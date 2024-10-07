@@ -244,7 +244,8 @@ tidy_boxcox_streamflow <- filter_streamflow_results |>
       .default = "observed"
       )
   ) |> 
-  select(!c(streamflow_model_objective_function)) 
+  select(!c(streamflow_model_objective_function)) |> 
+  distinct()
   
 
 
@@ -286,5 +287,23 @@ ggsave(
   units = "mm"
 )
 
+
+## Examine the difference to the observed ======================================
+### i.e., observed - best_CO2 and observed - best_non_CO2
+difference_to_observed_streamflow <- tidy_streamflow |> 
+  select(!c(bc_lambda, boxcox_streamflow)) |> 
+  distinct() |> 
+  pivot_wider(
+    names_from = streamflow_type,
+    values_from = streamflow,
+  )
+
+
+# Something is not working correctly. I guess it the regex stuff.
+x <- tidy_streamflow |> 
+  select(!c(bc_lambda, boxcox_streamflow)) |> 
+  distinct() |> 
+  dplyr::summarise(n = dplyr::n(), .by = c(year, precipitation, gauge, streamflow_type)) |>
+  dplyr::filter(n > 1L) 
 
 
