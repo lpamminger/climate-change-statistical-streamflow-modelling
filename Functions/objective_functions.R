@@ -1,0 +1,95 @@
+# Objective functions ----------------------------------------------------------
+
+constant_sd_objective_function <- function(modelled_streamflow, observed_streamflow, stop_start_data_set, parameter_set) {
+  
+  if(is.null(names(as.list(match.call())[-1]))) { # if no arguments provided return description
+    return(
+      list(
+        "name" = "constant_sd_objective_function",
+        "parameters" = "sd"
+      )
+    ) 
+  }
+  
+  
+  # dtruncnorm only works with vectors (double)
+  # matrix is a subclass of double and gets coerced into a double (double atomic vector)
+  constant_sd <- parameter_set[nrow(parameter_set), ]
+  
+  matrix_error_sd <- matrix(constant_sd,
+    nrow = nrow(modelled_streamflow),
+    ncol = ncol(modelled_streamflow),
+    byrow = TRUE
+  )
+  
+  prob_boxcox_observed <- truncnorm::dtruncnorm(
+    x = observed_streamflow,
+    a = 0,
+    b = Inf,
+    mean = modelled_streamflow,
+    sd = matrix_error_sd
+  )
+  
+  # Convert vector back into a matrix
+  prob_boxcox_observed <- matrix(prob_boxcox_observed,
+    nrow = nrow(modelled_streamflow),
+    ncol = ncol(modelled_streamflow)
+  )
+  
+  negative_log_likelihood <- colSums(-1 * log(prob_boxcox_observed))
+  
+  return(negative_log_likelihood)
+  
+}
+
+
+
+CO2_variable_objective_function <- function(modelled_streamflow, observed_streamflow, stop_start_data_set, parameter_set) { 
+  
+  if(is.null(names(as.list(match.call())[-1]))) { # if no arguments provided return description
+    return(
+      list(
+        "name" = "CO2_variable_objective_function",
+        "parameters" = c("sd", "scale_CO2")
+      )
+    ) 
+  }
+  
+  
+  constant_sd <- parameter_set[(nrow(parameter_set) - 1), ]
+  scale_CO2 <- parameter_set[nrow(parameter_set), ]
+  CO2 <- stop_start_data_set$CO2
+  
+  reshape_constant_sd <- matrix(constant_sd, nrow(modelled_streamflow), ncol(modelled_streamflow), byrow = TRUE)
+  reshape_scale_CO2 <- matrix(scale_CO2, nrow(modelled_streamflow), ncol(modelled_streamflow), byrow = TRUE)
+  reshape_CO2 <- matrix(CO2, nrow = nrow(modelled_streamflow), ncol = ncol(modelled_streamflow), byrow = FALSE) 
+  
+  
+  # each row will be increasing variable sd and column are combinations of constant sd and scale_CO2 parameters
+  variable_sd <- reshape_constant_sd + (reshape_scale_CO2 * reshape_CO2) 
+  
+  prob_boxcox_observed <- truncnorm::dtruncnorm(
+    x = observed_streamflow,
+    a = 0,
+    b = Inf,
+    mean = modelled_streamflow,
+    sd = variable_sd
+  )
+  
+  # Convert vector back into a matrix
+  prob_boxcox_observed <- matrix(prob_boxcox_observed,
+    nrow = nrow(modelled_streamflow),
+    ncol = ncol(modelled_streamflow)
+  )
+  
+  negative_log_likelihood <- colSums(-1 * log(prob_boxcox_observed))
+  
+  
+  return(negative_log_likelihood)
+}
+
+
+# Get function -----------------------------------------------------------------
+get_all_objective_functions <- function() {
+  c(constant_sd_objective_function, CO2_variable_objective_function)
+}
