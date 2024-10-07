@@ -1,4 +1,5 @@
 # Map plots - work out if models with CO2 perform better than ones without
+# Streamflow-time plots - what is the difference in streamflow?
 
 cat("\014") # clear console
 
@@ -8,14 +9,19 @@ pacman::p_load(tidyverse, sf)
 
 # Import functions ------------------------------------------------------------- 
 source("./Functions/utility.R")
-
+source("./Functions/boxcox_transforms.R")
 
 # Import data ------------------------------------------------------------------
-CMAES_results <- read_csv("Results/CMAES_results/CMAES_parameter_results_20240930.csv", show_col_types = FALSE)
+CMAES_results <- read_csv("./Results/CMAES_results/CMAES_parameter_results.csv", show_col_types = FALSE)
 
-gauge_information <- read_csv("./Data/Tidy/gauge_information_CAMELS_20240807.csv",
+streamflow_results <- read_csv("Results/CMAES_results/CMAES_streamflow_results.csv", 
+                               show_col_types = FALSE,
+                               col_select = !optimiser
+                               )
+
+gauge_information <- read_csv("./Data/Tidy/gauge_information_CAMELS.csv",
                               show_col_types = FALSE,
-                              col_select = c(gauge, state, lat, lon)
+                              col_select = c(gauge, bc_lambda, state, lat, lon)
                               ) # CAMELS is Australia wide.
 
 
@@ -28,8 +34,12 @@ vic_map <- read_sf(dsn = "./Data/Maps",
 
 
 # Gauges that do weird things - remove for now ---------------------------------
+## Gauges visually inspected using check_model_fit in graphs
 removed_gauges <- c("G0050115", "G0060005", "A0030501", "226220", "226407", "226222", "308145", "225020A")
 
+
+
+# Map plots --------------------------------------------------------------------
 # For a given catchment work out if a model with CO2 outperforms a model without CO2
 # remove unnecessary columns
 # only have unique streamflow model, gauge combinations
@@ -38,7 +48,7 @@ removed_gauges <- c("G0050115", "G0060005", "A0030501", "226220", "226407", "226
 # if yes then contains_CO2 = TRUE otherwise contains_CO2 is false
 # for each catchment (gauge) get the two lowest AIC values by contains_CO2
 
-edited_results <- CMAES_results |> 
+best_CO2_and_non_CO2_per_catchment <- CMAES_results |> 
   filter(! gauge %in% removed_gauges) |> 
   select(!c(parameter, parameter_value, optimiser, loglikelihood, exit_message, near_bounds)) |> 
   distinct() |> 
@@ -46,7 +56,7 @@ edited_results <- CMAES_results |>
     col = streamflow_model_objective_function,
     c(streamflow_model, objective_function),
     sep = "_",
-    remove = TRUE,
+    remove = FALSE,
     na.rm = FALSE
   ) |> 
   mutate(
@@ -57,12 +67,9 @@ edited_results <- CMAES_results |>
   slice_min(
     AIC,
     by = c(gauge, contains_CO2)
-  ) |> 
-  select(!streamflow_model_objective_function) |> 
-  pivot_wider(
-    names_from = contains_CO2,
-    values_from = AIC
-  )
+  ) 
+
+
 
 # Evidence ratio calculation ---------------------------------------------------
 # What to do (Taken from Burnham and Anderson 2002):
@@ -71,7 +78,13 @@ edited_results <- CMAES_results |>
 ## - calculate relative likelihood exp(0.5 * AIC_diff) pg. 72
 ## - evidence ratio is a relative measure of how much better the model is over the other model
 
-evidence_ratio_calc <- edited_results |> 
+
+evidence_ratio_calc <- best_CO2_and_non_CO2_per_catchment |> 
+  select(!c(streamflow_model_objective_function, streamflow_model, objective_function)) |> 
+  pivot_wider(
+    names_from = contains_CO2,
+    values_from = AIC
+  ) |> 
   mutate(
     AIC_difference = CO2 - no_CO2 # CO2 is smaller than non-CO2 then negative and CO2 is better
   ) |> 
@@ -185,3 +198,93 @@ ggsave(
   width = 297,
   units = "mm"
 )
+
+
+
+# Streamflow-timeseries plots --------------------------------------------------
+# the objective is to plot the best CO2, best non-CO2 and observed streamflow
+# (non box-cox) on a timeseries graph and examine the difference
+
+
+
+## Only get streamflow for the best CO2 and non CO2 models/obj functions =======
+### use the gauge, streamflow_model and objective function of
+### best_CO2_and_non_CO2_per_catchment to filter results from streamflow_results
+
+
+filter_streamflow_results <- streamflow_results |> 
+  semi_join(
+    best_CO2_and_non_CO2_per_catchment,
+    by = join_by(gauge, streamflow_model, objective_function)
+  )
+
+
+## Summarise results into a tidy format ========================================
+tidy_boxcox_streamflow <- filter_streamflow_results |> 
+  pivot_longer(
+    cols = c(observed_boxcox_streamflow, modelled_boxcox_streamflow),
+    names_to = "name",
+    values_to = "boxcox_streamflow"
+  ) |> 
+  unite( 
+    col = streamflow_model_objective_function,
+    c(streamflow_model, objective_function),
+    sep = "_",
+    remove = TRUE,
+    na.rm = FALSE
+  ) |> 
+  mutate(
+    streamflow_model_objective_function = if_else(name == "observed_boxcox_streamflow", "observed", streamflow_model_objective_function)
+  ) |> 
+  select(!name) |> 
+  mutate(
+    streamflow_type = case_when(
+      str_detect(streamflow_model_objective_function, "CO2") & !str_detect(streamflow_model_objective_function, "observed") ~ "CO2",
+      !str_detect(streamflow_model_objective_function, "CO2") & !str_detect(streamflow_model_objective_function, "observed") ~ "non_CO2",
+      .default = "observed"
+      )
+  ) |> 
+  select(!c(streamflow_model_objective_function)) 
+  
+
+
+## Convert from box-cox space to real space ====================================
+### bc lambda found in gauge_information
+#boxcox_inverse_transform()
+tidy_streamflow <- tidy_boxcox_streamflow |> 
+  left_join(
+    gauge_information, 
+    by = join_by(gauge)
+  ) |> 
+  select(!c(state, lat, lon)) |> 
+  mutate(
+    streamflow = boxcox_inverse_transform(yt = boxcox_streamflow, lambda = bc_lambda),
+    .by = gauge
+  ) 
+
+## Plot results ================================================================
+plot_streamflow_timeseries <- tidy_streamflow |> 
+  ggplot(aes(x = year, y = streamflow, colour = streamflow_type)) +
+  geom_line(na.rm = TRUE) +
+  theme_bw() +
+  scale_colour_brewer(palette = "Set1") +
+  labs(
+    x = "Year",
+    y = "Streamflow (mm)"
+  ) +
+  facet_wrap(~gauge, scales = "free_y") +
+  theme(legend.title = element_blank())
+
+
+ggsave(
+  filename = paste0("streamflow_timeseries_comparison_", get_date(), ".pdf"),
+  plot = plot_streamflow_timeseries,
+  device = "pdf",
+  path = "./Graphs/CMAES_graphs",
+  width = 1189,
+  height = 841,
+  units = "mm"
+)
+
+
+

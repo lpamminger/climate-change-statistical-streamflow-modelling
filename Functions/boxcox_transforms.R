@@ -14,7 +14,7 @@ boxcox_transform <- function(y, lambda = 0, lambda_2 = 0) {
 
 
 boxcox_inverse_transform <- function(yt, lambda = 0, lambda_2 = 0) {
-  if (lambda == 0L) {
+  if (all(lambda == 0)) {
     exp(yt) - lambda_2
   } else {
     ((yt * lambda) + 1)^(1 / lambda) - lambda_2
