@@ -39,6 +39,24 @@ removed_gauges <- c("G0050115", "G0060005", "A0030501", "226220", "226407", "226
 
 
 
+# Check for duplicates ---------------------------------------------------------
+# how many duplicates are there in streamflow_results 
+#x <- filter_streamflow_results |>
+#  dplyr::summarise(
+#    n = dplyr::n(), 
+#    .by = c(gauge, streamflow_model, objective_function)
+#  ) |>
+#  dplyr::filter(n > 1L) 
+
+# is there duplicates for parameter results. YES!
+#y <- CMAES_results |>
+#  dplyr::summarise(
+#    n = dplyr::n(), 
+#    .by = c(gauge, streamflow_model, objective_function)
+#  ) |>
+#  dplyr::filter(n > 1L)
+
+
 # Map plots --------------------------------------------------------------------
 # For a given catchment work out if a model with CO2 outperforms a model without CO2
 # remove unnecessary columns
@@ -219,6 +237,7 @@ filter_streamflow_results <- streamflow_results |>
   )
 
 
+
 ## Summarise results into a tidy format ========================================
 tidy_boxcox_streamflow <- filter_streamflow_results |> 
   pivot_longer(
@@ -244,8 +263,7 @@ tidy_boxcox_streamflow <- filter_streamflow_results |>
       .default = "observed"
       )
   ) |> 
-  select(!c(streamflow_model_objective_function)) |> 
-  distinct()
+  select(!c(streamflow_model_objective_function)) 
   
 
 
@@ -290,20 +308,46 @@ ggsave(
 
 ## Examine the difference to the observed ======================================
 ### i.e., observed - best_CO2 and observed - best_non_CO2
+
 difference_to_observed_streamflow <- tidy_streamflow |> 
   select(!c(bc_lambda, boxcox_streamflow)) |> 
   distinct() |> 
   pivot_wider(
     names_from = streamflow_type,
     values_from = streamflow,
+  ) |> 
+  mutate(
+    CO2_minus_non_CO2 = CO2 - non_CO2,
+    observed_minus_CO2 = observed - CO2,
+    observed_minus_non_CO2 = observed - non_CO2
   )
 
 
-# Something is not working correctly. I guess it the regex stuff.
-x <- tidy_streamflow |> 
-  select(!c(bc_lambda, boxcox_streamflow)) |> 
-  distinct() |> 
-  dplyr::summarise(n = dplyr::n(), .by = c(year, precipitation, gauge, streamflow_type)) |>
-  dplyr::filter(n > 1L) 
+
+# If you purely compare the model with CO2 and without CO2 than...
+difference_to_observed_streamflow |> 
+  ggplot(aes(x = year, y = CO2_minus_non_CO2)) +
+  geom_line(na.rm = TRUE) +
+  theme_bw() +
+  facet_wrap(~gauge, scales = "free_y")
+
+# Produces linear changes in CO2_minus_non_CO2 overtime
+# What does this mean?
+# A positive linear slope means as timeseries progresses the CO2 streamflow increases and non_CO2 decreases (opposite is true)
 
 
+
+# If you compare the model (both CO2 and non-CO2) to observed than...
+x <- difference_to_observed_streamflow |> 
+  summarise(
+    sum_observed = sum(observed, na.rm = TRUE),
+    sum_CO2 = sum(CO2, na.rm = TRUE),
+    sum_non_CO2 = sum(non_CO2, na.rm = TRUE),
+    sum_CO2_minus_non_CO2 = sum(CO2_minus_non_CO2, na.rm = TRUE),
+    sum_observed_minus_CO2 = sum(observed_minus_CO2, na.rm = TRUE),
+    sum_observed_minus_non_CO2 = sum(observed_minus_non_CO2, na.rm = TRUE),
+    .by = gauge
+  )
+
+
+# Explore parameter combinations -----------------------------------------------
