@@ -97,10 +97,10 @@ run_and_save_chunks_my_cmaes_parallel <- function(chunked_numerical_optimisers, 
   # I do not want to assign a variable name. Garbage collector works better like this.
   purrr::map(.x = sort_cmaes_results, .f = parameters_summary) |>
     purrr::list_rbind() |>
-    dplyr::slice_min( # Only take the min LL of each combination of replicates
-      loglikelihood,
-      by = c(gauge, streamflow_model, objective_function, optimiser)
-    ) |>
+    #dplyr::slice_min( # Only take the min LL of each combination of replicates
+     # loglikelihood,
+      #by = c(gauge, streamflow_model, objective_function, optimiser)
+    #) |>
     readr::write_csv(
       file = paste0(
         "./Results/CMAES_results/",
@@ -119,10 +119,10 @@ run_and_save_chunks_my_cmaes_parallel <- function(chunked_numerical_optimisers, 
     .f = modelled_streamflow_summary
   ) |>
     purrr::list_rbind() |>
-    dplyr::slice_min( # Only take the min LL of each combination of replicates
-      loglikelihood,
-      by = c(gauge, streamflow_model, objective_function, optimiser)
-    ) |>
+    #dplyr::slice_min( # Only take the min LL of each combination of replicates
+     # loglikelihood,
+      #by = c(gauge, streamflow_model, objective_function, optimiser)
+    #) |>
     readr::write_csv(
       file = paste0(
         "./Results/CMAES_results/",

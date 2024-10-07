@@ -174,6 +174,7 @@ iwalk(
 )
 
 
+gc()
 
 
 
@@ -187,11 +188,12 @@ parameters_list_of_files <- list.files(
 )
 
 
+
 combined_cmaes_parameters <- parameters_list_of_files |>
   readr::read_csv(show_col_types = FALSE) |>
-  dplyr::slice_min( # check if REPEATS go across batches
+  dplyr::slice_min( 
     loglikelihood,
-    by = c(gauge, streamflow_model, objective_function, optimiser)
+    by = c(gauge, streamflow_model, objective_function) # only get the minimum LL for gauge, streamflow model and objective function combination
   ) |>
   readr::write_csv(
     file = paste0("./Results/CMAES_results/CMAES_parameter_results.csv")
@@ -209,11 +211,11 @@ streamflow_list_of_files <- list.files(
 
 combined_cmaes_streamflow <- streamflow_list_of_files |>
   readr::read_csv(show_col_types = FALSE) |>
-  dplyr::slice_min( # I need this because if the REPEATS are spread over multiple chunk it will return > 1 best parameter set
+  dplyr::slice_min( 
     loglikelihood,
-    by = c(gauge, streamflow_model, objective_function, optimiser)
+    by = c(gauge, streamflow_model, objective_function, optimiser) # only get the minimum LL for gauge, streamflow model and objective function combination
   ) |>
-  select(!loglikelihood) |>
+  select(!loglikelihood) |> 
   readr::write_csv(
     file = paste0("./Results/CMAES_results/CMAES_streamflow_results.csv")
   )
