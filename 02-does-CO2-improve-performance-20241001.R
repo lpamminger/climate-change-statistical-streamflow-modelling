@@ -10,7 +10,7 @@ pacman::p_load(tidyverse, sf)
 # Import functions ------------------------------------------------------------- 
 source("./Functions/utility.R")
 source("./Functions/boxcox_transforms.R")
-#source("./Functions/streamflow_models.R")
+
 
 # Import data ------------------------------------------------------------------
 CMAES_results <- read_csv("./Results/CMAES_results/CMAES_parameter_results.csv", show_col_types = FALSE)
@@ -41,6 +41,7 @@ removed_gauges <- c("G0050115", "G0060005", "A0030501", "226220", "226407", "226
 
 
 # Check for duplicates ---------------------------------------------------------
+# Do this if I re-run 01
 # how many duplicates are there in streamflow_results 
 #x <- filter_streamflow_results |>
 #  dplyr::summarise(
@@ -388,9 +389,11 @@ totals_and_averages_streamflow |>
 # Questions to answer:
 
 # 1. Are the no CO2 and CO2 models selected for each catchment the same models with CO2?
-# Cases when true
-# If the non_Co2 and CO2 models are the same but the objective function is different (example catchment - 108003A)
+# I must consider two cases:
+# Case 1: when the streamflow model are the same but the objective functions are different
+# Case 2: when the objective functions are the same and the streamflow models are equivalent except one has CO2 and the other does not
 
+## Case 1 ======================================================================
 # if the streamflow model is the same for the CO2 and non-CO2 and the objective function is different
 # This must check if the unique streamflow models contain CO2? NO. Both streamflow models cannot have CO2
 
@@ -410,17 +413,11 @@ same_streamflow_model_different_objective_function <- best_CO2_and_non_CO2_per_c
   filter(same_model_different_objective_function) |> 
   pull(gauge)
 
-# Out of the X catchment Y. Compare the best CO2 and non-Co2
-# Two options are same streamflow model and different objective function
-cat(length(same_streamflow_model_different_objective_function), "gauges have same streamflow model and different objective function")
 
 
-
-
-# when the objective function is the same and the only difference between the streamflow models is a CO2 component - This is more difficult (example catchment - 112002A)
-# I think the best way it to write out CO2 and non_Co2 model pairs in a tibble then check against CMAES_results
-# This is hard coded
-# would be better to use get_non_drought_streamflow_models() and get_drought_streamflow_models()
+## Case 2 ======================================================================
+# I think the best way it to write out CO2 and non_CO2 model pairs (equivalent models) in a tibble then check against CMAES_results
+# This is hard coded. Would be better to use get_non_drought_streamflow_models() and get_drought_streamflow_models()
 non_CO2_streamflow_model_vs_CO2_equivalent <- tribble(
   ~non_CO2_model, ~CO2_equivalent,
  "streamflow_model_precip_only", "streamflow_model_separate_CO2",
@@ -435,19 +432,15 @@ non_CO2_streamflow_model_vs_CO2_equivalent <- tribble(
 
 
 
-
-
 # if it contains both columns of non_CO2_streamflow_model_vs_CO2_equivalent for a given row then only difference is CO2 component in model
-
-
-compare_streamflow_models <- function(streamflow_models, lookup_tibble) {
+compare_streamflow_models <- function(streamflow_models, objective_functions, lookup_tibble) {
   
   filtered_lookup_tibble <- lookup_tibble |> 
     filter(non_CO2_model == streamflow_models[1]) |> # This assumes the non_CO2 model is always first. I am not sure this is always true.
     unlist() |> 
     unname()
   
-  return(all(filtered_lookup_tibble == streamflow_models))
+  return(all(filtered_lookup_tibble == streamflow_models) & (length(unique(objective_functions)) == 1)) # ensures objective functions are the same
 }
   
 
@@ -455,6 +448,7 @@ same_model_except_with_CO2_check <- best_CO2_and_non_CO2_per_catchment |>
   summarise(
     same_model_with_and_without_CO2 = compare_streamflow_models(
       streamflow_models = streamflow_model, 
+      objective_functions = objective_function,
       lookup_tibble = non_CO2_streamflow_model_vs_CO2_equivalent
       ),
     .by = gauge
@@ -463,20 +457,30 @@ same_model_except_with_CO2_check <- best_CO2_and_non_CO2_per_catchment |>
   pull(gauge)
 
 
-# Out of the X catchment Y. Compare the best CO2 and non-Co2
-# Two options are same streamflow model and different objective function
-cat(length(same_model_except_with_CO2_check), "gauges have same streamflow model and different objective function")
+# Answering the first question =================================================\
+cat(
+  length(same_model_except_with_CO2_check), 
+  "out of", 
+  length(unique(best_CO2_and_non_CO2_per_catchment$gauge)), 
+  "catchments have the equivalent CO2 and non CO2 models (i.e., same model except one has CO2)" # they also have the same objective function
+  )
 
-165 / 210
+cat(
+  length(same_streamflow_model_different_objective_function), 
+  "out of", 
+  length(unique(best_CO2_and_non_CO2_per_catchment$gauge)), 
+  "catchments have the equivalent CO2 and non CO2 objective functions with the same streamflow model"
+)
+
 
 
 # 2. Are all parameters being utilised for the CO2 models? i.e., the model doesn’t set one value to zero. Check all values around zero?
 
 # make sure same_streamflow_model_different_objective_function parameters are being fully utilised
 # i.e., no parameters are really small
+
 parameter_utilisation <- CMAES_results |> 
-  #filter(gauge %in% same_streamflow_model_different_objective_function) |> 
-  filter(gauge %in% same_model_except_with_CO2_check) #|> 
+  filter(gauge %in% c(same_streamflow_model_different_objective_function, same_model_except_with_CO2_check)) |> 
   select(!c(optimiser, loglikelihood, exit_message, near_bounds)) |> 
   distinct() |> 
   unite( 
@@ -497,8 +501,9 @@ parameter_utilisation <- CMAES_results |>
   ) |> 
   select(!streamflow_model_objective_function) |> 
   filter(abs(parameter_value) < 1E-4)
+
 # What does a very small sd or scale CO2 mean?
 # a very low scale CO2 means -> variable_sd <- reshape_constant_sd + (reshape_scale_CO2 * reshape_CO2) 
 # the optimiser is setting something to zero
-
+# I don't know why sd want to be really small for the constant objective functions?
 

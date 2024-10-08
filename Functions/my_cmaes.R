@@ -37,7 +37,7 @@ make_default_cmaes_parameters <- function(SCALE, PARAMETER_NUMBER) {
       "noEffectCoord",
       "myTolX"
     ), 
-    max.restarts = 3L,  
+    max.restarts = 4L,  
     restart.multiplier = 2L, 
     stop.ons = c(
       list(
