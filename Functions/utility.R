@@ -206,3 +206,13 @@ saft_drought_algorithm <- function(rainfall_data){
   
   return(adjusted_drought)
 }
+
+
+# Copying histogram bin function factory from advanced R 2e (put in separate folder)
+binwidth_bins <- function(n){
+  force(n)
+  
+  function(x){
+    (max(x) - min(x)) / n
+  }
+}

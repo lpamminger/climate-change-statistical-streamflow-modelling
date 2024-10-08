@@ -10,6 +10,7 @@ pacman::p_load(tidyverse, sf)
 # Import functions ------------------------------------------------------------- 
 source("./Functions/utility.R")
 source("./Functions/boxcox_transforms.R")
+#source("./Functions/streamflow_models.R")
 
 # Import data ------------------------------------------------------------------
 CMAES_results <- read_csv("./Results/CMAES_results/CMAES_parameter_results.csv", show_col_types = FALSE)
@@ -338,8 +339,22 @@ difference_to_observed_streamflow |>
 
 
 # If you compare the model (both CO2 and non-CO2) to observed than...
-x <- difference_to_observed_streamflow |> 
+difference_to_observed_streamflow |> 
+  pivot_longer(
+    cols = starts_with("observed_minus"),
+    names_to = "residual_type",
+    values_to = "streamflow_residual"
+  ) |> 
+  ggplot(aes(x = year, y = streamflow_residual, colour = residual_type)) +
+  geom_line(na.rm = TRUE) +
+  theme_bw() +
+  facet_wrap(~gauge, scales = "free_y")
+
+
+# Totals and averages
+totals_and_averages_streamflow <- difference_to_observed_streamflow |> 
   summarise(
+    n = n(),
     sum_observed = sum(observed, na.rm = TRUE),
     sum_CO2 = sum(CO2, na.rm = TRUE),
     sum_non_CO2 = sum(non_CO2, na.rm = TRUE),
@@ -347,7 +362,143 @@ x <- difference_to_observed_streamflow |>
     sum_observed_minus_CO2 = sum(observed_minus_CO2, na.rm = TRUE),
     sum_observed_minus_non_CO2 = sum(observed_minus_non_CO2, na.rm = TRUE),
     .by = gauge
+  ) |> 
+  mutate(
+    ave_CO2_minus_non_CO2 = sum_CO2_minus_non_CO2 / n
+  )
+  
+
+# Directly comparing model results
+totals_and_averages_streamflow |> 
+  ggplot(aes(x = gauge, y = ave_CO2_minus_non_CO2)) +
+  geom_col() +
+  theme_bw() +
+  labs(
+    x = "Gauge",
+    y = "Average annual streamflow difference between CO2 and non-CO2 models (mm/year)"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 90), 
+    panel.grid.minor = element_blank()
   )
 
 
+
 # Explore parameter combinations -----------------------------------------------
+# Questions to answer:
+
+# 1. Are the no CO2 and CO2 models selected for each catchment the same models with CO2?
+# Cases when true
+# If the non_Co2 and CO2 models are the same but the objective function is different (example catchment - 108003A)
+
+# if the streamflow model is the same for the CO2 and non-CO2 and the objective function is different
+# This must check if the unique streamflow models contain CO2? NO. Both streamflow models cannot have CO2
+
+compare_objective_function <- function(streamflow_models, objective_functions) {
+  if((length(unique(streamflow_models)) == 1) & (length(unique(objective_functions)) != 1)) {
+    return(TRUE)
+  } else {
+    return(FALSE)
+  }
+}
+
+same_streamflow_model_different_objective_function <- best_CO2_and_non_CO2_per_catchment |> 
+  summarise(
+    same_model_different_objective_function = compare_objective_function(streamflow_model, objective_function),
+    .by = gauge
+  ) |>
+  filter(same_model_different_objective_function) |> 
+  pull(gauge)
+
+# Out of the X catchment Y. Compare the best CO2 and non-Co2
+# Two options are same streamflow model and different objective function
+cat(length(same_streamflow_model_different_objective_function), "gauges have same streamflow model and different objective function")
+
+
+
+
+# when the objective function is the same and the only difference between the streamflow models is a CO2 component - This is more difficult (example catchment - 112002A)
+# I think the best way it to write out CO2 and non_Co2 model pairs in a tibble then check against CMAES_results
+# This is hard coded
+# would be better to use get_non_drought_streamflow_models() and get_drought_streamflow_models()
+non_CO2_streamflow_model_vs_CO2_equivalent <- tribble(
+  ~non_CO2_model, ~CO2_equivalent,
+ "streamflow_model_precip_only", "streamflow_model_separate_CO2",
+ "streamflow_model_precip_auto", "streamflow_model_separate_CO2_auto",
+ "streamflow_model_precip_seasonal_ratio", "streamflow_model_separate_CO2_seasonal_ratio",
+ "streamflow_model_precip_seasonal_ratio_auto", "streamflow_model_separate_CO2_seasonal_ratio_auto",
+ "streamflow_model_drought_precip_only", "streamflow_model_drought_separate_CO2",
+ "streamflow_model_drought_precip_auto", "streamflow_model_drought_separate_CO2_auto",
+ "streamflow_model_drought_precip_seasonal_ratio", "streamflow_model_drought_separate_CO2_seasonal_ratio",
+ "streamflow_model_drought_precip_seasonal_ratio_auto", "streamflow_model_drought_separate_CO2_seasonal_ratio_auto"
+)
+
+
+
+
+
+# if it contains both columns of non_CO2_streamflow_model_vs_CO2_equivalent for a given row then only difference is CO2 component in model
+
+
+compare_streamflow_models <- function(streamflow_models, lookup_tibble) {
+  
+  filtered_lookup_tibble <- lookup_tibble |> 
+    filter(non_CO2_model == streamflow_models[1]) |> # This assumes the non_CO2 model is always first. I am not sure this is always true.
+    unlist() |> 
+    unname()
+  
+  return(all(filtered_lookup_tibble == streamflow_models))
+}
+  
+
+same_model_except_with_CO2_check <- best_CO2_and_non_CO2_per_catchment |> 
+  summarise(
+    same_model_with_and_without_CO2 = compare_streamflow_models(
+      streamflow_models = streamflow_model, 
+      lookup_tibble = non_CO2_streamflow_model_vs_CO2_equivalent
+      ),
+    .by = gauge
+  ) |> 
+  filter(same_model_with_and_without_CO2) |> 
+  pull(gauge)
+
+
+# Out of the X catchment Y. Compare the best CO2 and non-Co2
+# Two options are same streamflow model and different objective function
+cat(length(same_model_except_with_CO2_check), "gauges have same streamflow model and different objective function")
+
+165 / 210
+
+
+# 2. Are all parameters being utilised for the CO2 models? i.e., the model doesn’t set one value to zero. Check all values around zero?
+
+# make sure same_streamflow_model_different_objective_function parameters are being fully utilised
+# i.e., no parameters are really small
+parameter_utilisation <- CMAES_results |> 
+  #filter(gauge %in% same_streamflow_model_different_objective_function) |> 
+  filter(gauge %in% same_model_except_with_CO2_check) #|> 
+  select(!c(optimiser, loglikelihood, exit_message, near_bounds)) |> 
+  distinct() |> 
+  unite( 
+    col = streamflow_model_objective_function,
+    c(streamflow_model, objective_function),
+    sep = "_",
+    remove = FALSE,
+    na.rm = FALSE
+  ) |> 
+  mutate(
+    contains_CO2 = str_detect(streamflow_model_objective_function, "CO2"),
+    contains_CO2 = if_else(contains_CO2, "CO2", "no_CO2"),
+    .after = 2
+  ) |> 
+  slice_min(
+    AIC,
+    by = c(gauge, contains_CO2)
+  ) |> 
+  select(!streamflow_model_objective_function) |> 
+  filter(abs(parameter_value) < 1E-4)
+# What does a very small sd or scale CO2 mean?
+# a very low scale CO2 means -> variable_sd <- reshape_constant_sd + (reshape_scale_CO2 * reshape_CO2) 
+# the optimiser is setting something to zero
+
+
