@@ -505,5 +505,5 @@ parameter_utilisation <- CMAES_results |>
 # What does a very small sd or scale CO2 mean?
 # a very low scale CO2 means -> variable_sd <- reshape_constant_sd + (reshape_scale_CO2 * reshape_CO2) 
 # the optimiser is setting something to zero
-# I don't know why sd want to be really small for the constant objective functions?
+# I don't know why sd want to be really small for the constant objective functions? THIS DOES NOT OCCUR
 
