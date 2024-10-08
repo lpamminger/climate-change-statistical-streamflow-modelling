@@ -138,6 +138,19 @@ get_boxcox_streamflow <- function(cmaes_or_dream_result) {
 }
 
 
+
+plot.catchment_data <- function(x) {
+  
+  plot(
+    x = x$full_data_set$year,
+    y = x$full_data_set$observed_boxcox_streamflow,
+    type = "b",
+    xlab = "Year",
+    ylab = "Box-Cox Streamflow"
+  )
+  
+}
+
 plot.result_set <- function(x) {
   
   plot(

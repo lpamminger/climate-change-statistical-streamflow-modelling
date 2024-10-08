@@ -2,7 +2,7 @@ make_default_dream_parameters <- function(PARAMETER_NUMBER) {
   list(
     ndim = PARAMETER_NUMBER, # number of parameters in model
     nseq = 4 * PARAMETER_NUMBER, # number of chains to evolve (number of parameters * factor)
-    ndraw = 200000, # CHANGE TO 500,000 or 1e7 
+    ndraw = 50000, # CHANGE TO 500,000 or 1e7. Make this a factor of PARAMETER_NUMBER 
     Rthres = 1.2, # Vrugt recommendation
     boundHandling = "rand", # Method used to handle parameter values outside of parameter bounds. One of: "reflect", "bound", "fold", "none","rand"
     thin.t = 1, # CHANGE TO 32. Save the memory. 
