@@ -53,7 +53,7 @@ dream_example <- gauge |>
   ) |> 
   numerical_optimiser_setup_vary_inputs(
     streamflow_model = streamflow_model_precip_only,
-    objective_function = constant_sd_objective_function,
+    objective_function = CO2_variable_objective_function,
     bounds_and_transform_method = make_default_bounds_and_transform_methods(),
     minimise_likelihood = FALSE
   ) |> 
@@ -67,5 +67,15 @@ dream_example |>
   plot()
 
 # N_PARAMETERS = 3 -> nseq = 50,000 
-# Max parameters are 8. Extrapolate? if linear it would suggest round_any((50000/3) * 8, 1E4, ceiling) = 140,000
+# Max parameters are 8. Extrapolate? if linear it would suggest round_any((50000/3), 1E4, ceiling) = 20000 per parameter
 # I don't this this will work. I think the relationship between nseq and number of parameters is non-linear
+# Want to get the likelihoods to the nearest whole number of DREAM and CMAES
+
+# For gauge 407214 maximum parameters DREAM LL = 99.xxx, CMAES LL = 95.xxx
+# need to increase from 20000 * PARAMETER_NUMBER to or make it a non-linear relationship 160,000 for 8 params its too little. Try 200,000? Not enough.
+# Try 300,000? Not enough.
+# Playing with non-linear relationship for nseq and n_parameters:
+x <- seq(from = 3, to = 8, by = 1)
+y <- ((x ^ 2) - (x + 1)) * 1E4
+# non-linear relationship works with gauge 407214 and 3, 4 parameters
+# test for 5, 6, 7, 8? Go straight to 8? Good idea to test all.
