@@ -2,7 +2,10 @@
 cat("\014") # clear console
 
 # Import libraries--------------------------------------------------------------
-pacman::p_load(tidyverse, dream, tictoc, furrr, parallel, truncnorm, sloop, tictoc)
+pacman::p_load(tidyverse, dream, coda, tictoc, furrr, parallel, truncnorm, sloop, tictoc)
+# install dream using: install.packages("dream", repos="http://R-Forge.R-project.org")
+# install.packages("coda")
+
 
 # Import and prepare data-------------------------------------------------------
 
@@ -37,13 +40,13 @@ source("./Functions/cmaes_dream_summaries.R")
 source("./Functions/objective_functions.R")
 source("./Functions/numerical_optimiser_setup.R")
 source("./Functions/generic_functions.R")
-#source("./Functions/my_cmaes.R")
 source("./Functions/my_dream.R")
 source("./Functions/objective_function_setup.R")
 source("./Functions/result_set.R")
 
 
 # Run DREAM --------------------------------------------------------------------
+tic()
 gauge <- "407214"
 
 dream_example <- gauge |> 
@@ -52,7 +55,7 @@ dream_example <- gauge |>
     start_stop_indexes = start_stop_indexes
   ) |> 
   numerical_optimiser_setup_vary_inputs(
-    streamflow_model = streamflow_model_precip_only,
+    streamflow_model = streamflow_model_drought_separate_CO2_seasonal_ratio_auto,
     objective_function = CO2_variable_objective_function,
     bounds_and_transform_method = make_default_bounds_and_transform_methods(),
     minimise_likelihood = FALSE
@@ -65,6 +68,12 @@ dream_parameters <- dream_example |>
 
 dream_example |> 
   plot()
+
+toc()
+
+# for gauge = 407214, model = streamflow_model_drought_separate_CO2_seasonal_ratio_auto
+# and objective function CO2_variable_objective_function expect LL of 95
+# 550,000 nseq and 425 sec (~7min) gives 105 LL
 
 # N_PARAMETERS = 3 -> nseq = 50,000 
 # Max parameters are 8. Extrapolate? if linear it would suggest round_any((50000/3), 1E4, ceiling) = 20000 per parameter
