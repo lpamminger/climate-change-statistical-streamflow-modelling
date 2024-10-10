@@ -8,6 +8,9 @@
 
 
 
+# Testing if the branch works
+new_branch_test <- 1
+
 # Clear console ----------------------------------------------------------------
 cat("\014")
 
