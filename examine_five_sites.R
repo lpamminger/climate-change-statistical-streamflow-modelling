@@ -12,7 +12,7 @@
 cat("\014")
 
 # Import libraries -------------------------------------------------------------
-pacman::p_load(tidyverse)
+pacman::p_load(tidyverse, pdftools)
 
 
 # Import functions -------------------------------------------------------------
@@ -40,26 +40,26 @@ gauge_information <- read_csv("./Data/Tidy/gauge_information_CAMELS.csv",
 # Selecting sites --------------------------------------------------------------
 selected_sites <- c("614044", "113004A", "407220", "230210", "302214")
 
-parameter_utilisation_selected_sites <- CMAES_results |> 
-  filter(gauge %in% selected_sites) |> 
-  select(!c(optimiser, loglikelihood, exit_message, near_bounds)) |> 
-  distinct() |> 
-  unite( 
+parameter_utilisation_selected_sites <- CMAES_results |>
+  filter(gauge %in% selected_sites) |>
+  select(!c(optimiser, loglikelihood, exit_message, near_bounds)) |>
+  distinct() |>
+  unite(
     col = streamflow_model_objective_function,
     c(streamflow_model, objective_function),
     sep = "_",
     remove = FALSE,
     na.rm = FALSE
-  ) |> 
+  ) |>
   mutate(
     contains_CO2 = str_detect(streamflow_model_objective_function, "CO2"),
     contains_CO2 = if_else(contains_CO2, "CO2", "no_CO2"),
     .after = 2
-  ) |> 
+  ) |>
   slice_min(
     AIC,
     by = c(gauge, contains_CO2)
-  ) |> 
+  ) |>
   select(!streamflow_model_objective_function) |>
   filter(contains_CO2 == "CO2") |> # only interested in the CO2 models
   filter(abs(parameter_value) < 1E-4)
@@ -70,82 +70,83 @@ parameter_utilisation_selected_sites <- CMAES_results |>
 # Produce a timeseries plot for each site --------------------------------------
 ## Compare the observed, best CO2 and best non-CO2 (5 x 1 graph)
 
-best_CO2_and_non_CO2_per_catchment <- CMAES_results |> 
-  filter(gauge %in% selected_sites) |> 
-  select(!c(parameter, parameter_value, optimiser, loglikelihood, exit_message, near_bounds)) |> 
-  distinct() |> 
-  unite( 
+best_CO2_and_non_CO2_per_catchment <- CMAES_results |>
+  filter(gauge %in% selected_sites) |>
+  select(!c(parameter, parameter_value, optimiser, loglikelihood, exit_message, near_bounds)) |>
+  distinct() |>
+  unite(
     col = streamflow_model_objective_function,
     c(streamflow_model, objective_function),
     sep = "_",
     remove = FALSE,
     na.rm = FALSE
-  ) |> 
+  ) |>
   mutate(
     contains_CO2 = str_detect(streamflow_model_objective_function, "CO2"),
     contains_CO2 = if_else(contains_CO2, "CO2", "no_CO2"),
     .after = 2
-  ) |> 
+  ) |>
   slice_min(
     AIC,
     by = c(gauge, contains_CO2)
-  ) 
+  )
 
 
-filter_streamflow_results <- streamflow_results |> 
+filter_streamflow_results <- streamflow_results |>
   semi_join(
     best_CO2_and_non_CO2_per_catchment,
     by = join_by(gauge, streamflow_model, objective_function)
   )
 
 
-tidy_boxcox_streamflow <- filter_streamflow_results |> 
+tidy_boxcox_streamflow <- filter_streamflow_results |>
   pivot_longer(
     cols = c(observed_boxcox_streamflow, modelled_boxcox_streamflow),
     names_to = "name",
     values_to = "boxcox_streamflow"
-  ) |> 
-  unite( 
+  ) |>
+  unite(
     col = streamflow_model_objective_function,
     c(streamflow_model, objective_function),
     sep = "_",
     remove = TRUE,
     na.rm = FALSE
-  ) |> 
+  ) |>
   mutate(
     streamflow_model_objective_function = if_else(name == "observed_boxcox_streamflow", "observed", streamflow_model_objective_function)
-  ) |> 
-  select(!name) |> 
+  ) |>
+  select(!name) |>
   mutate(
     streamflow_type = case_when(
       str_detect(streamflow_model_objective_function, "CO2") & !str_detect(streamflow_model_objective_function, "observed") ~ "CO2",
       !str_detect(streamflow_model_objective_function, "CO2") & !str_detect(streamflow_model_objective_function, "observed") ~ "non_CO2",
       .default = "observed"
     )
-  ) |> 
-  select(!c(streamflow_model_objective_function)) 
+  ) |>
+  select(!c(streamflow_model_objective_function))
 
 
-tidy_streamflow <- tidy_boxcox_streamflow |> 
+tidy_streamflow <- tidy_boxcox_streamflow |>
   left_join(
-    gauge_information, 
+    gauge_information,
     by = join_by(gauge)
-  ) |> 
-  select(!c(state, lat, lon)) |> 
+  ) |>
+  select(!c(state, lat, lon)) |>
   mutate(
     streamflow = boxcox_inverse_transform(yt = boxcox_streamflow, lambda = bc_lambda),
     .by = gauge
-  ) 
+  )
 
 
-plot_streamflow_timeseries <- tidy_streamflow |> 
+plot_streamflow_timeseries <- tidy_streamflow |>
   ggplot(aes(x = year, y = streamflow, colour = streamflow_type)) +
   geom_line(na.rm = TRUE, alpha = 0.9) +
   theme_bw() +
   scale_colour_brewer(palette = "Dark2") +
   labs(
     x = "Year",
-    y = "Streamflow (mm)"
+    y = "Streamflow (mm)",
+    title = "Streamflow timeseries"
   ) +
   facet_wrap(~gauge, scales = "free_y", nrow = 5) +
   theme(legend.title = element_blank())
@@ -163,13 +164,13 @@ ggsave(
 
 
 # Plot the observed - CO2 and observed - nonCO2 residuals ----------------------
-difference_to_observed_streamflow <- tidy_streamflow |> 
-  select(!c(bc_lambda, boxcox_streamflow)) |> 
-  distinct() |> 
+difference_to_observed_streamflow <- tidy_streamflow |>
+  select(!c(bc_lambda, boxcox_streamflow)) |>
+  distinct() |>
   pivot_wider(
     names_from = streamflow_type,
     values_from = streamflow,
-  ) |> 
+  ) |>
   mutate(
     CO2_minus_non_CO2 = CO2 - non_CO2,
     observed_minus_CO2 = observed - CO2,
@@ -177,19 +178,20 @@ difference_to_observed_streamflow <- tidy_streamflow |>
   )
 
 
-plot_difference_observed_residuals <- difference_to_observed_streamflow |> 
+plot_difference_observed_residuals <- difference_to_observed_streamflow |>
   pivot_longer(
     cols = c(observed_minus_CO2, observed_minus_non_CO2),
     names_to = "residual_type",
     values_to = "residual_value"
-  ) |> 
+  ) |>
   ggplot(aes(x = year, y = residual_value, colour = residual_type)) +
   geom_line(na.rm = TRUE) +
   theme_bw() +
   labs(
     x = "Year",
     y = "Observed streamflow minus model streamflow (mm)",
-    colour = "Residual Type"
+    colour = "Residual Type",
+    title = "Observed minus modelled streamflow residuals"
   ) +
   scale_colour_brewer(palette = "Set1") +
   facet_wrap(~gauge, scales = "free_y", nrow = 5)
@@ -207,20 +209,21 @@ ggsave(
 
 
 # difference_CO2_minus_non_CO2 timeseries --------------------------------------
-plot_difference_CO2_minus_non_CO2 <- difference_to_observed_streamflow |> 
+plot_difference_CO2_minus_non_CO2 <- difference_to_observed_streamflow |>
   ggplot(aes(x = year, y = CO2_minus_non_CO2)) +
   geom_line(na.rm = TRUE) +
   theme_bw() +
   labs(
     x = "Year",
-    y = "Streamflow from best CO2 model minus streamflow from best non-CO2 model (mm)"
+    y = "Streamflow from best CO2 model minus streamflow from best non-CO2 model (mm)",
+    title = "CO2 model streamflow minus non-CO2 model streamflow"
   ) +
   facet_wrap(~gauge, scales = "free_y", nrow = 5)
 
 
 ggsave(
   filename = paste0("selected_sites_difference_CO2_minus_non_CO2_", get_date(), ".pdf"),
-  plot = plot_streamflow_timeseries,
+  plot = plot_difference_CO2_minus_non_CO2,
   device = "pdf",
   path = "./Graphs/examination_selected_sites",
   width = 297,
@@ -248,7 +251,7 @@ tibble_confidence_interval_acf <- function(acf_object, name = NULL, alpha = 0.05
   result_tibble$upper_bound <- as.numeric(upper_bound)
   result_tibble$lower_bound <- as.numeric(lower_bound)
   return(result_tibble)
-} 
+}
 
 
 list_of_observed_minus_CO2_per_catchment <- difference_to_observed_streamflow |>
@@ -269,7 +272,7 @@ remove_na_vector <- function(vector) {
 no_NA_list_of_observed_minus_CO2_per_catchment <- map(
   .x = list_of_observed_minus_CO2_per_catchment,
   .f = remove_na_vector
-  )
+)
 
 
 acf_objects_per_gauge <- map(
@@ -281,9 +284,9 @@ acf_objects_per_gauge <- map(
 
 get_lags_from_acf <- function(acf_object, name = NULL) {
   acf_tibble <- with(acf_object, tibble(lag, acf))
-  acf_tibble |> 
+  acf_tibble |>
     add_column(
-      gauge = {{  name }},
+      gauge = {{ name }},
       .before = 1
     )
 }
@@ -301,43 +304,45 @@ confidence_intervals_acf <- map2(
   .x = acf_objects_per_gauge,
   .y = names(acf_objects_per_gauge),
   .f = tibble_confidence_interval_acf
-) |> 
-  list_rbind() |> 
+) |>
+  list_rbind() |>
   rename(
     gauge = name
   )
 
-complete_acf_per_gauge <- lags_from_acf |> 
+complete_acf_per_gauge <- lags_from_acf |>
   left_join(
     confidence_intervals_acf,
     by = join_by(gauge)
-  ) 
-  
+  )
 
 
 
-acf_ggplot <- complete_acf_per_gauge |> 
+
+acf_ggplot <- complete_acf_per_gauge |>
   ggplot(aes(x = lag, y = acf)) +
   geom_hline(aes(yintercept = 0), linewidth = 1) +
   geom_segment(mapping = aes(xend = lag, yend = 0), linewidth = 1) +
   geom_hline(
-    aes(yintercept = lower_bound), 
-    linetype = 2, 
-    linewidth = 1, 
+    aes(yintercept = lower_bound),
+    linetype = 2,
+    linewidth = 1,
     colour = "blue"
-    ) +
+  ) +
   geom_hline(
-    aes(yintercept = upper_bound), 
-    linetype = 2, 
-    linewidth = 1, 
+    aes(yintercept = upper_bound),
+    linetype = 2,
+    linewidth = 1,
     colour = "blue"
-    ) +
+  ) +
   labs(
     x = "Lag",
-    y = "ACF"
+    y = "ACF",
+    title = "ACF graphs"
   ) +
   theme_bw() +
   facet_wrap(~gauge)
+
 
 ggsave(
   filename = paste0("selected_sites_acf_plots_", get_date(), ".pdf"),
@@ -349,4 +354,11 @@ ggsave(
   units = "mm"
 )
 
+# Combine all files and save
+pdf_paths_to_combine <- list.files(
+  path = "./Graphs/examination_selected_sites",
+  recursive = FALSE, # I don't want it looking in other folders
+  full.names = TRUE
+)
 
+pdf_combine(input = pdf_paths_to_combine, output = "./Graphs/examination_selected_sites/five_site_examination.pdf")

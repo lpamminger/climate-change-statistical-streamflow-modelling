@@ -328,6 +328,7 @@ difference_to_observed_streamflow <- tidy_streamflow |>
 
 # If you purely compare the model with CO2 and without CO2 than...
 difference_to_observed_streamflow |> 
+  #filter(gauge == "221207") |> 
   ggplot(aes(x = year, y = CO2_minus_non_CO2)) +
   geom_line(na.rm = TRUE) +
   theme_bw() +
@@ -346,11 +347,17 @@ difference_to_observed_streamflow |>
     names_to = "residual_type",
     values_to = "streamflow_residual"
   ) |> 
+  filter(gauge == "403217") |> 
   ggplot(aes(x = year, y = streamflow_residual, colour = residual_type)) +
   geom_line(na.rm = TRUE) +
-  theme_bw() +
-  facet_wrap(~gauge, scales = "free_y")
+  theme_bw() #+
+  #facet_wrap(~gauge, scales = "free_y")
 
+x <- difference_to_observed_streamflow |> 
+  drop_na() |> 
+  filter(gauge == "403217") |> 
+  pull(observed_minus_non_CO2) |> 
+  acf()
 
 # Totals and averages
 totals_and_averages_streamflow <- difference_to_observed_streamflow |> 
@@ -382,6 +389,8 @@ totals_and_averages_streamflow |>
     axis.text.x = element_text(angle = 90), 
     panel.grid.minor = element_blank()
   )
+
+
 
 
 
