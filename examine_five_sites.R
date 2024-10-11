@@ -61,7 +61,7 @@ parameter_utilisation_selected_sites <- CMAES_results |>
     by = c(gauge, contains_CO2)
   ) |>
   select(!streamflow_model_objective_function) |>
-  filter(contains_CO2 == "CO2") |> # only interested in the CO2 models
+  filter(contains_CO2 == "no_CO2") #|> # only interested in the CO2 models
   filter(abs(parameter_value) < 1E-4)
 
 # All parameters are non-zero
