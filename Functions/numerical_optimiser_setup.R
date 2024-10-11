@@ -156,15 +156,16 @@ numerical_optimiser_setup_vary_inputs <- function(catchment_data, ...) {
 make_default_bounds_and_transform_methods <- function() {
   tibble::tribble(
     ~parameter, ~lower_bound,   ~upper_bound,  ~transform_method,
-    "a0",        -300,           100,           linear_parameter_transform,
-    "a0_d",      -300,           100,           linear_parameter_transform,
-    "a0_n",      -300,           100,           linear_parameter_transform,
-    "a1",         1E-8 ,         1,             logarithmic_parameter_transform,
-    "a2",        -1,             1,             linear_parameter_transform,
-    "a3",        -250,           500,           linear_parameter_transform,
-    "a4",        -250,           1000,          linear_parameter_transform,
-    "sd",         1E-8,          1000,          logarithmic_parameter_transform,
-    "scale_CO2",  1E-8,          1000,          logarithmic_parameter_transform
+    "a0",        -300,           100,           linear_parameter_transform, # intercept
+    "a0_d",      -300,           100,           linear_parameter_transform, # intercept - no drought
+    "a0_n",      -300,           100,           linear_parameter_transform, # intercept - drought
+    "a1",         1E-8 ,         1,             logarithmic_parameter_transform, # slope
+    "a2",        -1,             1,             linear_parameter_transform, # autocorrelation
+    "a3",        -250,           500,           linear_parameter_transform, # CO2 coefficient
+    "a4",        -250,           1000,          linear_parameter_transform, # seasonal parameter
+    "a5",           0,           118.81,        linear_parameter_transform, # CO2 shift parameter - HARD CODED - SHOULD CHANGE BASED ON CO2 INPUT
+    "sd",         1E-8,          1000,          logarithmic_parameter_transform, # constant sd objective function
+    "scale_CO2",  1E-8,          1000,          logarithmic_parameter_transform # CO2 scaler for objective function
   )
 }
 
