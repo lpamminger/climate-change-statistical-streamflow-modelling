@@ -20,7 +20,8 @@ data <- readr::read_csv(
 
 gauge_information <- readr::read_csv(
   "./Data/Tidy/gauge_information_CAMELS.csv",
-  show_col_types = FALSE
+  show_col_types = FALSE,
+  col_select = c(gauge, bc_lambda, state, lat, lon)
 )
 
 
@@ -29,6 +30,7 @@ gauge_information <- readr::read_csv(
 
 ## Utility functions ===========================================================
 source("./Functions/utility.R")
+source("./Functions/boxcox_transforms.R")
 
 
 ## Import streamflow functions =================================================
@@ -336,12 +338,11 @@ replicate_cmaes <- function(gauge, streamflow_model, objective_function) {
       minimise_likelihood = TRUE
     ) |>
     my_cmaes(print_monitor = TRUE) |>
-    result_set() |>
-    parameters_summary() 
+    result_set() 
 }
 
 
-REPLICATES <- 10
+REPLICATES <- 1
 
 
 ## Site 1: =====================================================================
@@ -355,15 +356,25 @@ site_1_replicates <- replicate(
     constant_sd_objective_function
     ),
   simplify = FALSE
-) |> 
-  list_rbind() 
+)  
 
-best_site_1_replicates <- site_1_replicates |> 
+
+best_site_1_parameters <- map(
+  .x = site_1_replicates,
+  .f = parameters_summary
+) |>
+  list_rbind() |>
+  add_column(
+    replicate = rep(seq(1, REPLICATES), each = length(site_1_replicates[[1]]$best_parameter_set)), # hard coded
+    .before = 1
+  ) |>
   dplyr::slice_min(
     loglikelihood
   )
 
-
+# This is disgusting
+# using the replicate number from best_site_1_parameters
+site_1_streamflow <- modelled_streamflow_summary(site_1_replicates[[best_site_1_parameters$replicate[1]]])
 
 
 ## Site 2: =====================================================================
@@ -378,13 +389,25 @@ site_2_replicates <- replicate(
     constant_sd_objective_function
   ),
   simplify = FALSE
-) |> 
-  list_rbind() 
+)  
 
-best_site_2_replicates <- site_2_replicates |> 
+
+best_site_2_parameters <- map(
+  .x = site_2_replicates,
+  .f = parameters_summary
+) |>
+  list_rbind() |>
+  add_column(
+    replicate = rep(seq(1, REPLICATES), each = length(site_2_replicates[[1]]$best_parameter_set)), # hard coded
+    .before = 1
+  ) |>
   dplyr::slice_min(
     loglikelihood
   )
+
+# This is disgusting
+# using the replicate number from best_site_1_parameters
+site_2_streamflow <- modelled_streamflow_summary(site_2_replicates[[best_site_2_parameters$replicate[1]]])
 
 
 
@@ -399,13 +422,25 @@ site_3_replicates <- replicate(
     constant_sd_objective_function
   ),
   simplify = FALSE
-) |> 
-  list_rbind() 
+) 
 
-best_site_3_replicates <- site_3_replicates |> 
+
+best_site_3_parameters <- map(
+  .x = site_3_replicates,
+  .f = parameters_summary
+) |>
+  list_rbind() |>
+  add_column(
+    replicate = rep(seq(1, REPLICATES), each = length(site_3_replicates[[1]]$best_parameter_set)), # hard coded
+    .before = 1
+  ) |>
   dplyr::slice_min(
     loglikelihood
   )
+
+# This is disgusting
+# using the replicate number from best_site_1_parameters
+site_3_streamflow <- modelled_streamflow_summary(site_3_replicates[[best_site_3_parameters$replicate[1]]])
 
 
 
@@ -415,18 +450,30 @@ site_4_gauge <- "407220"
 site_4_replicates <- replicate(
   n = REPLICATES, 
   expr = replicate_cmaes(
-    site_1_gauge, 
+    site_4_gauge, 
     streamflow_model_separate_shifted_CO2_seasonal_ratio_auto, 
     constant_sd_objective_function
   ),
   simplify = FALSE
-) |> 
-  list_rbind() 
+) 
 
-best_site_4_replicates <- site_4_replicates |> 
+
+best_site_4_parameters <- map(
+  .x = site_4_replicates,
+  .f = parameters_summary
+) |>
+  list_rbind() |>
+  add_column(
+    replicate = rep(seq(1, REPLICATES), each = length(site_4_replicates[[1]]$best_parameter_set)), # hard coded
+    .before = 1
+  ) |>
   dplyr::slice_min(
     loglikelihood
   )
+
+# This is disgusting
+# using the replicate number from best_site_1_parameters
+site_4_streamflow <- modelled_streamflow_summary(site_4_replicates[[best_site_4_parameters$replicate[1]]])
 
 
 
@@ -434,20 +481,207 @@ best_site_4_replicates <- site_4_replicates |>
 site_5_gauge <- "614044"
 
 site_5_replicates <- replicate(
-  n = REPLICATES, 
+  n = REPLICATES,
   expr = replicate_cmaes(
-    site_1_gauge, 
-    streamflow_model_separate_shifted_CO2_seasonal_ratio_auto, 
+    site_5_gauge,
+    streamflow_model_separate_shifted_CO2_seasonal_ratio_auto,
     constant_sd_objective_function
   ),
   simplify = FALSE
-) |> 
-  list_rbind() 
+)
 
-best_site_5_replicates <- site_5_replicates |> 
+
+best_site_5_parameters <- map(
+  .x = site_5_replicates,
+  .f = parameters_summary
+) |>
+  list_rbind() |>
+  add_column(
+    replicate = rep(seq(1, REPLICATES), each = length(site_5_replicates[[1]]$best_parameter_set)), # hard coded
+    .before = 1
+  ) |>
   dplyr::slice_min(
     loglikelihood
   )
 
+# This is disgusting
+# using the replicate number from best_site_1_parameters
+site_5_streamflow <- modelled_streamflow_summary(site_5_replicates[[best_site_5_parameters$replicate[1]]])
 
 toc()
+
+
+
+# Repeat the plotting in examine_five_sites ------------------------------------
+combined_streamflow <- rbind(site_1_streamflow, site_2_streamflow, site_3_streamflow, site_4_streamflow, site_5_streamflow)
+
+streamflow_results <- combined_streamflow |> 
+  left_join(
+    gauge_information, 
+    by = join_by(gauge)
+    ) |> 
+  pivot_longer(
+    cols = ends_with("streamflow"),
+    names_to = "modelled_or_observed",
+    values_to = "boxcox_streamflow"
+  ) |> 
+  mutate(
+    streamflow = boxcox_inverse_transform(boxcox_streamflow, lambda = bc_lambda),
+    modelled_or_observed = if_else(modelled_or_observed == "observed_boxcox_streamflow", "observed", "modelled")
+  )
+
+## Plot 1
+plot_streamflow_timeseries <- streamflow_results |>
+  ggplot(aes(x = year, y = streamflow, colour = modelled_or_observed)) +
+  geom_line(na.rm = TRUE, alpha = 0.9) +
+  theme_bw() +
+  scale_colour_brewer(palette = "Dark2") +
+  labs(
+    x = "Year",
+    y = "Streamflow (mm)",
+    title = "Streamflow timeseries"
+  ) +
+  facet_wrap(~gauge, scales = "free_y", nrow = 5) +
+  theme(legend.title = element_blank())
+
+plot_streamflow_timeseries
+
+
+## Plot 2
+difference_to_observed_streamflow <- streamflow_results |>
+  select(!c(bc_lambda, boxcox_streamflow)) |>
+  distinct() |>
+  pivot_wider(
+    names_from = modelled_or_observed,
+    values_from = streamflow,
+  ) |>
+  mutate(
+    observed_minus_CO2 = observed - modelled
+  )
+
+
+plot_difference_observed_residuals <- difference_to_observed_streamflow |>
+  ggplot(aes(x = year, y = observed_minus_CO2)) +
+  geom_line(na.rm = TRUE) +
+  theme_bw() +
+  labs(
+    x = "Year",
+    y = "Observed streamflow minus CO2 model streamflow (mm)",
+    colour = "Residual Type",
+    title = "Observed minus modelled streamflow residuals"
+  ) +
+  facet_wrap(~gauge, scales = "free_y", nrow = 5)
+
+
+plot_difference_observed_residuals
+
+
+# Plot 4
+## acf using ggplot ============================================================
+## https://stackoverflow.com/questions/17788859/acf-plot-with-ggplot2-setting-width-of-geom-bar
+
+confidence_interval_acf <- function(acf_object, alpha = 0.05) {
+  return(qnorm((1 + (1 - alpha)) / 2) / sqrt(acf_object$n.used))
+}
+
+
+tibble_confidence_interval_acf <- function(acf_object, name = NULL, alpha = 0.05) {
+  upper_bound <- confidence_interval_acf(acf_object, alpha)
+  lower_bound <- -upper_bound
+  result_tibble <- as_tibble(cbind(name, upper_bound, lower_bound))
+  result_tibble$upper_bound <- as.numeric(upper_bound)
+  result_tibble$lower_bound <- as.numeric(lower_bound)
+  return(result_tibble)
+}
+
+
+list_of_observed_minus_CO2_per_catchment <- difference_to_observed_streamflow |>
+  select(year, gauge, observed_minus_CO2) |>
+  pivot_wider(
+    names_from = gauge,
+    values_from = observed_minus_CO2
+  ) |>
+  select(!year) |>
+  unclass()
+
+
+remove_na_vector <- function(vector) {
+  vector[!is.na(vector)]
+}
+
+
+no_NA_list_of_observed_minus_CO2_per_catchment <- map(
+  .x = list_of_observed_minus_CO2_per_catchment,
+  .f = remove_na_vector
+)
+
+
+acf_objects_per_gauge <- map(
+  .x = no_NA_list_of_observed_minus_CO2_per_catchment,
+  .f = acf,
+  plot = FALSE
+)
+
+
+get_lags_from_acf <- function(acf_object, name = NULL) {
+  acf_tibble <- with(acf_object, tibble(lag, acf))
+  acf_tibble |>
+    add_column(
+      gauge = {{ name }},
+      .before = 1
+    )
+}
+
+
+lags_from_acf <- map2(
+  .x = acf_objects_per_gauge,
+  .y = names(acf_objects_per_gauge),
+  .f = get_lags_from_acf
+) |>
+  list_rbind()
+
+
+confidence_intervals_acf <- map2(
+  .x = acf_objects_per_gauge,
+  .y = names(acf_objects_per_gauge),
+  .f = tibble_confidence_interval_acf
+) |>
+  list_rbind() |>
+  rename(
+    gauge = name
+  )
+
+complete_acf_per_gauge <- lags_from_acf |>
+  left_join(
+    confidence_intervals_acf,
+    by = join_by(gauge)
+  )
+
+
+
+
+acf_ggplot <- complete_acf_per_gauge |>
+  ggplot(aes(x = lag, y = acf)) +
+  geom_hline(aes(yintercept = 0), linewidth = 1) +
+  geom_segment(mapping = aes(xend = lag, yend = 0), linewidth = 1) +
+  geom_hline(
+    aes(yintercept = lower_bound),
+    linetype = 2,
+    linewidth = 1,
+    colour = "blue"
+  ) +
+  geom_hline(
+    aes(yintercept = upper_bound),
+    linetype = 2,
+    linewidth = 1,
+    colour = "blue"
+  ) +
+  labs(
+    x = "Lag",
+    y = "ACF",
+    title = "ACF graphs"
+  ) +
+  theme_bw() +
+  facet_wrap(~gauge)
+
+acf_ggplot
