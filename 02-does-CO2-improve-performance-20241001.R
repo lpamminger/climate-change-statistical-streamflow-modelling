@@ -15,6 +15,7 @@ source("./Functions/boxcox_transforms.R")
 # Import data ------------------------------------------------------------------
 CMAES_results <- read_csv("./Results/CMAES_results/CMAES_parameter_results.csv", show_col_types = FALSE)
 
+
 streamflow_results <- read_csv("Results/CMAES_results/CMAES_streamflow_results.csv", 
                                show_col_types = FALSE,
                                col_select = !optimiser
