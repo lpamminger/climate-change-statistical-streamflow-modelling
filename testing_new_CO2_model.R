@@ -495,6 +495,8 @@ toc()
 combined_parameters <- rbind(best_site_1_parameters, best_site_2_parameters, best_site_3_parameters, best_site_4_parameters, best_site_5_parameters)
 combined_streamflow <- rbind(site_1_streamflow, site_2_streamflow, site_3_streamflow, site_4_streamflow, site_5_streamflow)
 
+write_csv(combined_streamflow, "./results/CMAES_results/testing_new_CO2_model_streamflow.csv")
+
 streamflow_results <- combined_streamflow |> 
   left_join(
     gauge_information, 
