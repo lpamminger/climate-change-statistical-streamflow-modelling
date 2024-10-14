@@ -342,7 +342,7 @@ replicate_cmaes <- function(gauge, streamflow_model, objective_function) {
 }
 
 
-REPLICATES <- 1
+REPLICATES <- 10
 
 
 ## Site 1: =====================================================================
@@ -513,6 +513,7 @@ toc()
 
 
 # Repeat the plotting in examine_five_sites ------------------------------------
+combined_parameters <- rbind(best_site_1_parameters, best_site_2_parameters, best_site_3_parameters, best_site_4_parameters, best_site_5_parameters)
 combined_streamflow <- rbind(site_1_streamflow, site_2_streamflow, site_3_streamflow, site_4_streamflow, site_5_streamflow)
 
 streamflow_results <- combined_streamflow |> 
