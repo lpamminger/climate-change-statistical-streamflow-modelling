@@ -46,27 +46,6 @@ source("./Functions/objective_function_setup.R")
 source("./Functions/result_set.R")
 
 
-# Playing with CO2 data
-sample_CO2_data <- data |> 
-  filter(gauge == "102101A") |> 
-  pull(CO2)
-
-
-a3 <- 0.05
-a4 <- 0.75 * max(sample_CO2_data) # a negative value shifts the impact of CO2 earlier in the streamflow model. Do I want this?
-
-# a max(sample_CO2_data) effectively removes the CO2 components
-
-base_CO2_equation <- a3 * sample_CO2_data
-matrix_test <- matrix(rep(sample_CO2_data - a4, times = 5), nrow = length(sample_CO2_data))
-matrix_test[matrix_test <= 0] <- 0 
-new_CO2_equation <- a3 * matrix_test
-
-
-
-plot(ts(base_CO2_equation), ylim = range(c(base_CO2_equation, new_CO2_equation)), col = "blue")
-lines(ts(new_CO2_equation[, 1]), col = "red")
-lines(x = c(0, 59), y = c(0, 0), lty = 2)
 
 
 
@@ -686,3 +665,99 @@ acf_ggplot <- complete_acf_per_gauge |>
   facet_wrap(~gauge)
 
 acf_ggplot
+
+
+
+# CO2 contribution graphs for a5 -----------------------------------------------
+combined_parameters <- read_csv("./Results/CMAES_results/testing_new_CO2_model_parameters.csv", show_col_types = FALSE)
+
+CO2_contribution_streamflow <- function(a5, CO2) {
+  
+  altered_CO2_contribution <- CO2 - a5
+  altered_CO2_contribution[altered_CO2_contribution < 0] <- 0
+  
+  return(altered_CO2_contribution)
+}
+
+
+shift_CO2_params <- combined_parameters |>
+  filter(parameter == "a5") |> 
+  select(gauge, parameter_value)
+
+
+sample_CO2_data <- data |> 
+  filter(gauge == "102101A") |> 
+  pull(CO2)
+
+
+CO2_contribution_timeseries <- map(
+  .x = shift_CO2_params$parameter_value,
+  .f = CO2_contribution_streamflow,
+  CO2 = sample_CO2_data
+)
+
+
+names(CO2_contribution_timeseries) <- shift_CO2_params$gauge
+
+tidy_CO2_contribution_timeseries <- as_tibble(CO2_contribution_timeseries) |> 
+  pivot_longer(
+    cols = everything(),
+    names_to = "gauge",
+    values_to = "CO2_contribution"
+  ) |> 
+  arrange(gauge) |> 
+  mutate(
+    year = row_number() + 1958, # quick and dirty way to get the year because everything starts at 1959
+    .before = 1,
+    .by = gauge
+  )
+
+# get year where CO2 starts to do something
+# remove all zeroes by gauge
+# slice_head by gauge
+first_year_CO2_does_something <- tidy_CO2_contribution_timeseries |> 
+  filter(CO2_contribution > 0) |> 
+  slice_min(
+    CO2_contribution,
+    by = gauge
+  )
+
+
+tidy_CO2_contribution_timeseries |> 
+  ggplot(aes(x = year, y = CO2_contribution)) +
+  geom_line() +
+  labs(
+    x = "Year",
+    y = "Contribution of CO2 - 280 to streamflow model",
+    title = "When CO2 starts contributing to the model"
+  ) +
+  theme_bw() +
+  facet_wrap(~gauge, scales = "free_y")
+
+
+# Playing with CO2 data --------------------------------------------------------
+sample_CO2_data <- data |> 
+  filter(gauge == "102101A") |> 
+  pull(CO2)
+
+year <- data |> 
+  filter(gauge == "102101A") |> 
+  pull(year)
+
+
+a3 <- 0.05
+a4 <- 50 # a negative value shifts the impact of CO2 earlier in the streamflow model. Do I want this?
+
+# a max(sample_CO2_data) effectively removes the CO2 components
+
+base_CO2_equation <- a3 * sample_CO2_data 
+matrix_test <- matrix(rep(sample_CO2_data - a4, times = 5), nrow = length(sample_CO2_data))
+matrix_test[matrix_test <= 0] <- 0 
+new_CO2_equation <- a3 * matrix_test
+
+
+
+plot(x = year, y = base_CO2_equation, type = "l", ylim = range(c(base_CO2_equation, new_CO2_equation)), col = "blue")
+lines(x = year, y = new_CO2_equation[, 1], col = "red")
+lines(x = range(year), y = c(0, 0), lty = 2)
+
