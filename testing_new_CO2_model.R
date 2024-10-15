@@ -48,7 +48,6 @@ source("./Functions/result_set.R")
 
 
 
-
 # Steps to implementing new model ----------------------------------------------
 # a5 is the CO2 shift variable
 # I have hard coded the a5 parameter in make_parameter_bounds - this should require the user to input Co2 data to work out bounds.

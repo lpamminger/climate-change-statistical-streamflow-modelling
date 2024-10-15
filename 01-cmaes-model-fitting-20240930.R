@@ -47,7 +47,7 @@ source("./Functions/result_set.R")
 
 
 # Number of times we want to repeat each catchment-optimiser-streamflow model combinations
-REPEATS <- 10L 
+REPEATS <- 1L # should be 10 
 
 # Split catchments for into X chunks (due to RAM limitations).
 # Must be a multiple of REPEATS to avoid duplication across chunks. There is a check in code just in case
