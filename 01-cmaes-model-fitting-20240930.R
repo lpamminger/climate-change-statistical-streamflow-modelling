@@ -39,7 +39,6 @@ source("./Functions/objective_functions.R")
 source("./Functions/numerical_optimiser_setup.R")
 source("./Functions/generic_functions.R")
 source("./Functions/my_cmaes.R")
-source("./Functions/my_dream.R")
 source("./Functions/objective_function_setup.R")
 source("./Functions/result_set.R")
 
@@ -197,7 +196,7 @@ combined_cmaes_parameters <- parameters_list_of_files |>
     by = c(gauge, streamflow_model, objective_function) # only get the minimum LL for gauge, streamflow model and objective function combination
   ) |>
   readr::write_csv(
-    file = paste0("./Results/CMAES_results/CMAES_parameter_results.csv")
+    file = paste0("./Results/CMAES_results/CMAES_parameter_results_", get_date(), ".csv")
   )
 
 
@@ -218,7 +217,7 @@ combined_cmaes_streamflow <- streamflow_list_of_files |>
   ) |>
   select(!loglikelihood) |> 
   readr::write_csv(
-    file = paste0("./Results/CMAES_results/CMAES_streamflow_results.csv")
+    file = paste0("./Results/CMAES_results/CMAES_streamflow_results_", get_date(), ".csv")
   )
 
 

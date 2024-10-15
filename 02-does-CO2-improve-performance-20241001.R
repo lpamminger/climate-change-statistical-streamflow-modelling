@@ -13,10 +13,10 @@ source("./Functions/boxcox_transforms.R")
 
 
 # Import data ------------------------------------------------------------------
-CMAES_results <- read_csv("./Results/CMAES_results/CMAES_parameter_results.csv", show_col_types = FALSE)
+CMAES_results <- read_csv("./Results/CMAES_results/CMAES_parameter_results_20241015.csv", show_col_types = FALSE)
 
 
-streamflow_results <- read_csv("Results/CMAES_results/CMAES_streamflow_results.csv", 
+streamflow_results <- read_csv("Results/CMAES_results/CMAES_streamflow_results_20241015.csv", 
                                show_col_types = FALSE,
                                col_select = !optimiser
                                )
@@ -37,7 +37,7 @@ vic_map <- read_sf(dsn = "./Data/Maps",
 
 # Gauges that do weird things - remove for now ---------------------------------
 ## Gauges visually inspected using check_model_fit in graphs
-removed_gauges <- c("G0050115", "G0060005", "A0030501", "226220", "226407", "226222", "308145", "225020A")
+removed_gauges <- c()#"G0050115", "G0060005", "A0030501", "226220", "226407", "226222", "308145", "225020A")
 
 
 
