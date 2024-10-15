@@ -98,6 +98,7 @@ filter_streamflow_results <- streamflow_results |>
     by = join_by(gauge, streamflow_model, objective_function)
   )
 
+write_csv(filter_streamflow_results, file = "./Results/CMAES_results/compare_against_shifted_CO2.csv")
 
 tidy_boxcox_streamflow <- filter_streamflow_results |>
   pivot_longer(

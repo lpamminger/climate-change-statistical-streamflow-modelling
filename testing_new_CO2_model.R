@@ -496,10 +496,36 @@ combined_parameters <- rbind(best_site_1_parameters, best_site_2_parameters, bes
 write_csv(combined_parameters, file = "./Results/CMAES_results/testing_new_CO2_model_parameters.csv")
 
 combined_streamflow <- rbind(site_1_streamflow, site_2_streamflow, site_3_streamflow, site_4_streamflow, site_5_streamflow)
+write_csv(combined_streamflow, file = "./Results/CMAES_results/testing_new_CO2_model_streamflow.csv")
 
-write_csv(combined_streamflow, "./results/CMAES_results/testing_new_CO2_model_streamflow.csv")
+## Get results from examine five sites
+non_shifted_streamflow <- read_csv("Results/CMAES_results/compare_against_shifted_CO2.csv", 
+                                   show_col_types = FALSE
+                                   )
 
-streamflow_results <- combined_streamflow |> 
+## Filter out non-CO2 models from non-shifted streamflow
+only_CO2_non_shifted_streamflow <- non_shifted_streamflow |> 
+  filter(grepl("CO2", streamflow_model)) |> 
+  add_column(
+    is_CO2_shifted = FALSE
+  )
+
+## Shifted streamflow
+shifted_streamflow <- combined_streamflow |> 
+  add_column(
+    is_CO2_shifted = TRUE
+  ) |> 
+  select(!c(optimiser, loglikelihood)) 
+
+
+# Combine for plotting
+all_streamflow <- rbind(only_CO2_non_shifted_streamflow, shifted_streamflow) 
+
+
+
+# Convert boxcox streamflow to real space
+# remove duplicate observed_streamflow
+streamflow_results <- all_streamflow |> 
   left_join(
     gauge_information, 
     by = join_by(gauge)
@@ -511,11 +537,30 @@ streamflow_results <- combined_streamflow |>
   ) |> 
   mutate(
     streamflow = boxcox_inverse_transform(boxcox_streamflow, lambda = bc_lambda),
-    modelled_or_observed = if_else(modelled_or_observed == "observed_boxcox_streamflow", "observed", "modelled")
+    modelled_or_observed = case_when(
+      modelled_or_observed == "observed_boxcox_streamflow" ~ "observed",
+      (modelled_or_observed == "modelled_boxcox_streamflow") & (!is_CO2_shifted) ~ "no_shifted_CO2",
+      (modelled_or_observed == "modelled_boxcox_streamflow") & (is_CO2_shifted) ~ "shifted_CO2",
+    )
   )
 
+
+# How to remove the duplicate observed streamflow?
+cleaned_observed_flow <- streamflow_results |> 
+  group_by(gauge) |> 
+  filter(modelled_or_observed == "observed") |> 
+  arrange(year) |> 
+  distinct(year, .keep_all = TRUE) |> 
+  ungroup()
+
+
+cleaned_streamflow_results <- streamflow_results |> 
+  filter(modelled_or_observed != "observed") |> 
+  rbind(cleaned_observed_flow)
+
+
 ## Plot 1
-plot_streamflow_timeseries <- streamflow_results |>
+plot_streamflow_timeseries <- cleaned_streamflow_results |>
   ggplot(aes(x = year, y = streamflow, colour = modelled_or_observed)) +
   geom_line(na.rm = TRUE, alpha = 0.9) +
   theme_bw() +
@@ -528,24 +573,33 @@ plot_streamflow_timeseries <- streamflow_results |>
   facet_wrap(~gauge, scales = "free_y", nrow = 5) +
   theme(legend.title = element_blank())
 
-plot_streamflow_timeseries
+
+ggsave(
+  filename = paste0("shifted_CO2_streamflow_timeseries_comparison_", get_date(), ".pdf"),
+  plot = plot_streamflow_timeseries,
+  device = "pdf",
+  path = "./Graphs/examination_selected_sites",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
 
 
-## Plot 2
-difference_to_observed_streamflow <- streamflow_results |>
-  select(!c(bc_lambda, boxcox_streamflow)) |>
-  distinct() |>
+## Plot 2 the shifted - non-shifted timeseries
+difference_shifted_and_non_shifted_CO2 <- cleaned_streamflow_results |>
+  select(year, gauge, modelled_or_observed, streamflow) |>
   pivot_wider(
     names_from = modelled_or_observed,
     values_from = streamflow,
   ) |>
   mutate(
-    observed_minus_CO2 = observed - modelled
-  )
+    shifted_CO2_minus_non_shifted_CO2 = shifted_CO2 - no_shifted_CO2,
+    observed_minus_shifted = observed - shifted_CO2
+  ) 
 
 
-plot_difference_observed_residuals <- difference_to_observed_streamflow |>
-  ggplot(aes(x = year, y = observed_minus_CO2)) +
+plot_difference_residuals <- difference_shifted_and_non_shifted_CO2 |>
+  ggplot(aes(x = year, y = shifted_CO2_minus_non_shifted_CO2)) +
   geom_line(na.rm = TRUE) +
   theme_bw() +
   labs(
@@ -557,7 +611,15 @@ plot_difference_observed_residuals <- difference_to_observed_streamflow |>
   facet_wrap(~gauge, scales = "free_y", nrow = 5)
 
 
-plot_difference_observed_residuals
+ggsave(
+  filename = paste0("shifted_CO2_vs_non_shifted_residuals", get_date(), ".pdf"),
+  plot = plot_difference_residuals,
+  device = "pdf",
+  path = "./Graphs/examination_selected_sites",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
 
 
 # Plot 4
@@ -579,11 +641,11 @@ tibble_confidence_interval_acf <- function(acf_object, name = NULL, alpha = 0.05
 }
 
 
-list_of_observed_minus_CO2_per_catchment <- difference_to_observed_streamflow |>
-  select(year, gauge, observed_minus_CO2) |>
+list_of_observed_minus_CO2_per_catchment <- difference_shifted_and_non_shifted_CO2 |>
+  select(year, gauge, observed_minus_shifted) |>
   pivot_wider(
     names_from = gauge,
-    values_from = observed_minus_CO2
+    values_from = observed_minus_shifted
   ) |>
   select(!year) |>
   unclass()
