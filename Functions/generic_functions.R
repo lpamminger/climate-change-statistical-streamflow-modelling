@@ -179,7 +179,7 @@ summary.result_set <- function(x) {
   
   #summary() # print a summary
   #should show the the exit_message, best AIC and fitted parameters. List the models used and gauge
-  cat("Best fitnesss", x$AIC_best_parameter_set)
-  cat("Best parameter set", x$best_parameter_set)
+  cat("Best fitnesss (AIC):", x$AIC_best_parameter_set)
+  cat("\nBest Parameters:", paste(names(dream_example$best_parameter_set), signif(dream_example$best_parameter_set, 3), sep = ":", collapse = " "))
   
 }
