@@ -62,7 +62,7 @@ all_catchment_data <- purrr::map(
   start_stop_indexes = start_stop_indexes
 )
 
-
+all_catchment_data <- all_catchment_data
 
 ### Drought ####################################################################
 drought_gauges <- gauge_information |>
@@ -78,12 +78,12 @@ drought_catchment_data <- map(
 )
 
 
-
+drought_catchment_data <- drought_catchment_data
 
 
 # Build objective_functions using the optimiser_set object ---------------------
-all_streamflow_models <- get_non_drought_streamflow_models() 
-drought_streamflow_models <- get_drought_streamflow_models() 
+all_streamflow_models <- get_non_drought_streamflow_models()
+drought_streamflow_models <- get_drought_streamflow_models()
 all_objective_functions <- get_all_objective_functions()
 
 
@@ -157,7 +157,10 @@ chunk_repeat_all_drought_numerical_optimisers_cmaes <- split( # required for chu
 plan(multisession, workers = length(availableWorkers())) # set once for furrr
 iwalk(
   .x = chunk_repeat_all_numerical_optimisers_cmaes,
-  .f = run_and_save_chunks_my_cmaes_parallel,
+  .f = run_and_save_chunks_optimiser_parallel, 
+  optimiser = my_cmaes,
+  save_streamflow = TRUE,
+  save_sequences = FALSE,
   is_drought = FALSE
 )
 
@@ -169,7 +172,10 @@ gc()
 plan(multisession, workers = length(availableWorkers())) # set once for furrr
 iwalk(
   .x = chunk_repeat_all_drought_numerical_optimisers_cmaes,
-  .f = run_and_save_chunks_my_cmaes_parallel,
+  .f = run_and_save_chunks_optimiser_parallel, 
+  optimiser = my_cmaes,
+  save_streamflow = TRUE,
+  save_sequences = FALSE,
   is_drought = TRUE
 )
 
@@ -181,7 +187,7 @@ gc()
 # Join everything into a single file and save ----------------------------------
 ## Parameters ==================================================================
 parameters_list_of_files <- list.files(
-  path = "./Results/CMAES_results/",
+  path = "./Results/my_cmaes/",
   recursive = FALSE, # I don't want it looking in other folders
   pattern = "parameter",
   full.names = TRUE
@@ -196,13 +202,13 @@ combined_cmaes_parameters <- parameters_list_of_files |>
     by = c(gauge, streamflow_model, objective_function) # only get the minimum LL for gauge, streamflow model and objective function combination
   ) |>
   readr::write_csv(
-    file = paste0("./Results/CMAES_results/CMAES_parameter_results.csv")
+    file = paste0("./Results/my_cmaes/CMAES_parameter_results.csv")
   )
 
 
 ## Streamflow ==================================================================
 streamflow_list_of_files <- list.files(
-  path = "./Results/CMAES_results/",
+  path = "./Results/my_cmaes/",
   recursive = FALSE, # I don't want it looking in other folders
   pattern = "streamflow",
   full.names = TRUE
@@ -217,13 +223,13 @@ combined_cmaes_streamflow <- streamflow_list_of_files |>
   ) |>
   select(!loglikelihood) |> 
   readr::write_csv(
-    file = paste0("./Results/CMAES_results/CMAES_streamflow_results.csv")
+    file = paste0("./Results/my_cmaes/CMAES_streamflow_results.csv")
   )
 
 
 ## Delete all files ending with .csv ===========================================
 delete_files <- list.files(
-  path = "./Results/CMAES_results/",
+  path = "./Results/my_cmaes/",
   recursive = FALSE, # I don't want it looking in other folders
   pattern = "chunk", # remove all chunk files
   full.names = TRUE

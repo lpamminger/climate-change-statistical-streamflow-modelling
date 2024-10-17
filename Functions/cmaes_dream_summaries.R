@@ -168,7 +168,7 @@ run_and_save_chunks_optimiser_parallel <- function(chunked_numerical_optimisers,
   
   
   # Remove objects for garbage collection
-  rm(list = c("calibrated_results", "sort_results", "optimiser_name"))
+  rm(list = c("calibrated_results", "sort_results", "optimiser_name", "save_streamflow", "save_sequences", "is_drought"))
   
   # Call garbage collection
   gc()

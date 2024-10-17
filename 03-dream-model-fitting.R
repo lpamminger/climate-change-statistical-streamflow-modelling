@@ -45,60 +45,52 @@ source("./Functions/objective_function_setup.R")
 source("./Functions/result_set.R")
 
 
-# Psuedo-code for dream 
-# Options
-## 1. repeat 01-cmaes approach
-## 2. Repeat the run dream pipe thing 
-
-# pipe thing
-# repeat_pipe <- function(gauge, streamflow_model, objective_function, data, start_stop) {
-#}
-# Need to separate into drought and non-drought
-# separate again into batches based on ram requirements
-# I could package everything (gauge, streamflow_model and objective function) into
-# a single list then iterate over the list rather than using pmap?
-# This would make batching/chunking easier.
-
-
-# Steps.
-# Separate drought catchments vs. all catchments. Drought catchment only get drought streamflow models
-# Combine all gauge, streamflow model and objective function combinations in a list for iteration
-# Split list up based on batches. Batches determined based on RAM requirements
-# Run the repeat_pipe
-# Save the results similar to 01-cmaes i.e., do not assign a variable,
-# write_csv, append results and gc(). 
-## Saving results - I would like the optimal parameters and sequences. Ignore the streamflow-time.
-## sequences need to have |gauge|model|obj|parameter|parameter_value and rbind()
 
 
 
-all_gauges <- unique(gauge_information$gauge)[1:2]
+# Identify gauges --------------------------------------------------------------
+
+all_gauges <- unique(gauge_information$gauge)[1:2] # remove when done
 
 drought_gauges <- gauge_information |> 
   filter(drought) |> 
   pull(gauge) |> 
   unique()
 
+drought_gauges <- drought_gauges[1:2] # remove when done
 
-non_drought_streamflow_models <- get_non_drought_streamflow_models()[1:2]
 
-drought_streamflow_models <- get_drought_streamflow_models()[1:2]
+
+# Indentify streamflow_models and objective functions --------------------------
+non_drought_streamflow_models <- get_non_drought_streamflow_models()[1:2] # remove when done
+
+drought_streamflow_models <- get_drought_streamflow_models()[1:2] # remove when done
 
 all_objective_functions <- get_all_objective_functions()
 
 
-# I need to find all the combinations of all_gauges, non_drought_streamflow_models and all_objective_functions
+
+# Find all the combinations of gauges, streamflow model and objective funs -----
 non_drought_combinations <- tidyr::expand_grid(
   all_gauges,
   non_drought_streamflow_models,
   all_objective_functions
 ) |> 
   unclass() |> 
-  unname() # names breaks pmap? I don't know why
+  unname() # names breaks pmap? I don't know why - remove them
 
-# remove a list level for the streamflow_model and objective_functions
-#x <- list_flatten(non_drought_combinations$non_drought_streamflow_models)
 
+drought_combinations <- tidyr::expand_grid(
+  drought_gauges,
+  drought_streamflow_models,
+  all_objective_functions
+) |> 
+  unclass() |> 
+  unname() # names breaks pmap? I don't know why - remove them
+
+
+
+# Produce numerical_optimiser_objects ready for the optimiser ------------------
 
 numerical_optimiser_objects <- function(gauge, streamflow_model, objective_function, data, start_stop) {
   
@@ -119,128 +111,134 @@ numerical_optimiser_objects <- function(gauge, streamflow_model, objective_funct
 
 
 
-
-ready_for_optimisation <- pmap(.l = non_drought_combinations,
-          .f = numerical_optimiser_objects,
-          data = data,
-          start_stop = start_stop_indexes
-          )
-
-
+ready_for_optimisation <- pmap(
+  .l = non_drought_combinations,
+  .f = numerical_optimiser_objects,
+  data = data,
+  start_stop = start_stop_indexes
+)
 
 
 
+drought_ready_for_optimisation <- pmap(
+  .l = drought_combinations,
+  .f = numerical_optimiser_objects,
+  data = data,
+  start_stop = start_stop_indexes
+)
 
 
 
-# Allows running in parallel with chunking to not exceed RAM
-run_and_save_chunks_optimiser_parallel <- function(chunked_numerical_optimisers, chunk_id, optimiser, save_streamflow, save_sequences, is_drought) {
-  
-  tictoc::tic()
-  
-  calibrated_results <- furrr::future_map(
-    .x = chunked_numerical_optimisers,
-    .f = optimiser,
-    print_monitor = FALSE,
-    .options = furrr_options(
-      globals = TRUE,
-      seed = TRUE
-    )
-  )
-  
-  
-  # Purrr does not work in parallel, so I don't need plan(sequential)
-  sort_results <- purrr::map(.x = calibrated_results, .f = result_set)
-  
-  optimiser_name <- as.character(substitute(optimiser))
-  
-  # I do not want to assign a variable name. Garbage collector works better like this.
-  purrr::map(.x = sort_results, .f = parameters_summary) |>
-    purrr::list_rbind() |>
-    readr::write_csv(
-      file = paste0(
-        "./Results/",
-        optimiser_name,
-        "/",
-        if_else(is_drought, "drought_", ""),
-        "parameter_results_chunk_",
-        chunk_id,
-        "_",
-        get_date(),
-        ".csv"
-      )
-    )
-  
-  if (save_streamflow) {
-    purrr::map(
-      .x = sort_results,
-      .f = modelled_streamflow_summary
-    ) |>
-      purrr::list_rbind() |>
-      readr::write_csv(
-        file = paste0(
-          "./Results/",
-          optimiser_name,
-          "/",
-          if_else(is_drought, "drought_", ""),
-          "streamflow_results_chunk_",
-          chunk_id,
-          "_",
-          get_date(),
-          ".csv"
-        )
-      )
-  }
-  
-  if (save_sequences) {
-    purrr::map(
-      .x = sort_results,
-      .f = sequences_summary
-    ) |>
-      purrr::list_rbind() |>
-      readr::write_csv(
-        file = paste0(
-          "./Results/",
-          optimiser_name,
-          "/",
-          if_else(is_drought, "drought_", ""),
-          "sequences_results_chunk_",
-          chunk_id,
-          "_",
-          get_date(),
-          ".csv"
-        )
-      )
-  }
-  
-  
-  
-  cat(paste0("Chunk ", chunk_id, " complete "))
-  tictoc::toc()
-  cat("\n")
-  
-  
-  # Remove objects for garbage collection
-  rm(list = c("calibrated_results", "sort_results", "optimiser_name"))
-  
-  # Call garbage collection
-  gc()
-}
+# Split ready_for_optimisation objects into chunks to avoid exceeding RAM ------
+# Subject to change. I need to work out RAM requirements
+CHUNK_SIZE <- 10
+
+chunked_ready_for_optimisation <- split( # required for chunking in parallel
+  ready_for_optimisation,
+  ceiling(seq_along(ready_for_optimisation) / CHUNK_SIZE)
+)
+
+chunked_drought_ready_for_optimisation <- split( # required for chunking in parallel
+  drought_ready_for_optimisation,
+  ceiling(seq_along(drought_ready_for_optimisation) / CHUNK_SIZE)
+)
 
 
-x <- run_and_save_chunks_optimiser_parallel(
-  chunked_numerical_optimisers = ready_for_optimisation,
-  chunk_id = 1, 
+
+
+# Run the optimiser (calibration) ----------------------------------------------
+
+## Non-drought optimising ======================================================
+plan(multisession, workers = length(availableWorkers())) # set once for furrr
+iwalk(
+  .x = chunked_ready_for_optimisation,
+  .f = run_and_save_chunks_optimiser_parallel, 
   optimiser = my_dream,
-  save_streamflow = TRUE,
+  save_streamflow = FALSE,
   save_sequences = TRUE,
   is_drought = FALSE
+)
+
+
+gc()
+
+
+## Drought optimising ==========================================================
+plan(multisession, workers = length(availableWorkers())) # set once for furrr
+iwalk(
+  .x = chunked_drought_ready_for_optimisation,
+  .f = run_and_save_chunks_optimiser_parallel, 
+  optimiser = my_dream,
+  save_streamflow = FALSE,
+  save_sequences = TRUE,
+  is_drought = TRUE
+)
+
+
+gc()
+
+
+
+
+
+# Join everything into a single file and save ----------------------------------
+## Parameters ==================================================================
+parameters_list_of_files <- list.files(
+  path = "./Results/my_dream/",
+  recursive = FALSE, # I don't want it looking in other folders
+  pattern = "parameter",
+  full.names = TRUE
+)
+
+
+
+parameters_list_of_files |>
+  readr::read_csv(show_col_types = FALSE) |>
+  dplyr::slice_min( 
+    loglikelihood,
+    by = c(gauge, streamflow_model, objective_function) # only get the minimum LL for gauge, streamflow model and objective function combination
+  ) |>
+  readr::write_csv(
+    file = paste0("./Results/my_dream/DREAM_parameter_results.csv")
   )
 
 
+## Sequences ===================================================================
+sequences_list_of_files <- list.files(
+  path = "./Results/my_dream/",
+  recursive = FALSE, # I don't want it looking in other folders
+  pattern = "sequences",
+  full.names = TRUE
+)
 
 
-# Run DREAM --------------------------------------------------------------------
+sequences_list_of_files |>
+  readr::read_csv(show_col_types = FALSE) |>
+  readr::write_csv(
+    file = paste0("./Results/my_dream/DREAM_sequence_results.csv")
+  )
+
+
+## Delete all files ending with .csv ===========================================
+delete_files <- list.files(
+  path = "./Results/my_dream/",
+  recursive = FALSE, # I don't want it looking in other folders
+  pattern = "chunk", # remove all chunk files
+  full.names = TRUE
+) |>
+  file.remove()
+
+
+
+
+
+# DREAM - t.thin 
+# do I want everything to have the same number of sequences?
+# or do I want it to scale with parameter number?
+
+
+# TESTING ----------------------------------------------------------------------
+stop_here <- 1
 tic()
 gauge <- "407214"
 
