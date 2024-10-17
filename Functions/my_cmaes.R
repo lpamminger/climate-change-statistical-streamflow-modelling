@@ -42,7 +42,7 @@ make_default_cmaes_parameters <- function(SCALE, PARAMETER_NUMBER) {
     stop.ons = c(
       list(
         stopOnFlatFitness, 
-        myStopOnTolX(tol = 1E-5), 
+        myStopOnTolX(tol = 1E-6), 
         cmaesr::stopOnNoEffectAxis(),
         cmaesr::stopOnNoEffectCoord(),
         cmaesr::stopOnCondCov(),

@@ -61,7 +61,7 @@ parameter_utilisation_selected_sites <- CMAES_results |>
     by = c(gauge, contains_CO2)
   ) |>
   select(!streamflow_model_objective_function) |>
-  filter(contains_CO2 == "CO2") |> # only interested in the CO2 models
+  filter(contains_CO2 == "no_CO2") |> # only interested in the CO2 models
   filter(abs(parameter_value) < 1E-4)
 
 # All parameters are non-zero
@@ -98,6 +98,7 @@ filter_streamflow_results <- streamflow_results |>
     by = join_by(gauge, streamflow_model, objective_function)
   )
 
+write_csv(filter_streamflow_results, file = "./Results/CMAES_results/compare_against_shifted_CO2.csv")
 
 tidy_boxcox_streamflow <- filter_streamflow_results |>
   pivot_longer(
