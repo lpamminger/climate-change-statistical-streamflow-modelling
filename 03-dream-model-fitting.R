@@ -193,8 +193,24 @@ run_and_save_chunks_optimiser_parallel <- function(chunked_numerical_optimisers,
   }
   
   if (save_sequences) {
-    # extract tibble
-    # pivot_longer
+    purrr::map(
+      .x = sort_results,
+      .f = sequences_summary
+    ) |>
+      purrr::list_rbind() |>
+      readr::write_csv(
+        file = paste0(
+          "./Results/",
+          optimiser_name,
+          "/",
+          if_else(is_drought, "drought_", ""),
+          "sequences_results_chunk_",
+          chunk_id,
+          "_",
+          get_date(),
+          ".csv"
+        )
+      )
   }
   
   
@@ -222,18 +238,6 @@ x <- run_and_save_chunks_optimiser_parallel(
   )
 
 
-stop_here <- 1
-# If would like to save everything in the same chunk/batch
-# this stops > 5000 files being made
-
-# for the cmaes 
-# function()
-# future_map repeat for all gauges, models and objs in a given batch
-# combine and save the results sets using two save functions.
-# I already have this function run_and_save_chunks_my_cmaes_parallel()  !!!!!!!!!!!! DO THIS !!!!!!!!!!
-# re-use this?
-
-#furrr::future_pwalk()
 
 
 # Run DREAM --------------------------------------------------------------------
@@ -262,35 +266,7 @@ dream_example |>
 
 toc()
 
-test_sequences <- dream_example$sequences
 
-
-
-# This will require reworking to get to the same form as the others
-sequences_summary <- function(x) {
-  
-  tibble::as_tibble(
-    list(
-      "gauge" = x$numerical_optimiser_setup$catchment_data$gauge_ID,
-      "streamflow_model" = x$numerical_optimiser_setup$streamflow_model()$name,
-      "objective_function" = x$numerical_optimiser_setup$objective_function()$name,
-      "optimiser" = sloop::s3_class(x$optimised_object)[1],
-      "test" = c(x$sequences)
-    )
-  )
-  
-  #x$sequences |> 
-  #  pivot_longer(
-  #    cols = everything(),
-  #    names_to = "parameter",
-  #    values_to = "parameter_values" 
-  #  )
-
-  # find a way to merge the sequences and list() data
-}
-
-
-x <- sequences_summary(dream_example)
 
 
 test_sequences |> 
@@ -343,3 +319,30 @@ yy
 # test for 5, 6, 7, 8? Go straight to 8? Good idea to test all.
 
 
+# Code for dealing with negative mean box-cox streamflow values ----------------
+# matrix'ify this after DREAM
+# Trials for handling repression predictions with Q<0 when
+# using a truncated normal likelihood
+
+# Let the lower bound be Q=0 and upper bound Q=inf
+a <- 0
+b <- Inf
+
+# Define a truncated normal st. dev
+sigma <- 2
+
+# Let's predict streamflow using annual P
+P <- 200
+a0 <- -12
+a1 <- 0.05
+mu <- a0 + a1 * P
+
+# Now lets adjust the predicted mean flow for P to be >0
+# Specifically, lets treal Q_reg as the mean of the non-truncated distribution of
+# Q for the given P
+alpha <- (0 - mu) / sigma
+beta <- (Inf - mu) / sigma
+mu_true <- mu + sigma * (dnorm(alpha) - dnorm(beta)) / (pnorm(beta) - pnorm(alpha))
+
+sigma_true <- sqrt(sigma^2 * (1 - (-alpha * dnorm(alpha)) / (pnorm(beta) - pnorm(alpha)) -
+                                ((dnorm(alpha) - dnorm(beta)) / (pnorm(beta) - pnorm(alpha)))^2))
