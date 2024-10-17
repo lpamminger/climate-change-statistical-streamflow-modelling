@@ -32,7 +32,7 @@ restarts_summary <- function(x) {
 }
 
 
-# This will require reworking to get to the same form as the others
+# This will require reworking to get to the same form as the others REDO
 sequences_summary <- function(x) {
   
   x$sequences |> 
@@ -47,8 +47,7 @@ sequences_summary <- function(x) {
     dplyr::relocate(
       c(gauge, streamflow_model, objective_function),
       .before = 1
-    )
-  
+    ) 
 }
 
 

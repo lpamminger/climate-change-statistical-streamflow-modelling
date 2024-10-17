@@ -216,3 +216,9 @@ binwidth_bins <- function(n){
     (max(x) - min(x)) / n
   }
 }
+
+
+# Put a variable in an get its variable name as a character
+convert_object_variable_to_character <- function(variable) {
+  as.character(substitute(variable))
+}

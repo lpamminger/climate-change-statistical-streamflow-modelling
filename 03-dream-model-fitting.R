@@ -72,7 +72,7 @@ source("./Functions/result_set.R")
 
 
 
-all_gauges <- unique(gauge_information$gauge)
+all_gauges <- unique(gauge_information$gauge)[1:2]
 
 drought_gauges <- gauge_information |> 
   filter(drought) |> 
@@ -80,9 +80,9 @@ drought_gauges <- gauge_information |>
   unique()
 
 
-non_drought_streamflow_models <- get_non_drought_streamflow_models()
+non_drought_streamflow_models <- get_non_drought_streamflow_models()[1:2]
 
-drought_streamflow_models <- get_drought_streamflow_models()
+drought_streamflow_models <- get_drought_streamflow_models()[1:2]
 
 all_objective_functions <- get_all_objective_functions()
 
@@ -93,16 +93,16 @@ non_drought_combinations <- tidyr::expand_grid(
   non_drought_streamflow_models,
   all_objective_functions
 ) |> 
-  unclass()
+  unclass() |> 
+  unname() # names breaks pmap? I don't know why
 
-# This is ready for pmap?
-#pwalk(.l = non_drought_combinations,
- #    .f = )
+# remove a list level for the streamflow_model and objective_functions
+#x <- list_flatten(non_drought_combinations$non_drought_streamflow_models)
 
 
-repeat_dream <- function(gauge, streamflow_model, objective_function, data, start_stop) {
+numerical_optimiser_objects <- function(gauge, streamflow_model, objective_function, data, start_stop) {
   
-  dream_results <- gauge |> 
+   gauge |> 
     catchment_data_blueprint(
       observed_data = data,
       start_stop_indexes = start_stop
@@ -112,15 +112,117 @@ repeat_dream <- function(gauge, streamflow_model, objective_function, data, star
       objective_function = objective_function,
       bounds_and_transform_method = make_default_bounds_and_transform_methods(),
       minimise_likelihood = FALSE
-    ) |> 
-    my_dream() |> 
-    result_set() 
-  
-  # save parameters using parameter_summary()
-  # save sequences dream_results$sequences
+    ) 
+    
   
 }
 
+
+
+
+ready_for_optimisation <- pmap(.l = non_drought_combinations,
+          .f = numerical_optimiser_objects,
+          data = data,
+          start_stop = start_stop_indexes
+          )
+
+
+
+
+
+
+
+
+# Allows running in parallel with chunking to not exceed RAM
+run_and_save_chunks_optimiser_parallel <- function(chunked_numerical_optimisers, chunk_id, optimiser, save_streamflow, save_sequences, is_drought) {
+  
+  tictoc::tic()
+  
+  calibrated_results <- furrr::future_map(
+    .x = chunked_numerical_optimisers,
+    .f = optimiser,
+    print_monitor = FALSE,
+    .options = furrr_options(
+      globals = TRUE,
+      seed = TRUE
+    )
+  )
+  
+  
+  # Purrr does not work in parallel, so I don't need plan(sequential)
+  sort_results <- purrr::map(.x = calibrated_results, .f = result_set)
+  
+  optimiser_name <- as.character(substitute(optimiser))
+  
+  # I do not want to assign a variable name. Garbage collector works better like this.
+  purrr::map(.x = sort_results, .f = parameters_summary) |>
+    purrr::list_rbind() |>
+    readr::write_csv(
+      file = paste0(
+        "./Results/",
+        optimiser_name,
+        "/",
+        if_else(is_drought, "drought_", ""),
+        "parameter_results_chunk_",
+        chunk_id,
+        "_",
+        get_date(),
+        ".csv"
+      )
+    )
+  
+  if (save_streamflow) {
+    purrr::map(
+      .x = sort_results,
+      .f = modelled_streamflow_summary
+    ) |>
+      purrr::list_rbind() |>
+      readr::write_csv(
+        file = paste0(
+          "./Results/",
+          optimiser_name,
+          "/",
+          if_else(is_drought, "drought_", ""),
+          "streamflow_results_chunk_",
+          chunk_id,
+          "_",
+          get_date(),
+          ".csv"
+        )
+      )
+  }
+  
+  if (save_sequences) {
+    # extract tibble
+    # pivot_longer
+  }
+  
+  
+  
+  cat(paste0("Chunk ", chunk_id, " complete "))
+  tictoc::toc()
+  cat("\n")
+  
+  
+  # Remove objects for garbage collection
+  rm(list = c("calibrated_results", "sort_results", "optimiser_name"))
+  
+  # Call garbage collection
+  gc()
+}
+
+
+x <- run_and_save_chunks_optimiser_parallel(
+  chunked_numerical_optimisers = ready_for_optimisation,
+  chunk_id = 1, 
+  optimiser = my_dream,
+  save_streamflow = TRUE,
+  save_sequences = TRUE,
+  is_drought = FALSE
+  )
+
+
+stop_here <- 1
 # If would like to save everything in the same chunk/batch
 # this stops > 5000 files being made
 
@@ -161,6 +263,35 @@ dream_example |>
 toc()
 
 test_sequences <- dream_example$sequences
+
+
+
+# This will require reworking to get to the same form as the others
+sequences_summary <- function(x) {
+  
+  tibble::as_tibble(
+    list(
+      "gauge" = x$numerical_optimiser_setup$catchment_data$gauge_ID,
+      "streamflow_model" = x$numerical_optimiser_setup$streamflow_model()$name,
+      "objective_function" = x$numerical_optimiser_setup$objective_function()$name,
+      "optimiser" = sloop::s3_class(x$optimised_object)[1],
+      "test" = c(x$sequences)
+    )
+  )
+  
+  #x$sequences |> 
+  #  pivot_longer(
+  #    cols = everything(),
+  #    names_to = "parameter",
+  #    values_to = "parameter_values" 
+  #  )
+
+  # find a way to merge the sequences and list() data
+}
+
+
+x <- sequences_summary(dream_example)
+
 
 test_sequences |> 
   pivot_longer(
