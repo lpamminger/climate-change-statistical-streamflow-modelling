@@ -24,12 +24,7 @@ gauge_information <- readr::read_csv(
 )
 
 
-<<<<<<< HEAD
-  
-=======
 
-
->>>>>>> experimental_CO2_obj_fun
 ## Utility functions ===========================================================
 source("./Functions/utility.R")
 
@@ -50,7 +45,7 @@ source("./Functions/result_set.R")
 
 
 # Number of times we want to repeat each catchment-optimiser-streamflow model combinations
-REPEATS <- 1L # should be 10 
+REPEATS <- 10L 
 
 # Split catchments for into X chunks (due to RAM limitations).
 # Must be a multiple of REPEATS to avoid duplication across chunks. There is a check in code just in case
@@ -206,11 +201,7 @@ combined_cmaes_parameters <- parameters_list_of_files |>
     by = c(gauge, streamflow_model, objective_function) # only get the minimum LL for gauge, streamflow model and objective function combination
   ) |>
   readr::write_csv(
-<<<<<<< HEAD
-    file = paste0("./Results/my_cmaes/CMAES_parameter_results.csv")
-=======
     file = paste0("./Results/CMAES_results/CMAES_parameter_results_", get_date(), ".csv")
->>>>>>> experimental_CO2_obj_fun
   )
 
 
@@ -231,11 +222,7 @@ combined_cmaes_streamflow <- streamflow_list_of_files |>
   ) |>
   select(!loglikelihood) |> 
   readr::write_csv(
-<<<<<<< HEAD
-    file = paste0("./Results/my_cmaes/CMAES_streamflow_results.csv")
-=======
     file = paste0("./Results/CMAES_results/CMAES_streamflow_results_", get_date(), ".csv")
->>>>>>> experimental_CO2_obj_fun
   )
 
 
