@@ -22,11 +22,11 @@ setup_streamflow_results_plotting <- streamflow_results |>
 
 ## Get unique model and objective function combinations ========================
 unique_streamflow_model_objective_combinations <- setup_streamflow_results_plotting |>
-  distinct(gauge, streamflow_model, objective_function) 
+  distinct(streamflow_model, objective_function) 
 
 
 # Plotting function ============================================================
-check_results_plot <- function(streamflow_model, objective_function, streamflow_r.esults) {
+check_results_plot <- function(streamflow_model, objective_function, streamflow_results) {
   streamflow_results |>
     filter(streamflow_model == {{ streamflow_model }}) |>
     filter(objective_function == {{ objective_function }}) |>
@@ -48,6 +48,12 @@ check_results_plot <- function(streamflow_model, objective_function, streamflow_
 
 
 
+# There should only be 32? Not >5000 DELETE
+#check_results_plot(streamflow_model = "streamflow_model_precip_only", 
+#                   objective_function = "constant_sd_objective_function", 
+#                   streamflow_results = setup_streamflow_results_plotting
+#                   )
+
 # Results ----------------------------------------------------------------------
 many_plots <- map2(
   .x = unique_streamflow_model_objective_combinations |> dplyr::pull(streamflow_model),
@@ -55,6 +61,7 @@ many_plots <- map2(
   .f = check_results_plot,
   streamflow_results = setup_streamflow_results_plotting
 )
+
 
 
 
