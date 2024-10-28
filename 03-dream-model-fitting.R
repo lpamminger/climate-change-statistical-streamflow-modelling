@@ -291,6 +291,13 @@ test_sequences |>
 
 
 
+# Current seq
+PARAMETER_NUMBER <- 9
+seq <- round_any(((PARAMETER_NUMBER - 2) ^ 2.5) * 1E4, 1E4, ceiling)
+total_save_seq <- 1000
+thin <- seq / total_save_seq
+
+
 
 
 # for gauge = 407214, model = streamflow_model_drought_separate_CO2_seasonal_ratio_auto
