@@ -48,11 +48,6 @@ check_results_plot <- function(streamflow_model, objective_function, streamflow_
 
 
 
-# There should only be 32? Not >5000 DELETE
-#check_results_plot(streamflow_model = "streamflow_model_precip_only", 
-#                   objective_function = "constant_sd_objective_function", 
-#                   streamflow_results = setup_streamflow_results_plotting
-#                   )
 
 # Results ----------------------------------------------------------------------
 many_plots <- map2(

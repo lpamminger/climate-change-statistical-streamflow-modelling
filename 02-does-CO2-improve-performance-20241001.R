@@ -37,7 +37,8 @@ vic_map <- read_sf(dsn = "./Data/Maps",
 
 # Gauges that do weird things - remove for now ---------------------------------
 ## Gauges visually inspected using check_model_fit in graphs
-removed_gauges <- c()#"G0050115", "G0060005", "A0030501", "226220", "226407", "226222", "308145", "225020A")
+removed_gauges <- c("G0060005", "A2390531")
+
 
 
 
