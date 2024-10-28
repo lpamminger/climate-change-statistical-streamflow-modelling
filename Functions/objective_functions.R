@@ -1,15 +1,42 @@
+# Alpha checking ---------------------------------------------------------------
+# lower truncation term adjusting
+# Alpha using in pnrom. If -mu/sigma is large positve number then pnorm(alpha) = 1
+# This causes a divide by zero warning. To avoid warning just set to NA.
+# Let NA propogate without warnings
+lower_bound_correction <- function(uncorrected_mean_flow, uncorrected_uncertainty) {
+  
+  alpha <- (0 - uncorrected_mean_flow) / uncorrected_uncertainty
+  
+  near_machine_precision <- dplyr::near(pnorm(alpha), y = 1, tol = .Machine$double.eps^0.5) # check if within machine precision
+  
+  alpha[near_machine_precision] <- NA # Set values that are near 1 to NA to avoid divide by zero warnings
+  
+  return(alpha)
+}
+
+
+
+
 # Correcting modelled streamflow and standard deviation due to trun norm -------
 # https://en.wikipedia.org/wiki/Truncated_normal_distribution
 correct_mean_flow <- function(uncorrected_mean_flow, uncorrected_uncertainty) {
   
-  alpha <- (0 - uncorrected_mean_flow) / uncorrected_uncertainty
+  alpha <- lower_bound_correction(
+    uncorrected_mean_flow = uncorrected_mean_flow,
+    uncorrected_uncertainty = uncorrected_uncertainty
+  )
+
   uncorrected_mean_flow + ((uncorrected_uncertainty * dnorm(alpha)) / (1 - pnorm(alpha)))
   
 }
 
 correct_uncertainty_flow <- function(uncorrected_mean_flow, uncorrected_uncertainty) {
   
-  alpha <- (0 - uncorrected_mean_flow) / uncorrected_uncertainty
+  alpha <- lower_bound_correction(
+    uncorrected_mean_flow = uncorrected_mean_flow,
+    uncorrected_uncertainty = uncorrected_uncertainty
+  )
+  
   sqrt(uncorrected_uncertainty^2 * (1 + ((alpha * dnorm(alpha)) / (1 - pnorm(alpha))) - (dnorm(alpha) / (1 - pnorm(alpha)))^2))
   
 }

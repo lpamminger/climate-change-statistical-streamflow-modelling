@@ -44,82 +44,8 @@ source("./Functions/result_set.R")
 
 
 
-
-# TESTING ----------------------------------------------------------------------
-tic()
-gauge <- "230210"
-
-cmaes_example <- gauge |> 
-  catchment_data_blueprint(
-    observed_data = data,
-    start_stop_indexes = start_stop_indexes
-  ) |> 
-  numerical_optimiser_setup_vary_inputs(
-    streamflow_model = streamflow_model_precip_only, #streamflow_model_precip_only,
-    objective_function = constant_sd_objective_function, #CO2_variable_objective_function,
-    bounds_and_transform_method = make_default_bounds_and_transform_methods(),
-    minimise_likelihood = TRUE
-  ) |> 
-  my_cmaes(print_monitor = TRUE) |> 
-  result_set() 
-
-
-# Need to address these two problems
-# Warnings produced In sqrt(uncorrected_uncertainty^2 * (1 - (-alpha * dnorm(alpha))/(pnorm(beta) -  ... : NaNs produced
-# This suggest a negative number is being produced in the sqrt() or a NA in in the sqrt. Does this matter? Find exact cause:
-## dividing by zero pnorm(beta) - pnorm(alpha) are the same value. Why does this occur?
-
-# it still produces negatives. This occurs when rainfall is low to the historical average. Pull apart and see why this occurs
-# Compare against previous results
-cmaes_parameters <- cmaes_example |>
-  parameters_summary()
-
-cmaes_example |>
-  plot()
-
-bc_lambda <- gauge_information$bc_lambda[gauge_information$gauge == gauge]
-
-x <- cmaes_example |>
-  modelled_streamflow_summary()
-
-check_na <- x |>
-  pull(modelled_boxcox_streamflow) |>
-  boxcox_inverse_transform(lambda = bc_lambda)
-
-check_na[is.na(check_na)] <- 0
-
-plot(ts(check_na))
-
-catchment_data <- gauge |>
-  catchment_data_blueprint(
-    observed_data = data,
-    start_stop_indexes = start_stop_indexes
-  )
-
-y <- streamflow_model_precip_only(
-  catchment_data = catchment_data$full_data_set,
-  parameter_set = as.vector(cmaes_parameters$parameter_value)
-)
-
-
-toc()
-
-stop_here <- 1
-
-
-
-
-
-
-
-
-
-
-
-
-
 # Number of times we want to repeat each catchment-optimiser-streamflow model combinations
-REPEATS <- 10L 
+REPEATS <- 10L
 
 # Split catchments for into X chunks (due to RAM limitations).
 # Must be a multiple of REPEATS to avoid duplication across chunks. There is a check in code just in case
