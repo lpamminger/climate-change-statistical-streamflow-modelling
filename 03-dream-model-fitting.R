@@ -50,23 +50,24 @@ source("./Functions/result_set.R")
 
 # Identify gauges --------------------------------------------------------------
 
-all_gauges <- unique(gauge_information$gauge)#[1:2] # remove when done
+all_gauges <- unique(gauge_information$gauge)
+
+all_gauges <- all_gauges[which(all_gauges == "230210")] # remove
 
 drought_gauges <- gauge_information |> 
   filter(drought) |> 
   pull(gauge) |> 
   unique()
 
-#drought_gauges <- drought_gauges[1:2] # remove when done
-
+drought_gauges <- drought_gauges[which(drought_gauges == "408202")] # remove
 
 
 # Indentify streamflow_models and objective functions --------------------------
-non_drought_streamflow_models <- get_non_drought_streamflow_models()#[1:2] # remove when done
+non_drought_streamflow_models <- c(get_non_drought_streamflow_models()[1], get_non_drought_streamflow_models()[8])   # remove when done
 
-drought_streamflow_models <- get_drought_streamflow_models()#[1:2] # remove when done
+drought_streamflow_models <- c(get_drought_streamflow_models()[1], get_drought_streamflow_models()[1])  # remove when done
 
-all_objective_functions <- get_all_objective_functions()
+all_objective_functions <- get_all_objective_functions()[1]
 
 
 
@@ -220,13 +221,13 @@ sequences_list_of_files |>
 
 
 ## Delete all files ending with .csv ===========================================
-delete_files <- list.files(
-  path = "./Results/my_dream/",
-  recursive = FALSE, # I don't want it looking in other folders
-  pattern = "chunk", # remove all chunk files
-  full.names = TRUE
-) |>
-  file.remove()
+#delete_files <- list.files(
+#  path = "./Results/my_dream/",
+#  recursive = FALSE, # I don't want it looking in other folders
+#  pattern = "chunk", # remove all chunk files
+#  full.names = TRUE
+#) |>
+#  file.remove()
 
 
 
