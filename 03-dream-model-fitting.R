@@ -164,18 +164,18 @@ gc()
 
 
 ## Drought optimising ==========================================================
-plan(multisession, workers = length(availableWorkers())) # set once for furrr
-iwalk(
-  .x = chunked_drought_ready_for_optimisation,
-  .f = run_and_save_chunks_optimiser_parallel, 
-  optimiser = my_dream,
-  save_streamflow = FALSE,
-  save_sequences = TRUE,
-  is_drought = TRUE
-)
+#plan(multisession, workers = length(availableWorkers())) # set once for furrr
+#iwalk(
+#  .x = chunked_drought_ready_for_optimisation,
+#  .f = run_and_save_chunks_optimiser_parallel, 
+#  optimiser = my_dream,
+#  save_streamflow = FALSE,
+#  save_sequences = TRUE,
+#  is_drought = TRUE
+#)
 
 
-gc()
+#gc()
 
 
 
@@ -326,30 +326,3 @@ yy
 # test for 5, 6, 7, 8? Go straight to 8? Good idea to test all.
 
 
-# Code for dealing with negative mean box-cox streamflow values ----------------
-# matrix'ify this after DREAM
-# Trials for handling repression predictions with Q<0 when
-# using a truncated normal likelihood
-
-# Let the lower bound be Q=0 and upper bound Q=inf
-a <- 0
-b <- Inf
-
-# Define a truncated normal st. dev
-sigma <- 2
-
-# Let's predict streamflow using annual P
-P <- 200
-a0 <- -12
-a1 <- 0.05
-mu <- a0 + a1 * P
-
-# Now lets adjust the predicted mean flow for P to be >0
-# Specifically, lets treal Q_reg as the mean of the non-truncated distribution of
-# Q for the given P
-alpha <- (0 - mu) / sigma
-beta <- (Inf - mu) / sigma
-mu_true <- mu + sigma * (dnorm(alpha) - dnorm(beta)) / (pnorm(beta) - pnorm(alpha))
-
-sigma_true <- sqrt(sigma^2 * (1 - (-alpha * dnorm(alpha)) / (pnorm(beta) - pnorm(alpha)) -
-                                ((dnorm(alpha) - dnorm(beta)) / (pnorm(beta) - pnorm(alpha)))^2))

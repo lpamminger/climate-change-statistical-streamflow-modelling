@@ -13,7 +13,7 @@ make_default_dream_parameters <- function(PARAMETER_NUMBER) {
 
 
 
-my_dream <- function(numerical_optimiser_setup, dream_control = NULL, print_monitor = TRUE) {
+my_dream <- function(numerical_optimiser_setup, dream_control = NULL, print_monitor = FALSE) {
   
   ## Dream maximises makes sure minimise_likelihood is FALSE
   stopifnot(s3_class(numerical_optimiser_setup)[1] == "numerical_optimiser_setup")
@@ -28,7 +28,7 @@ my_dream <- function(numerical_optimiser_setup, dream_control = NULL, print_moni
   
   # If print monitor is false then set report to NULL in dream_control
   if(!print_monitor) {
-    dream_control$REPORT <-  NULL
+    dream_control$REPORT <- NULL
   }
   
   ### Make pars which is a list of variable ranges #############################
