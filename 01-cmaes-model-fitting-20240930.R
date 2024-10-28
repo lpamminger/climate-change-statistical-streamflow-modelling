@@ -228,10 +228,10 @@ combined_cmaes_streamflow <- streamflow_list_of_files |>
 
 
 ## Delete all files ending with .csv ===========================================
-delete_files <- list.files(
-  path = "./Results/my_cmaes/",
-  recursive = FALSE, # I don't want it looking in other folders
-  pattern = "chunk", # remove all chunk files
-  full.names = TRUE
-) |>
-  file.remove()
+#delete_files <- list.files(
+#  path = "./Results/my_cmaes/",
+#  recursive = FALSE, # I don't want it looking in other folders
+#  pattern = "chunk", # remove all chunk files
+#  full.names = TRUE
+#) |>
+#  file.remove()
