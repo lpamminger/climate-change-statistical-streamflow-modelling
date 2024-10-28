@@ -49,7 +49,7 @@ REPEATS <- 10L
 
 # Split catchments for into X chunks (due to RAM limitations).
 # Must be a multiple of REPEATS to avoid duplication across chunks. There is a check in code just in case
-CHUNK_SIZE <- 4500 # items per batch
+CHUNK_SIZE <- 9000 # items per batch
 
 
 # Construct catchment_data objects ---------------------------------------------
