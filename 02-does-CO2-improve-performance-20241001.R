@@ -13,10 +13,10 @@ source("./Functions/boxcox_transforms.R")
 
 
 # Import data ------------------------------------------------------------------
-CMAES_results <- read_csv("./Results/CMAES_results/CMAES_parameter_results_20241015.csv", show_col_types = FALSE)
+CMAES_results <- read_csv("./Results/my_cmaes/CMAES_parameter_results_20241028.csv", show_col_types = FALSE)
 
 
-streamflow_results <- read_csv("Results/CMAES_results/CMAES_streamflow_results_20241015.csv", 
+streamflow_results <- read_csv("Results/my_cmaes/CMAES_streamflow_results_20241028.csv", 
                                show_col_types = FALSE,
                                col_select = !optimiser
                                )
@@ -287,7 +287,7 @@ tidy_streamflow <- tidy_boxcox_streamflow |>
 ## Plot results ================================================================
 plot_streamflow_timeseries <- tidy_streamflow |> 
   ggplot(aes(x = year, y = streamflow, colour = streamflow_type)) +
-  geom_line(na.rm = TRUE) +
+  geom_line(na.rm = TRUE, alpha = 0.5) +
   theme_bw() +
   scale_colour_brewer(palette = "Set1") +
   labs(

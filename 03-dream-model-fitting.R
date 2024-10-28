@@ -50,21 +50,21 @@ source("./Functions/result_set.R")
 
 # Identify gauges --------------------------------------------------------------
 
-all_gauges <- unique(gauge_information$gauge)[1:2] # remove when done
+all_gauges <- unique(gauge_information$gauge)#[1:2] # remove when done
 
 drought_gauges <- gauge_information |> 
   filter(drought) |> 
   pull(gauge) |> 
   unique()
 
-drought_gauges <- drought_gauges[1:2] # remove when done
+#drought_gauges <- drought_gauges[1:2] # remove when done
 
 
 
 # Indentify streamflow_models and objective functions --------------------------
-non_drought_streamflow_models <- get_non_drought_streamflow_models()[1:2] # remove when done
+non_drought_streamflow_models <- get_non_drought_streamflow_models()#[1:2] # remove when done
 
-drought_streamflow_models <- get_drought_streamflow_models()[1:2] # remove when done
+drought_streamflow_models <- get_drought_streamflow_models()#[1:2] # remove when done
 
 all_objective_functions <- get_all_objective_functions()
 
@@ -131,7 +131,7 @@ drought_ready_for_optimisation <- pmap(
 
 # Split ready_for_optimisation objects into chunks to avoid exceeding RAM ------
 # Subject to change. I need to work out RAM requirements
-CHUNK_SIZE <- 10
+CHUNK_SIZE <- 100
 
 chunked_ready_for_optimisation <- split( # required for chunking in parallel
   ready_for_optimisation,
@@ -164,18 +164,18 @@ gc()
 
 
 ## Drought optimising ==========================================================
-#plan(multisession, workers = length(availableWorkers())) # set once for furrr
-#iwalk(
-#  .x = chunked_drought_ready_for_optimisation,
-#  .f = run_and_save_chunks_optimiser_parallel, 
-#  optimiser = my_dream,
-#  save_streamflow = FALSE,
-#  save_sequences = TRUE,
-#  is_drought = TRUE
-#)
+plan(multisession, workers = length(availableWorkers())) # set once for furrr
+iwalk(
+  .x = chunked_drought_ready_for_optimisation,
+  .f = run_and_save_chunks_optimiser_parallel, 
+  optimiser = my_dream,
+  save_streamflow = FALSE,
+  save_sequences = TRUE,
+  is_drought = TRUE
+)
 
 
-#gc()
+gc()
 
 
 
@@ -326,3 +326,15 @@ yy
 # test for 5, 6, 7, 8? Go straight to 8? Good idea to test all.
 
 
+# Did the results produce 1000 of each parameter? ------------------------------
+DREAM_sequence_results <- read_csv("Results/my_dream/DREAM_sequence_results.csv")
+
+
+x <- DREAM_sequence_results |> 
+  summarise(
+    n = n(),
+    .by = c(gauge, streamflow_model, objective_function, parameter)
+  )
+
+# I don't know how thining works. Also if DREAM converges before 
+# the max ndraw is meet it will not be 1000 different combinations
