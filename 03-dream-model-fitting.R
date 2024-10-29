@@ -65,7 +65,7 @@ drought_gauges <- drought_gauges[which(drought_gauges == "408202")] # remove
 # Indentify streamflow_models and objective functions --------------------------
 non_drought_streamflow_models <- c(get_non_drought_streamflow_models()[1], get_non_drought_streamflow_models()[8])   # remove when done
 
-drought_streamflow_models <- c(get_drought_streamflow_models()[1], get_drought_streamflow_models()[1])  # remove when done
+drought_streamflow_models <- c(get_drought_streamflow_models()[1], get_drought_streamflow_models()[8])  # remove when done
 
 all_objective_functions <- get_all_objective_functions()[1]
 
@@ -241,6 +241,8 @@ sequences_list_of_files |>
 
 
 # TESTING ----------------------------------------------------------------------
+stop_here <- 1
+stop_here <- 1
 stop_here <- 1
 tic()
 gauge <- "407214"
