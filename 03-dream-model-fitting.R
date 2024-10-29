@@ -355,6 +355,18 @@ streamflow <- streamflow_model_drought_separate_shifted_CO2_seasonal_ratio_auto(
 
 
 
+
+# Compare parameter results ====================================================
+CMAES_parameter_results <- read_csv("Results/my_cmaes/CMAES_parameter_results_20241028.csv", show_col_types = FALSE)
+
+compare_parameter_results <- CMAES_parameter_results |> 
+  right_join(DREAM_parameter_results, by = join_by(gauge, streamflow_model, objective_function)) |> 
+  mutate(
+    AIC_diff = AIC.x - AIC.y
+  )
+
+
+
 # TESTING ----------------------------------------------------------------------
 stop_here <- 1
 stop_here <- 1
