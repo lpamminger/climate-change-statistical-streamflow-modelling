@@ -851,7 +851,7 @@ streamflow_model_separate_shifted_CO2 <- function(catchment_data, parameter_set)
   if(is.null(names(as.list(match.call())[-1]))) {
     return(
       list(
-        "name" = "test_streamflow_model_separate_CO2",
+        "name" = "streamflow_model_separate_shifted_CO2",
         "parameters" = c("a0", "a1", "a3", "a5")
       )
     )
