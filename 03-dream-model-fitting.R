@@ -246,6 +246,74 @@ sequences_list_of_files |>
 sequences <- read_csv("Results/my_dream/DREAM_sequence_results.csv", show_col_types = FALSE)
 
 
+### Convert a5 parameter into year #############################################
+CO2 <- data |> 
+  filter(gauge == "102101A") |> 
+  pull(CO2)
+
+year <- data |> 
+  filter(gauge == "102101A") |> 
+  pull(year)
+
+
+
+
+# make this compatible with tables
+single_a5_to_year <- function(shifted_CO2_parameter, CO2, year) {
+  
+  adjusted_CO2 <- if_else(CO2 - shifted_CO2_parameter < 0, 0, CO2 - shifted_CO2_parameter)
+  
+  year_where_CO2_impacts_flow <- year[adjusted_CO2 != 0][1] 
+  
+  return(year_where_CO2_impacts_flow)
+  
+}
+
+
+shifted_CO2_parameter_into_year_CO2_starts_impacting_flow <- function(shifted_CO2_parameter, CO2, year) {
+  
+  map_dbl(
+    .x = shifted_CO2_parameter,
+    .f = single_a5_to_year,
+    CO2 = CO2,
+    year = year
+  )
+  
+}
+
+
+just_a5 <- sequences |>
+  filter(parameter == "a5") |>
+  mutate(
+    year_where_CO2_impacts_flow = shifted_CO2_parameter_into_year_CO2_starts_impacting_flow(
+      shifted_CO2_parameter = parameter_values,
+      CO2 = CO2,
+      year = year
+    )
+  )
+
+
+a5_to_year_plot <- just_a5 |> 
+  ggplot(aes(x = year_where_CO2_impacts_flow)) +
+  geom_histogram(
+    binwidth = binwidth_bins(30),
+    fill = "grey",
+    colour = "black"
+  ) +
+  #scale_y_sqrt() +
+  labs(
+    x = "Year where CO2 starts impacting streamflow",
+    y = "Frequency"
+  ) +
+  theme_bw() +
+  facet_wrap(~gauge, scales = "free")
+
+
+a5_to_year_plot
+
+
+
+
 # See if thin.t produces 1000 different parameter combinations -----------------
 count_combinations <- sequences |> 
   summarise(
