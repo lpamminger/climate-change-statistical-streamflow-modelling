@@ -239,6 +239,121 @@ sequences_list_of_files |>
 
 
 
+# analysising dream results WILL MOVE TO ANOTHER FILE --------------------------
+# how close are the test catchments parameter to CMAES
+# histogram 
+# comparison of streamflow time graphs?
+sequences <- read_csv("Results/my_dream/DREAM_sequence_results.csv", show_col_types = FALSE)
+
+
+# See if thin.t produces 1000 different parameter combinations -----------------
+count_combinations <- sequences |> 
+  summarise(
+    n = n(),
+    .by = c(gauge, streamflow_model, objective_function, parameter)
+  )
+
+# I don't know how thining works. Also if DREAM converges before 
+# the max ndraw is meet it will not be 1000 different combinations
+
+
+
+# Plot the histograms of parameter values ======================================
+plot_parameter_histogram <- function(streamflow_model, objective_function, sequence_results) {
+  
+  sequence_results |>
+    filter(streamflow_model == {{ streamflow_model }}) |>
+    filter(objective_function == {{ objective_function }}) |>
+    ggplot(aes(x = parameter_values)) +
+    geom_histogram(
+      binwidth = binwidth_bins(30),
+      fill = "grey",
+      colour = "black"
+    ) +
+    theme_bw() +
+    scale_y_sqrt() +
+    labs(
+      x = "Range of Parameter Values",
+      y = "Frequency",
+      title = paste0("Streamflow Model: ", streamflow_model, "\nObjective Function: ", objective_function)
+    ) +
+    facet_grid(gauge~parameter, scales = "free")
+}
+
+
+models <- unique(pull(sequences, streamflow_model))
+objfun <- unique(pull(sequences, objective_function))
+
+histogram_plot_1 <- plot_parameter_histogram(
+  streamflow_model = models[4],
+  objective_function =  objfun,
+  sequence_results = sequences
+)
+
+histogram_plot_2 <- plot_parameter_histogram(
+  streamflow_model = models[2],
+  objective_function =  objfun,
+  sequence_results = sequences
+)
+
+histogram_plot_1
+histogram_plot_2
+
+
+
+# Compare streamflow timeseries ================================================
+DREAM_parameter_results <- read_csv("Results/my_dream/DREAM_parameter_results.csv", show_col_types = FALSE, col_types = "cccccdddcl") |> 
+  drop_na()
+# these will have to be inputted into the respective models
+# Temporary and hardcoded
+
+CMAES_streamflow <- read_csv("Results/my_cmaes/CMAES_streamflow_results_20241028.csv", show_col_types = FALSE)
+
+
+DREAM_join <- DREAM_parameter_results |> 
+  select(c(gauge, streamflow_model, objective_function)) |> 
+  distinct()
+
+
+CMAES_filtered_streamflow <- CMAES_streamflow |> 
+  semi_join(DREAM_join, by = join_by(gauge, streamflow_model, objective_function))
+
+
+parameters <- DREAM_parameter_results |> 
+  filter(gauge == "408202") |> 
+  filter(streamflow_model == "streamflow_model_drought_separate_shifted_CO2_seasonal_ratio_auto") |> 
+  pull(parameter_value)
+
+
+gauge <- "408202"
+
+catchment_data <- gauge |>
+  catchment_data_blueprint(
+    observed_data = data,
+    start_stop_indexes = start_stop_indexes
+  ) 
+
+catchment_data$stop_start_data_set <- NULL
+
+catchment_data_altered <- unlist(catchment_data, recursive = FALSE)
+
+names(catchment_data_altered) <- c(
+  "gauge_ID",
+  "contains_drought",
+  "year",                      
+  "precipitation",
+  "observed_boxcox_streamflow",
+  "is_drought_year",
+  "CO2", 
+  "seasonal_ratio"
+)
+
+streamflow <- streamflow_model_drought_separate_shifted_CO2_seasonal_ratio_auto(
+  catchment_data = catchment_data,
+  parameter_set = parameters
+  )
+
+
 
 # TESTING ----------------------------------------------------------------------
 stop_here <- 1
@@ -329,15 +444,3 @@ yy
 # test for 5, 6, 7, 8? Go straight to 8? Good idea to test all.
 
 
-# Did the results produce 1000 of each parameter? ------------------------------
-DREAM_sequence_results <- read_csv("Results/my_dream/DREAM_sequence_results.csv")
-
-
-x <- DREAM_sequence_results |> 
-  summarise(
-    n = n(),
-    .by = c(gauge, streamflow_model, objective_function, parameter)
-  )
-
-# I don't know how thining works. Also if DREAM converges before 
-# the max ndraw is meet it will not be 1000 different combinations
