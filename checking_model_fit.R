@@ -70,3 +70,61 @@ ggsave(
   width = 1189,
   height = 841
 )
+
+
+# TESTING
+# Determining a3 parameter bounds ----------------------------------------------
+lambda <- seq(from = 0, to = 1.5, by = 0.01)
+
+swap_boxcox_transform <- function(lambda, y) {
+  boxcox_transform(y = y, lambda = lambda)
+}
+
+y <- map_dbl(
+  .x = lambda,
+  .f = swap_boxcox_transform,
+  y = 100
+)
+
+plot(lambda, y)
+points(0.856, boxcox_transform(100, 0.856), col = "red")
+
+# look at gauge 312061 because it has the max lambda
+# 313061 does hit the bounds for a3. Expand a3 parameter. Yes
+# catchments
+# I am not concerned about the sd, a5 and scale_CO2 being near zero.
+
+parameter_results <- read_csv("./Results/my_cmaes/CMAES_parameter_results_20241028.csv", show_col_types = FALSE)
+gauge_information <- read_csv("Data/Tidy/gauge_information_CAMELS.csv", show_col_types = FALSE)
+
+
+check_bounds <- parameter_results |> 
+  filter(near_bounds) |> 
+  filter(parameter == "a3") #|> 
+  pull(gauge) |> 
+  unique()
+
+check_lambda <- gauge_information |> 
+  filter(gauge %in% check_bounds)
+
+# Its not entirely dependent on lambda them
+
+# Trial and error to get a3 good?
+gauge <- "G9030124"
+
+example <- gauge |> 
+  catchment_data_blueprint(
+    observed_data = data,
+    start_stop_indexes = start_stop_indexes
+  ) |> 
+  numerical_optimiser_setup_vary_inputs(
+    streamflow_model = streamflow_model_separate_shifted_CO2_seasonal_ratio,
+    objective_function = constant_sd_objective_function,
+    bounds_and_transform_method = make_default_bounds_and_transform_methods(),
+    minimise_likelihood = TRUE
+  ) |> 
+  my_cmaes(print_monitor = TRUE) |> 
+  result_set() 
+
+parameters <- example |> 
+  parameters_summary()
