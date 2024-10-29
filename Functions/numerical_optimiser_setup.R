@@ -161,7 +161,7 @@ make_default_bounds_and_transform_methods <- function() {
     "a0_n",      -300,           100,           linear_parameter_transform, # intercept - drought
     "a1",         1E-5 ,         1,             logarithmic_parameter_transform, # slope
     "a2",        -1,             1,             linear_parameter_transform, # autocorrelation
-    "a3",        -1,             1,             linear_parameter_transform, # CO2 coefficient. 
+    "a3",        -10,            10,            linear_parameter_transform, # CO2 coefficient. 
     "a4",        -250,           800,           linear_parameter_transform, # seasonal parameter
     "a5",         0,             118.81,        linear_parameter_transform, # CO2 shift parameter - HARD CODED - SHOULD CHANGE BASED ON CO2 INPUT
     "sd",         1E-8,          1000,          logarithmic_parameter_transform, # constant sd objective function 
