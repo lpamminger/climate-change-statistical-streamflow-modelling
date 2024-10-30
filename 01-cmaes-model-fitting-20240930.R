@@ -159,7 +159,7 @@ iwalk(
   .x = chunk_repeat_all_numerical_optimisers_cmaes,
   .f = run_and_save_chunks_optimiser_parallel, 
   optimiser = my_cmaes,
-  save_streamflow = TRUE,
+  save_streamflow = FALSE,
   save_sequences = FALSE,
   is_drought = FALSE
 )
@@ -174,7 +174,7 @@ iwalk(
   .x = chunk_repeat_all_drought_numerical_optimisers_cmaes,
   .f = run_and_save_chunks_optimiser_parallel, 
   optimiser = my_cmaes,
-  save_streamflow = TRUE,
+  save_streamflow = FALSE,
   save_sequences = FALSE,
   is_drought = TRUE
 )
@@ -195,15 +195,76 @@ parameters_list_of_files <- list.files(
 
 
 
+# Issue: sometimes replicates produce >= 2 exact same results
+# if LL is the same slice_min saves everything
+# I only want a single catchment-model-objective-function combinations
+
+
+# Work around:
+# - add another column with the parameter number
+# - for each catchment-model-objective-function group take the first X
+#   rows where is the number of parameters
+# This removes duplicates for parameters
+
+# For the streamflow duplicates are removed using distinct(year)
+
+
+get_parameter_number <- function(streamflow_model, objective_function) {
+  streamflow_model <- noquote(streamflow_model)
+  objective_function <- noquote(objective_function)
+  
+  streamflow_model_name <- streamflow_model()[[1]]
+  objective_function_name <- objective_function()[[1]]
+  parameter_number <- length(c(streamflow_model()[[2]], objective_function()[[2]]))
+  
+  tibble(
+    "streamflow_model" = streamflow_model_name,
+    "objective_function" = objective_function_name,
+    "parameter_number" = parameter_number
+  )
+}
+
+
+
+# THIS WILL BREAK IF ANOTHER OBJECTIVE FUNCTION IS ADDED
+parameter_combinations <- map(
+  .x = c(all_streamflow_models, drought_streamflow_models),
+  .f = get_parameter_number,
+  objective_function = all_objective_functions[[1]]
+) |> 
+  list_rbind()
+
+parameter_combinations_2 <- map(
+  .x = c(all_streamflow_models, drought_streamflow_models),
+  .f = get_parameter_number,
+  objective_function = all_objective_functions[[2]]
+) |> 
+  list_rbind()
+
+all_parameter_combinations <- rbind(parameter_combinations, parameter_combinations_2)
+
+
+
+
 combined_cmaes_parameters <- parameters_list_of_files |>
-  readr::read_csv(show_col_types = FALSE) |>
-  dplyr::slice_min( 
+  readr::read_csv(show_col_types = FALSE) |> 
+  left_join(
+    all_parameter_combinations,
+    by = join_by(streamflow_model, objective_function)
+  ) |>  
+  dplyr::slice_min(  
     loglikelihood,
-    by = c(gauge, streamflow_model, objective_function) # only get the minimum LL for gauge, streamflow model and objective function combination
-  ) |>
+    by = c(gauge, streamflow_model, objective_function), # only get the minimum LL for gauge, streamflow model and objective function combination
+    ) |>
+  slice(  
+    seq(from = 1, to = parameter_number[1]),
+    .by = c(gauge, streamflow_model, objective_function)
+  ) |> 
+  select(!parameter_number) |> 
   readr::write_csv(
     file = paste0("./Results/my_cmaes/CMAES_parameter_results_", get_date(), ".csv")
   )
+
 
 
 ## Streamflow ==================================================================
@@ -221,17 +282,26 @@ combined_cmaes_streamflow <- streamflow_list_of_files |>
     loglikelihood,
     by = c(gauge, streamflow_model, objective_function, optimiser) # only get the minimum LL for gauge, streamflow model and objective function combination
   ) |>
+  distinct( # remove log-likelihood duplicates
+    year, 
+    gauge, 
+    streamflow_model, 
+    objective_function, 
+    optimiser, 
+    .keep_all = TRUE
+    ) |> 
   select(!loglikelihood) |> 
   readr::write_csv(
     file = paste0("./Results/my_cmaes/CMAES_streamflow_results_", get_date(), ".csv")
   )
 
 
+
 ## Delete all files ending with .csv ===========================================
-#delete_files <- list.files(
-#  path = "./Results/my_cmaes/",
-#  recursive = FALSE, # I don't want it looking in other folders
-#  pattern = "chunk", # remove all chunk files
-#  full.names = TRUE
-#) |>
-#  file.remove()
+delete_files <- list.files(
+  path = "./Results/my_cmaes/",
+  recursive = FALSE, # I don't want it looking in other folders
+  pattern = "chunk", # remove all chunk files
+  full.names = TRUE
+) |>
+  file.remove()
