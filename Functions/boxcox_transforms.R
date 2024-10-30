@@ -23,11 +23,11 @@ boxcox_inverse_transform <- function(yt, lambda = 0, lambda_2 = 0) {
 
 
 
-boxcox_lambda_generator <- function(precipitation, streamflow) {
+boxcox_lambda_generator <- function(precipitation, streamflow, lambda_2) {
   # , confidence_interval_percentage = 0.95
   ## Response variable q must be positive. Zero is not positive. Add a really small number + 1e-7.
   # Use MASS boxcox function to find best lambda
-  boxcox_result_object <- MASS::boxcox(lm((streamflow + sqrt(.Machine$double.eps)) ~ precipitation, y = TRUE), # , y = TRUE IS NEEDED FOR WRAPPER TO WORK https://community.rstudio.com/t/error-in-eval-predvars-data-env-object-x-not-found-when-creating-a-function/129475/2
+  boxcox_result_object <- MASS::boxcox(lm((streamflow + lambda_2) ~ precipitation, y = TRUE), # , y = TRUE IS NEEDED FOR WRAPPER TO WORK https://community.rstudio.com/t/error-in-eval-predvars-data-env-object-x-not-found-when-creating-a-function/129475/2
     lambda = seq(0, 5, 1 / 1000),
     plotit = FALSE
   )
