@@ -441,9 +441,11 @@ test_suite <- best_model_combination_per_catchment |>
   )
 
 # hard code into the test below:
+# - works for gauge = 105102A, model = streamflow_model_drought_precip_only, obj = constant_sd_objective_function
 
-tic()
-gauge <- "407214"
+tic <- as.numeric(Sys.time())
+
+gauge <- "146095A"
 
 dream_example <- gauge |>
   catchment_data_blueprint(
@@ -456,8 +458,12 @@ dream_example <- gauge |>
     bounds_and_transform_method = make_default_bounds_and_transform_methods(),
     minimise_likelihood = FALSE
   ) |>
-  my_dream() |>
+  my_dream(print_monitor = TRUE) |>
   result_set()
+
+toc <- round(as.numeric(Sys.time()) - tic, 1)
+
+cat(toc, "sec")
 
 dream_parameters <- dream_example |>
   parameters_summary()
@@ -465,7 +471,7 @@ dream_parameters <- dream_example |>
 dream_example |>
   plot()
 
-toc()
+
 
 
 
