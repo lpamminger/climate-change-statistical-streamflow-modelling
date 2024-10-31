@@ -228,6 +228,11 @@ sequences_list_of_files |>
 
 
 
+
+
+
+
+
 # DREAM - t.thin
 # do I want everything to have the same number of sequences?
 # or do I want it to scale with parameter number?
@@ -426,9 +431,17 @@ compare_parameter_results <- CMAES_parameter_results |>
 
 
 # TESTING ----------------------------------------------------------------------
-stop_here <- 1
-stop_here <- 1
-stop_here <- 1
+# make sure everything gets a good exit message
+
+test_suite <- best_model_combination_per_catchment |> 
+  distinct(
+    streamflow_model_name,
+    objective_function_name,
+    .keep_all = TRUE
+  )
+
+# hard code into the test below:
+
 tic()
 gauge <- "407214"
 

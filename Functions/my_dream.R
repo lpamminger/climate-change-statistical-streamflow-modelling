@@ -2,10 +2,10 @@ make_default_dream_parameters <- function(PARAMETER_NUMBER) {
   list(
     ndim = PARAMETER_NUMBER, # number of parameters in model
     nseq = 4 * PARAMETER_NUMBER, # number of chains to evolve (number of parameters * factor)
-    ndraw = round_any(((PARAMETER_NUMBER - 2) ^ 2.5) * 1E4, 1E4, ceiling), # Non-linear relationship between nseq and parameter number
+    ndraw = Inf, #round_any(((PARAMETER_NUMBER - 2) ^ 2.5) * 1E4, 1E4, ceiling), # Non-linear relationship between nseq and parameter number
     Rthres = 1.2, # Vrugt recommendation
     boundHandling = "rand", # Method used to handle parameter values outside of parameter bounds. One of: "reflect", "bound", "fold", "none","rand"
-    thin.t = round_any(((PARAMETER_NUMBER - 2) ^ 2.5) * 1E4, 1E4, ceiling) / 1000, # CHANGE - scaled based on parameter_number. Save the memory. I want 1000 different parameter combinations
+    thin.t = 1000, # cut excess? #round_any(((PARAMETER_NUMBER - 2) ^ 2.5) * 1E4, 1E4, ceiling) / 1000, # CHANGE - scaled based on parameter_number. Save the memory. I want 1000 different parameter combinations
     burnin.length = 0 # hopefully this removes some of the burn-in errors. With a 0.9 (90 % of evaluation using burn in still error). Set to zero no burn in 
   )
 }
