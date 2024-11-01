@@ -531,3 +531,59 @@ yy <- round_any(((x - 2)^2.5) * 1E4, 1E4, ceiling)
 yy
 # non-linear relationship works with gauge 407214 and 3, 4 parameters
 # test for 5, 6, 7, 8? Go straight to 8? Good idea to test all.
+
+
+
+# Checking CMAES - can delete/move
+# a3 = -25 works (tick) 108003A can have an a3 less than -10 streamflow_model_separate_shifted_CO2	constant_sd_objective_function
+# a3 = 50 works. 112102A	a3 > 10 streamflow_model_separate_shifted_CO2_seasonal_ratio_auto	constant_sd_objective_function
+# a3 = 20 works. G8150018 a3>10	streamflow_model_separate_shifted_CO2_seasonal_ratio_auto	constant_sd_objective_function
+
+
+# Results
+CMAES_parameter_results <- read_csv(
+  "Results/my_cmaes/CMAES_parameter_results_20241101.csv",
+  show_col_types = FALSE
+)
+
+
+inspect_parameter_a3 <- CMAES_parameter_results |> 
+  filter(parameter == "a3") |> 
+  pull(parameter_value) |> 
+  range()
+
+# Changes made based on parameter results
+# - catchments still hitting a3 bounds - make slightly larger
+# - scale_CO2 want to be very close to zero. Cannot be zero due to log transform
+# - try to reduce bounds to speed up time. Bounds to reduce:
+# a0_d/a0_n, a4, sd
+
+inspect_parameter <- CMAES_parameter_results |> # is the CO2 being shut-off? Sometimes. Hopefully the AIC deems these models as not good.
+  filter(parameter == "a5") |> 
+  filter(parameter_value > 110)
+
+# Testing
+random_test <- CMAES_parameter_results |> 
+  filter(streamflow_model == streamflow_model_drought_separate_shifted_CO2_seasonal_ratio_auto()$name) |> 
+  slice_sample(
+    n = 1
+  )
+
+gauge <- "227225A"
+example <- gauge |>
+  catchment_data_blueprint(
+    observed_data = data,
+    start_stop_indexes = start_stop_indexes
+  ) |>
+  numerical_optimiser_setup_vary_inputs(
+    streamflow_model = streamflow_model_drought_separate_shifted_CO2_seasonal_ratio_auto,
+    objective_function = constant_sd_objective_function,
+    bounds_and_transform_method = make_default_bounds_and_transform_methods(),
+    minimise_likelihood = TRUE
+  ) |>
+  my_cmaes(print_monitor = TRUE) |>
+  result_set() 
+
+x <- example |> parameters_summary()
+example |> plot()
+# based on trial and error set a3 to -25 to 50
