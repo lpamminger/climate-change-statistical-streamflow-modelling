@@ -47,8 +47,9 @@ source("./Functions/result_set.R")
 REPEATS <- 10L
 
 # Split catchments for into X chunks (due to RAM limitations).
-# Must be a multiple of REPEATS to avoid duplication across chunks. There is a check in code just in case
-CHUNK_SIZE <- 9000 # items per batch
+# I am not convinced a larger chunk size is always better
+# The 4500 seemed to run faster than the 9000? Maybe try 4000?
+CHUNK_SIZE <- 4000 # items per batch
 
 
 # Construct catchment_data objects ---------------------------------------------
