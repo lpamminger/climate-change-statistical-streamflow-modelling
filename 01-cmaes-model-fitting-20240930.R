@@ -159,7 +159,7 @@ iwalk(
   .x = chunk_repeat_all_numerical_optimisers_cmaes,
   .f = run_and_save_chunks_optimiser_parallel, 
   optimiser = my_cmaes,
-  save_streamflow = FALSE,
+  save_streamflow = TRUE,
   save_sequences = FALSE,
   is_drought = FALSE
 )
@@ -174,7 +174,7 @@ iwalk(
   .x = chunk_repeat_all_drought_numerical_optimisers_cmaes,
   .f = run_and_save_chunks_optimiser_parallel, 
   optimiser = my_cmaes,
-  save_streamflow = FALSE,
+  save_streamflow = TRUE,
   save_sequences = FALSE,
   is_drought = TRUE
 )
