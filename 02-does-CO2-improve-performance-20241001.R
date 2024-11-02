@@ -13,10 +13,10 @@ source("./Functions/boxcox_transforms.R")
 
 
 # Import data ------------------------------------------------------------------
-CMAES_results <- read_csv("./Results/my_cmaes/CMAES_parameter_results_20241031.csv", show_col_types = FALSE)
+CMAES_results <- read_csv("./Results/my_cmaes/CMAES_parameter_results_20241102.csv", show_col_types = FALSE)
 
 
-streamflow_results <- read_csv("Results/my_cmaes/CMAES_streamflow_results_20241031.csv",
+streamflow_results <- read_csv("Results/my_cmaes/CMAES_streamflow_results_20241102.csv",
   show_col_types = FALSE,
   col_select = !optimiser
 )
