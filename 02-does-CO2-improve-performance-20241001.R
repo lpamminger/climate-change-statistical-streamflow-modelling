@@ -41,7 +41,7 @@ vic_map <- read_sf(
 
 # Gauges that do weird things - remove for now ---------------------------------
 ## Gauges visually inspected using check_model_fit in graphs
-#removed_gauges <- c("G0060005", "A2390531")
+removed_gauges <- c("G0060005", "A2390531")
 
 
 
@@ -55,7 +55,7 @@ vic_map <- read_sf(
 # for each catchment (gauge) get the two lowest AIC values by contains_CO2
 
 best_CO2_and_non_CO2_per_catchment <- CMAES_results |>
-  #filter(!gauge %in% removed_gauges) |>
+  filter(!gauge %in% removed_gauges) |>
   select(!c(parameter, parameter_value, optimiser, loglikelihood, exit_message, near_bounds)) |>
   unite(
     col = streamflow_model_objective_function,
@@ -232,6 +232,7 @@ best_streamflow_results <- streamflow_results |>
 
 ## Summarise results into a tidy format ========================================
 tidy_boxcox_streamflow <- best_streamflow_results |>
+  drop_na() |>  # only include if observed streamflow is present
   pivot_longer(
     cols = c(observed_boxcox_streamflow, modelled_boxcox_streamflow),
     names_to = "name",
@@ -322,6 +323,7 @@ difference_to_observed_streamflow <- tidy_streamflow |>
 
 
 
+
 # If you purely compare the model with CO2 and without CO2 than...
 difference_to_observed_streamflow |>
   # filter(gauge == "221207") |>
@@ -369,8 +371,46 @@ totals_and_averages_streamflow <- difference_to_observed_streamflow |>
   ) |>
   mutate(
     ave_CO2_minus_non_CO2 = sum_CO2_minus_non_CO2 / n
+  ) |> 
+  arrange(desc(ave_CO2_minus_non_CO2)) |> 
+  left_join(
+    evidence_ratio_calc,
+    by = join_by(gauge)
+  ) |> 
+  select(!c(no_CO2, CO2, AIC_difference))
+
+
+# Plot comparing the difference in CO2 and non-Co2 streamflow against evi_ratio
+totals_and_averages_streamflow |>
+  ggplot(aes(x = evidence_ratio, y = sum_CO2_minus_non_CO2)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x, se = FALSE) +
+  theme_bw() +
+  scale_x_continuous(
+    transform = "pseudo_log",
+    breaks = unname(
+      quantile(
+        totals_and_averages_streamflow$evidence_ratio,
+        seq(from = 0, to = 1, by = 0.1)
+      )
+    ),
+    labels = signif(
+      unname(
+        quantile(
+          totals_and_averages_streamflow$evidence_ratio,
+          seq(from = 0, to = 1, by = 0.1)
+        )
+      ),
+      digits = 2
+    )
+  ) +
+  labs(
+    x = "Evidence Ratio",
+    y = "Difference between CO2 and non-CO2 streamflow for entire timeseries (mm)"
   )
 
+
+#mb <- as.numeric(1:10 %o% 10 ^ (0:3)) # this would be useful to know earlier
 
 # Directly comparing model results
 totals_and_averages_streamflow |>
