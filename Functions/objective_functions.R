@@ -7,7 +7,9 @@ lower_bound_correction <- function(uncorrected_mean_flow, uncorrected_uncertaint
   
   alpha <- (0 - uncorrected_mean_flow) / uncorrected_uncertainty
   
-  alpha <- max(qnorm(p = 1 - .Machine$double.eps^0.5), alpha)
+  cut_off_constant <- qnorm(p = 1 - .Machine$double.eps^0.5)
+  
+  alpha[alpha >= cut_off_constant] <- cut_off_constant
   
   #near_machine_precision <- dplyr::near(pnorm(alpha), y = 1, tol = .Machine$double.eps^0.5) # check if within machine precision
   
