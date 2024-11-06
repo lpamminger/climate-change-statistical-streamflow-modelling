@@ -43,6 +43,31 @@ source("./Functions/objective_function_setup.R")
 source("./Functions/result_set.R")
 
 
+
+# Remove testing - I think changes are good. Ready to rock and roll.
+gauge <- "315450"
+
+example <- gauge |>
+  catchment_data_blueprint(
+    observed_data = data,
+    start_stop_indexes = start_stop_indexes
+  ) |>
+  numerical_optimiser_setup_vary_inputs(
+    streamflow_model = streamflow_model_separate_shifted_CO2,
+    objective_function = CO2_variable_objective_function,
+    bounds_and_transform_method = make_default_bounds_and_transform_methods(),
+    minimise_likelihood = TRUE
+  ) |>
+  my_cmaes(print_monitor = TRUE) |>
+  result_set()
+
+x <- parameters_summary(example)
+plot(example)
+
+
+
+
+
 # Number of times we want to repeat each catchment-optimiser-streamflow model combinations
 REPEATS <- 10L
 

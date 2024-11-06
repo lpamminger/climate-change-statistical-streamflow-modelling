@@ -7,7 +7,7 @@ lower_bound_correction <- function(uncorrected_mean_flow, uncorrected_uncertaint
   
   alpha <- (0 - uncorrected_mean_flow) / uncorrected_uncertainty
   
-  cut_off_constant <- qnorm(p = 1 - .Machine$double.eps^0.5)
+  cut_off_constant <- qnorm(p = 1 - .Machine$double.eps^0.5) # this is the limit using the inverse cdf alpha = max(alpha, qnorm(p = ...))
   
   alpha[alpha >= cut_off_constant] <- cut_off_constant
   
