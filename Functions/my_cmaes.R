@@ -45,8 +45,8 @@ make_default_cmaes_parameters <- function(SCALE, PARAMETER_NUMBER) {
         myStopOnTolX(tol = 1E-6), 
         cmaesr::stopOnNoEffectAxis(),
         cmaesr::stopOnNoEffectCoord(),
-        cmaesr::stopOnCondCov(),
-        stopOnTimeBudget(budget = 180)
+        cmaesr::stopOnCondCov()#,
+        #stopOnTimeBudget(budget = 180)
       ) 
     )
   )
