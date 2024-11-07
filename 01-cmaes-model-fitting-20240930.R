@@ -45,24 +45,24 @@ source("./Functions/result_set.R")
 
 
 # Remove testing - I think changes are good. Ready to rock and roll.
-gauge <- "315450"
+#gauge <- "315450"
 
-example <- gauge |>
-  catchment_data_blueprint(
-    observed_data = data,
-    start_stop_indexes = start_stop_indexes
-  ) |>
-  numerical_optimiser_setup_vary_inputs(
-    streamflow_model = streamflow_model_separate_shifted_CO2,
-    objective_function = CO2_variable_objective_function,
-    bounds_and_transform_method = make_default_bounds_and_transform_methods(),
-    minimise_likelihood = TRUE
-  ) |>
-  my_cmaes(print_monitor = TRUE) |>
-  result_set()
+#example <- gauge |>
+#  catchment_data_blueprint(
+#    observed_data = data,
+#    start_stop_indexes = start_stop_indexes
+#  ) |>
+#  numerical_optimiser_setup_vary_inputs(
+#    streamflow_model = streamflow_model_separate_shifted_CO2,
+#    objective_function = CO2_variable_objective_function,
+#    bounds_and_transform_method = make_default_bounds_and_transform_methods(),
+#    minimise_likelihood = TRUE
+#  ) |>
+#  my_cmaes(print_monitor = TRUE) |>
+#  result_set()
 
-x <- parameters_summary(example)
-plot(example)
+#x <- parameters_summary(example)
+#plot(example)
 
 
 
@@ -74,7 +74,7 @@ REPEATS <- 10L
 # Split catchments for into X chunks (due to RAM limitations).
 # I am not convinced a larger chunk size is always better
 # The 4500 seemed to run faster than the 9000? Maybe try 4000?
-CHUNK_SIZE <- 4000 # items per batch
+CHUNK_SIZE <- 5000 # items per batch
 
 
 # Construct catchment_data objects ---------------------------------------------
