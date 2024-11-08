@@ -9,9 +9,30 @@ source("./Functions/utility.R")
 # Import the calibrated .csv's ---------------------------------------------------
 streamflow_results <- read_csv("./Results/my_cmaes/CMAES_streamflow_results_20241107.csv", show_col_types = FALSE)
  
+chopped_streamflow_results <- streamflow_results |> 
+  drop_na() |> 
+  mutate(
+    lag_year = dplyr::lag(year, n = 1L),
+    .by = c(gauge, streamflow_model, objective_function),
+    .after = 1
+  ) |> 
+  mutate(
+    diff_year = year - lag_year,
+    .after = 2
+  ) |> 
+  mutate(
+    diff_year = if_else(is.na(diff_year), 1, diff_year)
+  ) |> 
+  filter(
+    diff_year == 1 # only have consecutive observed years in data
+  )
+
+
+
 
 # Tidy data for plotting -------------------------------------------------------
-setup_streamflow_results_plotting <- streamflow_results |>
+setup_streamflow_results_plotting <- chopped_streamflow_results |> # change back to streamflow results if not good
+  drop_na() |> 
   pivot_longer(
     cols = ends_with("streamflow"),
     names_to = "modelled_or_observed",
@@ -46,6 +67,7 @@ check_results_plot <- function(streamflow_model, objective_function, streamflow_
     )
 }
 
+# top and tail function
 
 
 
@@ -94,15 +116,19 @@ points(0.856, boxcox_transform(100, 0.856), col = "red")
 # catchments
 # I am not concerned about the sd, a5 and scale_CO2 being near zero.
 
-parameter_results <- read_csv("./Results/my_cmaes/CMAES_parameter_results_20241028.csv", show_col_types = FALSE)
+parameter_results <- read_csv("./Results/my_cmaes/CMAES_parameter_results_20241107.csv", show_col_types = FALSE)
 gauge_information <- read_csv("Data/Tidy/gauge_information_CAMELS.csv", show_col_types = FALSE)
 
 
 check_bounds <- parameter_results |> 
   filter(near_bounds) |> 
-  filter(parameter == "a3") #|> 
-  pull(gauge) |> 
-  unique()
+  filter(parameter == "a5") #|> 
+  slice_sample(
+    n = 1,
+    by = gauge
+  )
+  #pull(gauge) |> 
+  #unique()
 
 check_lambda <- gauge_information |> 
   filter(gauge %in% check_bounds)
