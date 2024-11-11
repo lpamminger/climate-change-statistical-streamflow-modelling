@@ -564,7 +564,13 @@ parameter_utilisation <- CMAES_results |>
   select(!streamflow_model_objective_function) 
 
 check_near_zero <- parameter_utilisation |>
-  filter(abs(parameter_value) < 1E-4) # sd and scale_CO2 are okay
+  filter(abs(parameter_value) < 1E-4) #|>  # sd and scale_CO2 are okay
+  
+# does near zero scale CO2 and sd catchments always perform worse? No. Sometimes they are better.
+AIC_check_near_zero <- evidence_ratio_calc |> 
+  filter(gauge %in% check_near_zero$gauge) |> 
+  filter(AIC_difference < 0)
+
 
 check_a5 <- parameter_utilisation |> 
   filter(parameter == "a5") |> 
