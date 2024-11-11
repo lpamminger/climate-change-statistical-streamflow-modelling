@@ -13,10 +13,15 @@ source("./Functions/boxcox_transforms.R")
 
 
 # Import data ------------------------------------------------------------------
-CMAES_results <- read_csv("./Results/my_cmaes/CMAES_parameter_results_20241102.csv", show_col_types = FALSE)
+CMAES_results <- read_csv("./Results/my_cmaes/CMAES_parameter_results_20241108.csv", show_col_types = FALSE)
 
+data <- readr::read_csv(
+  "./Data/Tidy/with_NA_yearly_data_CAMELS.csv",
+  col_types = "icdddddddll", # ensuring each column is a the correct type
+  show_col_types = FALSE
+)
 
-streamflow_results <- read_csv("Results/my_cmaes/CMAES_streamflow_results_20241102.csv",
+streamflow_results <- read_csv("Results/my_cmaes/CMAES_streamflow_results_20241108.csv",
   show_col_types = FALSE,
   col_select = !optimiser
 )
@@ -41,7 +46,7 @@ vic_map <- read_sf(
 
 # Gauges that do weird things - remove for now ---------------------------------
 ## Gauges visually inspected using check_model_fit in graphs
-removed_gauges <- c("G0060005", "A2390531")
+#removed_gauges <- c("G0060005", "A2390531")
 
 
 
@@ -55,7 +60,7 @@ removed_gauges <- c("G0060005", "A2390531")
 # for each catchment (gauge) get the two lowest AIC values by contains_CO2
 
 best_CO2_and_non_CO2_per_catchment <- CMAES_results |>
-  filter(!gauge %in% removed_gauges) |>
+  #filter(!gauge %in% removed_gauges) |>
   select(!c(parameter, parameter_value, optimiser, loglikelihood, exit_message, near_bounds)) |>
   unite(
     col = streamflow_model_objective_function,
@@ -229,9 +234,29 @@ best_streamflow_results <- streamflow_results |>
   )
 
 
+## Remove non-consectutive years of observed and modelled streamflow ===========
+chopped_streamflow_results <- best_streamflow_results |> 
+  drop_na() |> 
+  mutate(
+    lag_year = dplyr::lag(year, n = 1L),
+    .by = c(gauge, streamflow_model, objective_function),
+    .after = 1
+  ) |> 
+  mutate(
+    diff_year = year - lag_year,
+    .after = 2
+  ) |> 
+  mutate(
+    diff_year = if_else(is.na(diff_year), 1, diff_year)
+  ) |> 
+  filter(
+    diff_year == 1 # only have consecutive observed years in data
+  )
+
+
 
 ## Summarise results into a tidy format ========================================
-tidy_boxcox_streamflow <- best_streamflow_results |>
+tidy_boxcox_streamflow <- chopped_streamflow_results |>
   drop_na() |>  # only include if observed streamflow is present
   pivot_longer(
     cols = c(observed_boxcox_streamflow, modelled_boxcox_streamflow),
@@ -279,6 +304,7 @@ tidy_streamflow <- tidy_boxcox_streamflow |>
 plot_streamflow_timeseries <- tidy_streamflow |>
   ggplot(aes(x = year, y = streamflow, colour = streamflow_type)) +
   geom_line(na.rm = TRUE, alpha = 0.5) +
+  geom_point(na.rm = TRUE, size = 0.5, alpha = 0.5) +
   theme_bw() +
   scale_colour_brewer(palette = "Set1") +
   labs(
@@ -301,10 +327,6 @@ ggsave(
 
 
 
-# I am not sure if the code from line 302 below works...
-
-
-
 ## Examine the difference to the observed ======================================
 ### i.e., observed - best_CO2 and observed - best_non_CO2
 
@@ -317,114 +339,108 @@ difference_to_observed_streamflow <- tidy_streamflow |>
   ) |>
   mutate(
     CO2_minus_non_CO2 = CO2 - non_CO2,
-    observed_minus_CO2 = observed - CO2,
-    observed_minus_non_CO2 = observed - non_CO2
+    standardised_CO2_minus_non_CO2 = (CO2 - non_CO2) / precipitation#,
+    #observed_minus_CO2 = observed - CO2,
+    #observed_minus_non_CO2 = observed - non_CO2
   )
 
-
-
-
-# If you purely compare the model with CO2 and without CO2 than...
-difference_to_observed_streamflow |>
-  # filter(gauge == "221207") |>
-  ggplot(aes(x = year, y = CO2_minus_non_CO2)) +
-  geom_line(na.rm = TRUE) +
-  theme_bw() +
-  facet_wrap(~gauge, scales = "free_y")
-
-# Produces linear changes in CO2_minus_non_CO2 overtime
-# What does this mean?
-# A positive linear slope means as timeseries progresses the CO2 streamflow increases and non_CO2 decreases (opposite is true)
-
-
-
-# If you compare the model (both CO2 and non-CO2) to observed than...
-difference_to_observed_streamflow |>
-  pivot_longer(
-    cols = starts_with("observed_minus"),
-    names_to = "residual_type",
-    values_to = "streamflow_residual"
-  ) |>
-  filter(gauge == "403217") |>
-  ggplot(aes(x = year, y = streamflow_residual, colour = residual_type)) +
-  geom_line(na.rm = TRUE) +
-  theme_bw() #+
-# facet_wrap(~gauge, scales = "free_y")
-
-x <- difference_to_observed_streamflow |>
-  drop_na() |>
-  filter(gauge == "403217") |>
-  pull(observed_minus_non_CO2) |>
-  acf()
-
-# Totals and averages
+# Totals and averages (not standardised meaning catchments with high rainfall will be larger)
 totals_and_averages_streamflow <- difference_to_observed_streamflow |>
   summarise(
     n = n(),
-    sum_observed = sum(observed, na.rm = TRUE),
-    sum_CO2 = sum(CO2, na.rm = TRUE),
-    sum_non_CO2 = sum(non_CO2, na.rm = TRUE),
+    #sum_observed = sum(observed, na.rm = TRUE),
+    #sum_CO2 = sum(CO2, na.rm = TRUE),
+    #sum_non_CO2 = sum(non_CO2, na.rm = TRUE),
     sum_CO2_minus_non_CO2 = sum(CO2_minus_non_CO2, na.rm = TRUE),
-    sum_observed_minus_CO2 = sum(observed_minus_CO2, na.rm = TRUE),
-    sum_observed_minus_non_CO2 = sum(observed_minus_non_CO2, na.rm = TRUE),
+    sum_standardised_CO2_minus_non_CO2 = sum(standardised_CO2_minus_non_CO2, na.rm = TRUE),
+    #sum_observed_minus_CO2 = sum(observed_minus_CO2, na.rm = TRUE),
+    #sum_observed_minus_non_CO2 = sum(observed_minus_non_CO2, na.rm = TRUE),
     .by = gauge
   ) |>
   mutate(
-    ave_CO2_minus_non_CO2 = sum_CO2_minus_non_CO2 / n
+    ave_CO2_minus_non_CO2 = sum_CO2_minus_non_CO2 / n,
+    ave_standardised_CO2_minus_non_CO2 = sum_standardised_CO2_minus_non_CO2 / n
   ) |> 
-  arrange(desc(ave_CO2_minus_non_CO2)) |> 
+  arrange(desc(ave_standardised_CO2_minus_non_CO2)) |> 
   left_join(
     evidence_ratio_calc,
     by = join_by(gauge)
   ) |> 
-  select(!c(no_CO2, CO2, AIC_difference))
+  select(!c(no_CO2, CO2, AIC_difference))#, #sum_CO2, sum_observed, sum_non_CO2))
 
 
-# Plot comparing the difference in CO2 and non-Co2 streamflow against evi_ratio
+
+
+
+# Compare the average difference in CO2 and non-CO2 per year and evi ratio
 totals_and_averages_streamflow |>
-  ggplot(aes(x = evidence_ratio, y = sum_CO2_minus_non_CO2)) +
+  ggplot(aes(x = abs(evidence_ratio), y = ave_standardised_CO2_minus_non_CO2)) +
   geom_point() +
-  geom_smooth(method = "lm", formula = y ~ x, se = FALSE) +
+  #geom_smooth(method = "lm", formula = y ~ x, se = FALSE) +
   theme_bw() +
-  scale_x_continuous(
-    transform = "pseudo_log",
-    breaks = unname(
-      quantile(
-        totals_and_averages_streamflow$evidence_ratio,
-        seq(from = 0, to = 1, by = 0.1)
-      )
-    ),
-    labels = signif(
-      unname(
-        quantile(
-          totals_and_averages_streamflow$evidence_ratio,
-          seq(from = 0, to = 1, by = 0.1)
-        )
-      ),
-      digits = 2
-    )
-  ) +
+  scale_x_log10(
+    breaks = c(1, 1E1, 1E2, 1E3, 1E4, 1E6, 1E17)
+    ) +
+  #scale_x_continuous(
+   # transform = "pseudo_log",
+    #breaks = unname(
+     # quantile(
+      #  totals_and_averages_streamflow$evidence_ratio,
+       # seq(from = 0, to = 1, by = 0.1)
+      #)
+    #),
+    #labels = signif(
+     # unname(
+      #  quantile(
+       #   totals_and_averages_streamflow$evidence_ratio,
+        #  seq(from = 0, to = 1, by = 0.1)
+        #)
+      #),
+      #digits = 2
+    #)
+  #) +
   labs(
-    x = "Evidence Ratio",
-    y = "Difference between CO2 and non-CO2 streamflow for entire timeseries (mm)"
-  )
+    x = "Absolute Value of Evidence Ratio",
+    y = "Standardised difference between CO2 and non-CO2 streamflow"
+  ) #+
+  #theme(
+  #  axis.text.x = element_text(angle = 45)
+  #)
 
 
-#mb <- as.numeric(1:10 %o% 10 ^ (0:3)) # this would be useful to know earlier
 
-# Directly comparing model results
-totals_and_averages_streamflow |>
-  ggplot(aes(x = gauge, y = ave_CO2_minus_non_CO2)) +
-  geom_col() +
+
+
+# How do the fitted parameters compared to the observed ones in RQ1? -----------
+RQ1_parameters <- c("a0", "a0_d", "a0_n", "a1", "a2", "sd")
+
+RQ1_parameter_comparison <- CMAES_results |> 
+  filter(parameter %in% RQ1_parameters)
+
+
+stats_RQ1_parameter_comparison <- RQ1_parameter_comparison |> 
+  summarise(
+    median_parameters = median(parameter_value),
+    q5_parameters = quantile(parameter_value, probs = 0.05),
+    q95_parameters = quantile(parameter_value, probs = 0.95),
+    .by = parameter
+  ) |> 
+  arrange(parameter)
+
+RQ1_parameter_comparison |> 
+  ggplot(aes(x = parameter_value)) +
+  geom_histogram(
+    colour = "black", 
+    fill = "grey",
+    bins = 30
+    ) +
+  geom_vline(
+    aes(xintercept = median(parameter_value)), 
+    colour = "red"
+    ) +
   theme_bw() +
-  labs(
-    x = "Gauge",
-    y = "Average annual streamflow difference between CO2 and non-CO2 models (mm/year)"
-  ) +
-  theme(
-    axis.text.x = element_text(angle = 90),
-    panel.grid.minor = element_blank()
-  )
+  facet_wrap(~parameter, scales = "free") 
+
 
 
 
@@ -465,14 +481,14 @@ same_streamflow_model_different_objective_function <- best_CO2_and_non_CO2_per_c
 # This is hard coded. Would be better to use get_non_drought_streamflow_models() and get_drought_streamflow_models()
 non_CO2_streamflow_model_vs_CO2_equivalent <- tribble(
   ~non_CO2_model, ~CO2_equivalent,
-  "streamflow_model_precip_only", "streamflow_model_separate_CO2",
-  "streamflow_model_precip_auto", "streamflow_model_separate_CO2_auto",
-  "streamflow_model_precip_seasonal_ratio", "streamflow_model_separate_CO2_seasonal_ratio",
-  "streamflow_model_precip_seasonal_ratio_auto", "streamflow_model_separate_CO2_seasonal_ratio_auto",
-  "streamflow_model_drought_precip_only", "streamflow_model_drought_separate_CO2",
-  "streamflow_model_drought_precip_auto", "streamflow_model_drought_separate_CO2_auto",
-  "streamflow_model_drought_precip_seasonal_ratio", "streamflow_model_drought_separate_CO2_seasonal_ratio",
-  "streamflow_model_drought_precip_seasonal_ratio_auto", "streamflow_model_drought_separate_CO2_seasonal_ratio_auto"
+  "streamflow_model_precip_only", "streamflow_model_separate_shifted_CO2",
+  "streamflow_model_precip_auto", "streamflow_model_separate_shifted_CO2_auto",
+  "streamflow_model_precip_seasonal_ratio", "streamflow_model_separate_shifted_CO2_seasonal_ratio",
+  "streamflow_model_precip_seasonal_ratio_auto", "streamflow_model_separate_shifted_CO2_seasonal_ratio_auto",
+  "streamflow_model_drought_precip_only", "streamflow_model_drought_separate_shifted_CO2",
+  "streamflow_model_drought_precip_auto", "streamflow_model_drought_separate_shifted_CO2_auto",
+  "streamflow_model_drought_precip_seasonal_ratio", "streamflow_model_drought_separate_shifted_CO2_seasonal_ratio",
+  "streamflow_model_drought_precip_seasonal_ratio_auto", "streamflow_model_drought_separate_shifted_CO2_seasonal_ratio_auto"
 )
 
 
@@ -483,7 +499,7 @@ compare_streamflow_models <- function(streamflow_models, objective_functions, lo
     filter(non_CO2_model == streamflow_models[1]) |> # This assumes the non_CO2 model is always first. I am not sure this is always true.
     unlist() |>
     unname()
-
+  
   return(all(filtered_lookup_tibble == streamflow_models) & (length(unique(objective_functions)) == 1)) # ensures objective functions are the same
 }
 
@@ -499,6 +515,7 @@ same_model_except_with_CO2_check <- best_CO2_and_non_CO2_per_catchment |>
   ) |>
   filter(same_model_with_and_without_CO2) |>
   pull(gauge)
+
 
 
 # Answering the first question =================================================\
@@ -522,6 +539,7 @@ cat(
 
 # make sure same_streamflow_model_different_objective_function parameters are being fully utilised
 # i.e., no parameters are really small
+# or if the a5 parameter is > 118.81 (this means the CO2 comp does nothing)
 
 parameter_utilisation <- CMAES_results |>
   filter(gauge %in% c(same_streamflow_model_different_objective_function, same_model_except_with_CO2_check)) |>
@@ -543,10 +561,192 @@ parameter_utilisation <- CMAES_results |>
     AIC,
     by = c(gauge, contains_CO2)
   ) |>
-  select(!streamflow_model_objective_function) |>
-  filter(abs(parameter_value) < 1E-4)
+  select(!streamflow_model_objective_function) 
+
+check_near_zero <- parameter_utilisation |>
+  filter(abs(parameter_value) < 1E-4) # sd and scale_CO2 are okay
+
+check_a5 <- parameter_utilisation |> 
+  filter(parameter == "a5") |> 
+  filter(parameter_value > 118.81) # good - nothing is greater than this, meaning the AIC successfully ignored the catchments
 
 # What does a very small sd or scale CO2 mean?
 # a very low scale CO2 means -> variable_sd <- reshape_constant_sd + (reshape_scale_CO2 * reshape_CO2)
 # the optimiser is setting something to zero
 # I don't know why sd want to be really small for the constant objective functions? THIS DOES NOT OCCUR
+
+
+
+
+# Convert a5 into time of emergence --------------------------------------------
+# find catchments with the best model including the a5 parameter (anything shifted)
+# filter the a5 parameter out
+# transform the a5 parameter into year
+# make this compatible with tables
+# if it is less than 39.58 then CO2 started impacting streamflow before 1959
+# if the a5 is zero we cannot say it occur at industrialision because we have
+# not fit the model to pre-industrialisation data.
+
+# filter parameter_utilisation using the best_model_combination_per_catchment
+just_a5_best_models <- parameter_utilisation |> 
+  semi_join(
+    best_model_combination_per_catchment,
+    by = join_by(gauge, streamflow_model, objective_function)
+  ) |> 
+  filter(parameter == "a5") 
+
+
+
+single_a5_to_year <- function(shifted_CO2_parameter, CO2, year) {
+  adjusted_CO2 <- if_else(CO2 - shifted_CO2_parameter < 0, 0, CO2 - shifted_CO2_parameter)
+  
+  year_where_CO2_impacts_flow <- year[adjusted_CO2 != 0][1]
+  
+  return(year_where_CO2_impacts_flow)
+}
+
+
+map_single_a5_to_year <- function(gauge, just_a5_best_models, data) {
+  year <- data |> 
+    filter(gauge == {{ gauge }}) |> 
+    pull(year)
+  
+  CO2 <- data |> 
+    filter(gauge == {{ gauge }}) |> 
+    pull(CO2)
+  
+  shift_CO2 <- just_a5_best_models |> 
+    filter(gauge == {{ gauge }}) |> 
+    pull(parameter_value)
+  
+  year_shift_occurred <- single_a5_to_year(shift_CO2, CO2, year)
+  
+  tibble(
+    "gauge" = {{ gauge }},
+    "a5" = shift_CO2,
+    "year_shift_occurred" = year_shift_occurred
+  )
+}
+
+
+time_of_emergence <- map(
+  .x = just_a5_best_models$gauge,
+  .f = map_single_a5_to_year,
+  just_a5_best_models,
+  data = data
+) |> 
+  list_rbind() 
+
+
+more_data_time_of_emergence <-  time_of_emergence |> 
+  left_join(
+    gauge_information,
+    by = join_by(gauge)
+  ) |> 
+  left_join(
+    evidence_ratio_calc,
+    by = join_by(gauge)
+  ) 
+
+# see when everything occurs  
+more_data_time_of_emergence |> 
+  ggplot(aes(x = gauge, y = year_shift_occurred, label = year_shift_occurred, colour = state)) +
+  geom_point() +
+  geom_text(nudge_y = 1) +
+  theme_bw() +
+  labs(
+    x = "Gauge",
+    y = "Year CO2 term kicked-in",
+    colour = "State"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 90)
+  )
+
+
+# is there a relationship between ToE and evi ratio
+more_data_time_of_emergence |> 
+  ggplot(aes(x = abs(evidence_ratio), y = year_shift_occurred)) +
+  geom_smooth(
+    method = "lm", 
+    formula = y ~ x, 
+    se = TRUE, 
+    colour = "black",
+    linewidth = 0.5
+  ) +
+  geom_point(
+    aes(colour = state),
+    size = 2
+    ) +
+  theme_bw() +
+  scale_x_log10() +
+  labs(
+    x = "Evidence Ratio",
+    y = "Year CO2 term kicked-in",
+    colour = "State"
+  )
+
+
+
+
+
+
+
+
+
+
+# I am not sure if the code below here works...
+
+# If you purely compare the model with CO2 and without CO2 than...
+difference_to_observed_streamflow |>
+  # filter(gauge == "221207") |>
+  ggplot(aes(x = year, y = CO2_minus_non_CO2)) +
+  geom_line(na.rm = TRUE) +
+  theme_bw() +
+  facet_wrap(~gauge, scales = "free_y")
+
+# Produces linear changes in CO2_minus_non_CO2 overtime
+# What does this mean?
+# A positive linear slope means as timeseries progresses the CO2 streamflow increases and non_CO2 decreases (opposite is true)
+
+
+
+# If you compare the model (both CO2 and non-CO2) to observed than...
+difference_to_observed_streamflow |>
+  pivot_longer(
+    cols = starts_with("observed_minus"),
+    names_to = "residual_type",
+    values_to = "streamflow_residual"
+  ) |>
+  filter(gauge == "403217") |>
+  ggplot(aes(x = year, y = streamflow_residual, colour = residual_type)) +
+  geom_line(na.rm = TRUE) +
+  theme_bw() #+
+# facet_wrap(~gauge, scales = "free_y")
+
+x <- difference_to_observed_streamflow |>
+  drop_na() |>
+  filter(gauge == "403217") |>
+  pull(observed_minus_non_CO2) |>
+  acf()
+
+#mb <- as.numeric(1:10 %o% 10 ^ (0:3)) # this would be useful to know earlier
+
+# Directly comparing model results
+totals_and_averages_streamflow |>
+  ggplot(aes(x = gauge, y = ave_CO2_minus_non_CO2)) +
+  geom_col() +
+  theme_bw() +
+  labs(
+    x = "Gauge",
+    y = "Average annual streamflow difference between CO2 and non-CO2 models (mm/year)"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 90),
+    panel.grid.minor = element_blank()
+  )
+
+
+
+
+
