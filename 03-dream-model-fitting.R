@@ -173,9 +173,11 @@ ready_for_optimisation <- pmap(
 
 
 
+
+
 # Split ready_for_optimisation objects into chunks to avoid exceeding RAM ------
 # Subject to change. I need to work out RAM requirements
-CHUNK_SIZE <- 100
+CHUNK_SIZE <- 28
 
 chunked_ready_for_optimisation <- split( # required for chunking in parallel
   ready_for_optimisation,
