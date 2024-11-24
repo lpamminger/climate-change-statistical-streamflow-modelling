@@ -2,7 +2,7 @@ make_default_dream_parameters <- function(PARAMETER_NUMBER) {
   list(
     ndim = PARAMETER_NUMBER, # number of parameters in model
     nseq = PARAMETER_NUMBER, # number of chains to evolve (number of parameters * factor)
-    ndraw = 2E6, #round_any(((PARAMETER_NUMBER - 2) ^ 2.5) * 1E5, 1E4, ceiling), # Non-linear relationship between nseq and parameter number
+    ndraw = 1E8, #round_any(((PARAMETER_NUMBER - 2) ^ 2.5) * 1E5, 1E4, ceiling), # Non-linear relationship between nseq and parameter number
     Rthres = 1.2, # Vrugt recommendation
     boundHandling = "rand", # Method used to handle parameter values outside of parameter bounds. One of: "reflect", "bound", "fold", "none","rand"
     thin.t = 1000, #round_any(((PARAMETER_NUMBER - 2) ^ 2.5) * 1E5, 1E4, ceiling) / 1000, # CHANGE - scaled based on parameter_number. Save the memory. I want 1000 different parameter combinations
