@@ -54,6 +54,91 @@ converged_DREAM_sequences <- DREAM_sequences |>
 
 
 # For the converged catchments look at parameter distributions -----------------
+# what do I want the graph to look like?
+# for single page of distributions for each catchment
+
+parameter_names <- tibble::tribble(
+    ~parameter, ~parameter_name,   
+    "a0",        "Intercept (a0)",
+    "a0_d",      "Intercept - Drought (a0_d)",
+    "a0_n",      "Intercept - Non-drought (a0_n)",           
+    "a1",        "Slope (a1)",         
+    "a2",        "Lag-1 Autocorrelation (a2)",             
+    "a3",        "CO2 Coefficient (a3)", 
+    "a4",        "Seasonal Rainfall Coefficient (a4)",
+    "a5",        "Shift CO2 Term (a5)",             
+    "sd",        "Constant Uncertainty (sd)",           
+    "scale_CO2", "Variable CO2 Uncertainty (scale_CO2)",          
+  )
+
+
+
+
+
+plot_parameter_distribution <- function(gauge, DREAM_sequences) {
+  
+  make_title <- DREAM_sequences |> 
+    filter(gauge == {{ gauge }}) |> 
+    slice_head() |> 
+    select(c(gauge, streamflow_model, objective_function)) 
+  
+  plot_title <- paste0(
+    "Gauge: ", make_title$gauge, "\n",
+    "Streamflow Model: ", make_title$streamflow_model, "\n",
+    "Objective Function: ", make_title$objective_function
+  )
+  
+  DREAM_sequences |> 
+    left_join(
+      parameter_names,
+      by = join_by(parameter)
+    ) |> 
+    filter(gauge == {{ gauge }}) |> 
+    ggplot(aes(x = parameter_values)) +
+    geom_histogram(
+      binwidth = binwidth_bins(30),
+      fill = "darkgrey",
+      colour = "black"
+    ) +
+    scale_y_sqrt() +
+    labs(
+      x = "Parameter Value",
+      y = "Count",
+      title = plot_title
+    ) +
+    facet_wrap(
+      ~factor(parameter_name, levels = parameter_names$parameter_name), # sets order of facets
+      scales = "free"
+    ) +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5, size = 12))
+  
+}
+
+
+## Repeat for each gauge and combine in a single document ######################
+many_parameter_histograms <- map(
+  .x = unique(converged_DREAM_sequences$gauge),
+  .f = plot_parameter_distribution,
+  DREAM_sequences = converged_DREAM_sequences
+)
+
+
+ggsave(
+  filename = paste0("parameter_histograms_DREAM_", get_date(), ".pdf"), 
+  path = "./Graphs/DREAM_graphs",
+  plot = gridExtra::marrangeGrob(
+    many_parameter_histograms, 
+    nrow = 1, 
+    ncol = 1,
+    top = NULL,
+    bottom = quote(paste(g, "of", npages))
+    ), 
+  device = "pdf",
+  units = "mm",
+  width = 297,
+  height = 210
+)
 
 
 
@@ -127,14 +212,32 @@ ToE_range <- converged_shifted_CO2_param |>
 
 
 ## Plot ########################################################################
-converged_shifted_CO2_param |> 
-  ggplot(aes(x = gauge, y = ToE)) +  # colour = state?
+converged_shifted_CO2_param |>
+  ggplot(aes(x = gauge, y = ToE)) + # colour = state?
   geom_boxplot(na.rm = TRUE) +
+  geom_text(
+    data = ToE_range,
+    mapping = aes(
+      y = 1958,
+      label = paste0("n = ", plotted_ToE)
+    ),
+    inherit.aes = TRUE
+  ) +
   labs(
     x = "Gauge",
     y = "Time of Emergence"
   ) +
-  theme_bw()
+  theme_bw() +
+  scale_y_continuous(
+    limits = c(1958, 2014),
+    breaks = seq(from = 1958, to = 2014, by = 5)
+  ) 
+
+
+
+
+
+
 
 
 
@@ -160,45 +263,7 @@ count_combinations <- sequences |>
 
 
 
-# Plot the histograms of parameter values ======================================
-plot_parameter_histogram <- function(streamflow_model, objective_function, sequence_results) {
-  sequence_results |>
-    filter(streamflow_model == {{ streamflow_model }}) |>
-    filter(objective_function == {{ objective_function }}) |>
-    ggplot(aes(x = parameter_values)) +
-    geom_histogram(
-      binwidth = binwidth_bins(30),
-      fill = "grey",
-      colour = "black"
-    ) +
-    theme_bw() +
-    scale_y_sqrt() +
-    labs(
-      x = "Range of Parameter Values",
-      y = "Frequency",
-      title = paste0("Streamflow Model: ", streamflow_model, "\nObjective Function: ", objective_function)
-    ) +
-    facet_grid(gauge ~ parameter, scales = "free")
-}
 
-
-models <- unique(pull(sequences, streamflow_model))
-objfun <- unique(pull(sequences, objective_function))
-
-histogram_plot_1 <- plot_parameter_histogram(
-  streamflow_model = models[4],
-  objective_function =  objfun,
-  sequence_results = sequences
-)
-
-histogram_plot_2 <- plot_parameter_histogram(
-  streamflow_model = models[2],
-  objective_function =  objfun,
-  sequence_results = sequences
-)
-
-histogram_plot_1
-histogram_plot_2
 
 
 
