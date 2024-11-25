@@ -1,35 +1,73 @@
-#
-# !!!!!!!!!!!! OLD !!!!!!!!!!!!!!!!!!! 
-#
-# Moved from 03-DREAM ----------------------------------------------------------
-  # DREAM - t.thin
-  # do I want everything to have the same number of sequences?
-  # or do I want it to scale with parameter number?
-  
-  
-  
-  # analysising dream results WILL MOVE TO ANOTHER FILE --------------------------
-# how close are the test catchments parameter to CMAES
-# histogram
-# comparison of streamflow time graphs?
-sequences <- read_csv("Results/my_dream/DREAM_sequence_results.csv", show_col_types = FALSE)
+# DREAM analysis
+
+cat("\014") # clear console
+
+# Import libraries--------------------------------------------------------------
+pacman::p_load(tidyverse)
 
 
-### Convert a5 parameter into year #############################################
-CO2 <- data |>
-  filter(gauge == "102101A") |>
-  pull(CO2)
-
-year <- data |>
-  filter(gauge == "102101A") |>
-  pull(year)
+# Import functions -------------------------------------------------------------
+source("./Functions/utility.R")
+source("./Functions/boxcox_transforms.R")
 
 
+# Import data ------------------------------------------------------------------
+data <- data <- readr::read_csv(
+  "Data/Tidy/with_NA_yearly_data_CAMELS.csv",
+  col_types = "icdddddddll", # ensuring each column is a the correct type
+  show_col_types = FALSE
+)
 
 
-# make this compatible with tables
-single_a5_to_year <- function(shifted_CO2_parameter, CO2, year) {
-  adjusted_CO2 <- if_else(CO2 - shifted_CO2_parameter < 0, 0, CO2 - shifted_CO2_parameter)
+# Import DREAM parameters and sequences ----------------------------------------
+DREAM_params <- readr::read_csv(
+  "Results/my_dream/parameter_results_chunk_1_20241115.csv",
+  show_col_types = FALSE
+  )
+
+
+DREAM_sequences <- readr::read_csv(
+  "Results/my_dream/sequences_results_chunk_1_20241115.csv",
+  show_col_types = FALSE
+  )
+
+
+
+# Testing only - remove non-converged catchments -------------------------------
+converged_DREAM_params <- DREAM_params |> 
+  filter(exit_message == "Convergence criteria reached")
+
+#length(unique(DREAM_params$gauge))
+#length(unique(converged_DREAM_params$gauge))
+# Only 9 of the 28 catchments have converged using DREAM
+
+# converged_DREAM_params |> filter(parameter == "a5")
+# Only 2 of the 28 catchments have an a5 parameter
+
+
+converged_DREAM_sequences <- DREAM_sequences |> 
+  semi_join( # filter join
+    converged_DREAM_params,
+    by = join_by(gauge)
+  )
+
+
+
+# For the converged catchments look at parameter distributions -----------------
+
+
+
+
+# For the converged catchments convert a5 into Time of Emergence (ToE) ---------
+
+## Just get a5's
+converged_shifted_CO2_param <- converged_DREAM_sequences |> 
+  filter(parameter == "a5")
+
+
+## Convert the a5's into a time of emergence
+single_a5_to_time_of_emergence <- function(a5, CO2, year) {
+  adjusted_CO2 <- if_else(CO2 - a5 < 0, 0, CO2 - a5)
   
   year_where_CO2_impacts_flow <- year[adjusted_CO2 != 0][1]
   
@@ -37,44 +75,75 @@ single_a5_to_year <- function(shifted_CO2_parameter, CO2, year) {
 }
 
 
-shifted_CO2_parameter_into_year_CO2_starts_impacting_flow <- function(shifted_CO2_parameter, CO2, year) {
+get_CO2_and_year_per_gauge <- function(gauge, data) {
+  
+  data |> 
+    filter(gauge == {{ gauge }}) |> 
+    select(c(year, CO2))
+  
+}
+
+
+mutate_compatible_a5_to_time_of_emergence <- function(a5, gauge, data) {
   map_dbl(
-    .x = shifted_CO2_parameter,
-    .f = single_a5_to_year,
-    CO2 = CO2,
-    year = year
+    .x = a5,
+    .f = single_a5_to_time_of_emergence,
+    CO2 = get_CO2_and_year_per_gauge(gauge, data)$CO2,
+    year = get_CO2_and_year_per_gauge(gauge, data)$year
   )
 }
 
 
-just_a5 <- sequences |>
-  filter(parameter == "a5") |>
+converged_shifted_CO2_param <- converged_shifted_CO2_param |> 
   mutate(
-    year_where_CO2_impacts_flow = shifted_CO2_parameter_into_year_CO2_starts_impacting_flow(
-      shifted_CO2_parameter = parameter_values,
-      CO2 = CO2,
-      year = year
+    ToE = mutate_compatible_a5_to_time_of_emergence(
+      a5 = parameter_values,
+      gauge = gauge,
+      data = data
     )
   )
 
 
-a5_to_year_plot <- just_a5 |>
-  ggplot(aes(x = year_where_CO2_impacts_flow)) +
-  geom_histogram(
-    binwidth = binwidth_bins(30),
-    fill = "grey",
-    colour = "black"
-  ) +
-  # scale_y_sqrt() +
+
+
+
+## Inspect ToE's
+count_na <- function(column) {
+  sum(is.na(column))
+}
+
+
+  
+ToE_range <- converged_shifted_CO2_param |> 
+  summarise(
+    n = n(),
+    count_na = count_na(ToE),
+    .by = gauge
+  ) |> 
+  mutate(
+    plotted_ToE = n - count_na,
+    percentage_NA = (count_na / n) * 100
+  )
+
+
+## Plot ########################################################################
+converged_shifted_CO2_param |> 
+  ggplot(aes(x = gauge, y = ToE)) +  # colour = state?
+  geom_boxplot(na.rm = TRUE) +
   labs(
-    x = "Year where CO2 starts impacting streamflow",
-    y = "Frequency"
+    x = "Gauge",
+    y = "Time of Emergence"
   ) +
-  theme_bw() +
-  facet_wrap(~gauge, scales = "free")
+  theme_bw()
 
 
-a5_to_year_plot
+
+
+#
+# !!!!!!!!!!!! OLD !!!!!!!!!!!!!!!!!!! 
+#
+# Moved from 03-DREAM ----------------------------------------------------------
+ 
 
 
 
