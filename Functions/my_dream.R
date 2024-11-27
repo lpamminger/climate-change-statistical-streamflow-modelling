@@ -28,7 +28,7 @@ my_dream <- function(numerical_optimiser_setup, dream_control = NULL, print_moni
   
   # If print monitor is false then set report to NULL in dream_control
   if(!print_monitor) {
-    dream_control$REPORT <- NULL
+    dream_control$REPORT <- 0
   }
   
   ### Make pars which is a list of variable ranges #############################
