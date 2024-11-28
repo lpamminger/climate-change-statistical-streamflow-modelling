@@ -45,10 +45,10 @@ source("./Functions/result_set.R")
 
 
 # Remove testing - I think changes are good. Ready to rock and roll.
-#gauge <- "315450"
+#gauge <- "915011A"
 
 #example <- gauge |>
-#  catchment_data_blueprint(
+#   catchment_data_blueprint(
 #    observed_data = data,
 #    start_stop_indexes = start_stop_indexes
 #  ) |>
@@ -62,8 +62,7 @@ source("./Functions/result_set.R")
 #  result_set()
 
 #x <- parameters_summary(example)
-#plot(example)
-
+#plot(example) 
 
 
 
@@ -102,8 +101,6 @@ drought_catchment_data <- map(
   start_stop_indexes = start_stop_indexes
 )
 
-
-drought_catchment_data <- drought_catchment_data
 
 
 # Build objective_functions using the optimiser_set object ---------------------
@@ -177,7 +174,6 @@ chunk_repeat_all_drought_numerical_optimisers_cmaes <- split( # required for chu
 
 
 # Run cmaes --------------------------------------------------------------------
-
 
 plan(multisession, workers = length(availableWorkers())) # set once for furrr
 iwalk(
