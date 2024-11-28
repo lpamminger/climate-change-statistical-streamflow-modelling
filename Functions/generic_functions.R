@@ -153,16 +153,22 @@ plot.catchment_data <- function(x) {
 
 plot.result_set <- function(x) {
   
+  # should only plot what I have optimised for
+  # remove data not in calibration
+  # easiest way is to use the full observed streamflow and an index i.e., if
+  # there is a NA it was not calibrated on
+  keep_data <- !is.na(x$numerical_optimiser_setup$catchment_data$full_data_set$observed_boxcox_streamflow)
+  
   plot(
-    x = x$numerical_optimiser_setup$catchment_data$full_data_set$year,
-    y = x$optimised_boxcox_streamflow, 
+    x = x$numerical_optimiser_setup$catchment_data$full_data_set$year[keep_data],
+    y = x$optimised_boxcox_streamflow[keep_data], 
     type = "b", 
     xlab = "Year",
     ylab = "Box-Cox Streamflow", 
-    ylim = range(c(x$optimised_boxcox_streamflow, x$numerical_optimiser_setup$catchment_data$full_data_set$observed_boxcox_streamflow), na.rm = TRUE))
+    ylim = range(c(x$optimised_boxcox_streamflow[keep_data], x$numerical_optimiser_setup$catchment_data$full_data_set$observed_boxcox_streamflow[keep_data]), na.rm = TRUE))
   lines(
-    x = x$numerical_optimiser_setup$catchment_data$full_data_set$year,
-    y = x$numerical_optimiser_setup$catchment_data$full_data_set$observed_boxcox_streamflow,
+    x = x$numerical_optimiser_setup$catchment_data$full_data_set$year[keep_data],
+    y = x$numerical_optimiser_setup$catchment_data$full_data_set$observed_boxcox_streamflow[keep_data],
     type = "b",
     col = "red"
   )
