@@ -3,7 +3,6 @@
 # Clear environment and console ------------------------------------------------
 rm(list = ls())
 cat("\014")
-par(mfrow = c(1, 1))
 
 # Import libraries -------------------------------------------------------------
 pacman::p_load(tidyverse, MASS, checkmate)
@@ -61,7 +60,6 @@ catchment_information <- readr::read_csv(
 
 ## CONSTANTS ===================================================================
 acceptable_missing_streamflow_days <- 10
-acceptable_number_continuous_years <- 20
 minimum_entires_year <- 30 # at least 30 years of data required. Copied from HRS
 min_run_length <- 2
 pre_ind_CO2_ppm <- 280
@@ -225,8 +223,8 @@ list_start_end_index <- map(
   .x = unique(yearly_data$gauge),
   .f = gauge_continous_start_end,
   data = yearly_data,
-  min_run_length = min_run_length
-) # minimum of 2 years of data
+  min_run_length = min_run_length 
+) 
 
 names(list_start_end_index) <- paste0("gauge_", unique(yearly_data$gauge))
 
@@ -272,14 +270,12 @@ gauge_data <- yearly_data |>
   mutate(
     max_run = (max_run_end - max_run_start) + 1
   ) |>
-  filter(entires >= minimum_entires_year)
+  filter(entires >= minimum_entires_year) |>
+  left_join( # Add chunks to gauge_data i.e., continuous runs
+    catchment_information, 
+    by = join_by(gauge)
+  )
 
-
-
-
-# Add chunks to gauge_data i.e., continuous runs
-gauge_data <- gauge_data |>
-  left_join(catchment_information, by = join_by(gauge))
 
 
 ### Update yearly data with removed catchments #################################
@@ -287,45 +283,8 @@ updated_yearly_data <- yearly_data |>
   filter(gauge %in% gauge_data$gauge)
 
 
-## Fine tuning yearly data =====================================================
-
-### Only include acceptable years ##############################################
-continuous_gauge_data <- gauge_data |>
-  filter(max_run >= acceptable_number_continuous_years)
-
-acceptable_yearly_data <- updated_yearly_data |>
-  filter(gauge %in% continuous_gauge_data$gauge)
-
-
-
-### Remove streamflow if it is discontinuous ###################################
-### - Only include the longest run of continuous streamflow for each catchment
-
-#get_only_continuous_data <- function(gauge_id, start_index, end_index, yearly_data) {
-#  yearly_data |>
-#    filter(gauge == gauge_id) |>
-#    slice(start_index:end_index)
-#}
-
-
-#list_continuous_yearly_data <- pmap(
-#  .l = list(
-#    "gauge" = gauge_data$gauge,
-#    "start" = gauge_data$max_run_start,
-#    "end" = gauge_data$max_run_end
-#  ),
-#  .f = get_only_continuous_data,
-#  yearly_data = acceptable_yearly_data
-#)
-
-
-#continuous_yearly_data <- do.call("rbind", list_continuous_yearly_data)
-
-
-### Add a box-cox streamflow column ############################################
-### - There has to be a better way to do this
-
-
+# Convert streamflow (mm) into box-cox streamflow ------------------------------
+## Function to convert streamflow (q_mm) into box-cox streamflow ===============
 bc_q_generator <- function(gauge_id, a_priori_boxcox_lambda, yearly_data, lambda_2) {
   
   extracted_q_mm <- yearly_data |>
@@ -339,24 +298,6 @@ bc_q_generator <- function(gauge_id, a_priori_boxcox_lambda, yearly_data, lambda
   boxcox_transform(extracted_q_mm, lambda = a_priori_boxcox_lambda, lambda_2 = lambda_2)
 }
 
-
-#bc_q_list <- map2(
-#  .x = gauge_data$gauge,
-#  .y = gauge_data$bc_lambda,
-#  .f = bc_q_generator,
-#  yearly_data = continuous_yearly_data,
-#  lambda_2 = 1
-#)
-
-#bc_q <- do.call("rbind", bc_q_list)
-
-#names(bc_q) <- "bc_q"
-
-#continuous_yearly_data <- continuous_yearly_data |>
-#  add_column( # add column assumes the rows remain fixed
-#    bc_q,
-#    .before = 6
-#  )
 
 
 with_NA_bc_q <- map2(
@@ -386,7 +327,6 @@ with_NA_yearly_data <- with_NA_yearly_data |>
 
 # Save .csv  -------------------------------------------------------------------
 write_csv(gauge_data, paste0("./Data/Tidy/gauge_information_CAMELS.csv"))
-#write_csv(continuous_yearly_data, paste0("./Data/Tidy/continuous_yearly_data_CAMELS.csv"))
 write_csv(start_end_index, paste0("./Data/Tidy/start_end_index.csv"))
 write_csv(with_NA_yearly_data, paste0("./Data/Tidy/with_NA_yearly_data_CAMELS.csv"))
 
@@ -445,3 +385,54 @@ ggsave(
 #                         geom_line(aes(y = rolling_ave_seasonal_ratio), colour = "red") +
 #                         facet_wrap(~gauge, scales = "free_y") +
 #                         theme_bw()
+
+
+
+
+
+# Continuous stuff - Probably remove -------------------------------------------
+### Remove streamflow if it is discontinuous ###################################
+### - Only include the longest run of continuous streamflow for each catchment
+
+#get_only_continuous_data <- function(gauge_id, start_index, end_index, yearly_data) {
+#  yearly_data |>
+#    filter(gauge == gauge_id) |>
+#    slice(start_index:end_index)
+#}
+
+
+#list_continuous_yearly_data <- pmap(
+#  .l = list(
+#    "gauge" = gauge_data$gauge,
+#    "start" = gauge_data$max_run_start,
+#    "end" = gauge_data$max_run_end
+#  ),
+#  .f = get_only_continuous_data,
+#  yearly_data = acceptable_yearly_data
+#)
+
+
+#continuous_yearly_data <- do.call("rbind", list_continuous_yearly_data)
+
+
+### Add a box-cox streamflow column ############################################
+### - There has to be a better way to do this
+
+#bc_q_list <- map2(
+#  .x = gauge_data$gauge,
+#  .y = gauge_data$bc_lambda,
+#  .f = bc_q_generator,
+#  yearly_data = continuous_yearly_data,
+#  lambda_2 = 1
+#)
+
+#bc_q <- do.call("rbind", bc_q_list)
+
+#names(bc_q) <- "bc_q"
+
+#continuous_yearly_data <- continuous_yearly_data |>
+#  add_column( # add column assumes the rows remain fixed
+#    bc_q,
+#    .before = 6
+#  )
+#write_csv(continuous_yearly_data, paste0("./Data/Tidy/continuous_yearly_data_CAMELS.csv"))
