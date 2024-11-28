@@ -17,38 +17,52 @@ source("./Functions/utility.R")
 
 # Import data ------------------------------------------------------------------
 
-daily_streamflow_raw <- read_csv("./Data/Raw/streamflow_mmd.csv",
+daily_streamflow_raw <- readr::read_csv(
+  "./Data/Raw/streamflow_mmd.csv",
   na = c("-99.99"), # NA is represented using -99.99 in CAMELS dataset. Convert to NA
   show_col_types = FALSE # quiets column specification
 )
 
-daily_precip_raw <- read_csv("./Data/Raw/precipitation_AWAP.csv",
+daily_precip_raw <- readr::read_csv(
+  "./Data/Raw/precipitation_AGCD.csv",
   na = c("-99.99"),
   show_col_types = FALSE
 )
 
-yearly_CO2_ppm <- read_csv("./Data/Raw/20230321_Mauna_Loa_CO2_data.csv",
+yearly_CO2_ppm <- readr::read_csv(
+  "./Data/Raw/20241125_Mauna_Loa_CO2_data.csv",
+  skip = 43,
   col_select = !unc,
   show_col_types = FALSE
 )
 
-catchment_information <- read_csv("./Data/Raw/CAMELS_AUS_Attributes&Indices_MasterTable.csv",
+catchment_information <- readr::read_csv(
+  "./Data/Raw/CAMELS_AUS_Attributes&Indices_MasterTable.csv",
   col_select = c(
     "station_id",
+    "station_name",
     "state_outlet",
     "lat_outlet",
     "long_outlet"
   ),
   show_col_types = FALSE
-)
+) |> 
+  rename(
+    gauge = station_id,
+    lat = lat_outlet,
+    lon = long_outlet,
+    state = state_outlet
+  )
+
+
 
 
 # Tidying data -----------------------------------------------------------------
 
 ## CONSTANTS ===================================================================
-acceptable_missing_streamflow_days <- 7
+acceptable_missing_streamflow_days <- 10
 acceptable_number_continuous_years <- 20
-minimum_entires_year <- 20
+minimum_entires_year <- 30 # at least 30 years of data required. Copied from HRS
 min_run_length <- 2
 pre_ind_CO2_ppm <- 280
 
@@ -172,11 +186,8 @@ yearly_streamflow <- daily_streamflow_raw |>
     .by = c(year, gauge)
   ) |>
   mutate(
-    q_mm = if_else(q_na_count > acceptable_missing_streamflow_days, NA, q_mm) # if there are more than x missing values then set to NA
+    q_mm = if_else(q_na_count >= acceptable_missing_streamflow_days, NA, q_mm) # if there are more than x missing values then set to NA
   ) |>
-  # mutate(
-  #  q_mm = q_mm + 1 # some streamflow values are less than one. When bc'd this produces a negative boxcox streamflow value = bad
-  # ) |>
   arrange(gauge, year)
 
 
@@ -264,13 +275,7 @@ gauge_data <- yearly_data |>
   filter(entires >= minimum_entires_year)
 
 
-catchment_information <- catchment_information |>
-  rename(
-    gauge = station_id,
-    lat = lat_outlet,
-    lon = long_outlet,
-    state = state_outlet
-  )
+
 
 # Add chunks to gauge_data i.e., continuous runs
 gauge_data <- gauge_data |>
@@ -296,25 +301,25 @@ acceptable_yearly_data <- updated_yearly_data |>
 ### Remove streamflow if it is discontinuous ###################################
 ### - Only include the longest run of continuous streamflow for each catchment
 
-get_only_continuous_data <- function(gauge_id, start_index, end_index, yearly_data) {
-  yearly_data |>
-    filter(gauge == gauge_id) |>
-    slice(start_index:end_index)
-}
+#get_only_continuous_data <- function(gauge_id, start_index, end_index, yearly_data) {
+#  yearly_data |>
+#    filter(gauge == gauge_id) |>
+#    slice(start_index:end_index)
+#}
 
 
-list_continuous_yearly_data <- pmap(
-  .l = list(
-    "gauge" = gauge_data$gauge,
-    "start" = gauge_data$max_run_start,
-    "end" = gauge_data$max_run_end
-  ),
-  .f = get_only_continuous_data,
-  yearly_data = acceptable_yearly_data
-)
+#list_continuous_yearly_data <- pmap(
+#  .l = list(
+#    "gauge" = gauge_data$gauge,
+#    "start" = gauge_data$max_run_start,
+#    "end" = gauge_data$max_run_end
+#  ),
+#  .f = get_only_continuous_data,
+#  yearly_data = acceptable_yearly_data
+#)
 
 
-continuous_yearly_data <- do.call("rbind", list_continuous_yearly_data)
+#continuous_yearly_data <- do.call("rbind", list_continuous_yearly_data)
 
 
 ### Add a box-cox streamflow column ############################################
@@ -335,34 +340,34 @@ bc_q_generator <- function(gauge_id, a_priori_boxcox_lambda, yearly_data, lambda
 }
 
 
-bc_q_list <- map2(
-  .x = gauge_data$gauge,
-  .y = gauge_data$bc_lambda,
-  .f = bc_q_generator,
-  yearly_data = continuous_yearly_data,
-  lambda_2 = 1
-)
+#bc_q_list <- map2(
+#  .x = gauge_data$gauge,
+#  .y = gauge_data$bc_lambda,
+#  .f = bc_q_generator,
+#  yearly_data = continuous_yearly_data,
+#  lambda_2 = 1
+#)
 
-bc_q <- do.call("rbind", bc_q_list)
+#bc_q <- do.call("rbind", bc_q_list)
 
-names(bc_q) <- "bc_q"
+#names(bc_q) <- "bc_q"
 
-continuous_yearly_data <- continuous_yearly_data |>
-  add_column( # add column assumes the rows remain fixed
-    bc_q,
-    .before = 6
-  )
+#continuous_yearly_data <- continuous_yearly_data |>
+#  add_column( # add column assumes the rows remain fixed
+#    bc_q,
+#    .before = 6
+#  )
 
 
-with_NA_bc_q_list <- map2(
+with_NA_bc_q <- map2(
   .x = gauge_data$gauge,
   .y = gauge_data$bc_lambda,
   .f = bc_q_generator,
   yearly_data = updated_yearly_data,
   lambda_2 = 1
-)
+) |> 
+  list_rbind()
 
-with_NA_bc_q <- do.call("rbind", with_NA_bc_q_list)
 
 names(with_NA_bc_q) <- "bc_q"
 
@@ -381,7 +386,7 @@ with_NA_yearly_data <- with_NA_yearly_data |>
 
 # Save .csv  -------------------------------------------------------------------
 write_csv(gauge_data, paste0("./Data/Tidy/gauge_information_CAMELS.csv"))
-write_csv(continuous_yearly_data, paste0("./Data/Tidy/continuous_yearly_data_CAMELS.csv"))
+#write_csv(continuous_yearly_data, paste0("./Data/Tidy/continuous_yearly_data_CAMELS.csv"))
 write_csv(start_end_index, paste0("./Data/Tidy/start_end_index.csv"))
 write_csv(with_NA_yearly_data, paste0("./Data/Tidy/with_NA_yearly_data_CAMELS.csv"))
 
@@ -389,10 +394,26 @@ write_csv(with_NA_yearly_data, paste0("./Data/Tidy/with_NA_yearly_data_CAMELS.cs
 
 
 # Examining data ---------------------------------------------------------------
-# data <- read_csv("./Data/Tidy/with_NA_yearly_data_CAMELS_20240718.csv", # add date
-#          show_col_types = FALSE)
+# Plot rainfall-runoff relationship for everything - identify outliers for cutting
+rainfall_runoff_check <- with_NA_yearly_data |> 
+  ggplot(aes(x = p_mm, bc_q)) +
+  geom_point(na.rm = TRUE) +
+  geom_smooth(method = "lm", formula = y~x, se = FALSE, na.rm = TRUE) +
+  theme_bw() +
+  facet_wrap(~gauge, scales = "free")
 
+# Using trial and error, setting acceptable_missing_streamflow_days = 10
+# does not produce any unusable drop in the rainfall-runoff relationship
 
+ggsave(
+  filename = "rainfall_runoff_check.pdf",
+  plot = rainfall_runoff_check,
+  device = "pdf",
+  path = "Graphs",
+  height = 841,
+  width = 1189,
+  units = "mm"
+)
 
 ## plotting seasonal ratios ====================================================
 
