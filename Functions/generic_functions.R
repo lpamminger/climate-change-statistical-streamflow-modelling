@@ -189,3 +189,11 @@ summary.result_set <- function(x) {
   cat("\nBest Parameters:", paste(names(dream_example$best_parameter_set), signif(dream_example$best_parameter_set, 3), sep = ":", collapse = " "))
   
 }
+
+
+
+
+# is empty tibble
+is_empty_tibble <- function(x) {
+  if_else(nrow(x) * ncol(x) == 0, TRUE, FALSE)
+}
