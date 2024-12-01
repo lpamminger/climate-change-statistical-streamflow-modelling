@@ -7,32 +7,32 @@ source("./Functions/utility.R")
 
 
 # Import the calibrated .csv's ---------------------------------------------------
-streamflow_results <- read_csv("./Results/my_cmaes/CMAES_streamflow_results_20241108.csv", show_col_types = FALSE)
- 
-chopped_streamflow_results <- streamflow_results |> 
-  drop_na() |> 
-  mutate(
-    lag_year = dplyr::lag(year, n = 1L),
-    .by = c(gauge, streamflow_model, objective_function),
-    .after = 1
-  ) |> 
-  mutate(
-    diff_year = year - lag_year,
-    .after = 2
-  ) |> 
-  mutate(
-    diff_year = if_else(is.na(diff_year), 1, diff_year)
-  ) |> 
-  filter(
-    diff_year == 1 # only have consecutive observed years in data
+streamflow_results <- read_csv(
+  "./Results/my_cmaes/CMAES_streamflow_results_20241130.csv", 
+  show_col_types = FALSE
   )
+ 
+data <- read_csv(
+  "Data/Tidy/with_NA_yearly_data_CAMELS.csv",
+  show_col_types = FALSE
+)
 
+# Only include streamflow that was calibrated on -------------------------------
+## join the included_in_calibration column
+in_calibration <- data |> 
+  select(year, gauge, included_in_calibration)
 
+only_calibration_streamflow_results <-  streamflow_results |> 
+  left_join(
+    in_calibration,
+    by = join_by(year, gauge)
+  ) |> 
+  filter(included_in_calibration)
+  
 
 
 # Tidy data for plotting -------------------------------------------------------
-setup_streamflow_results_plotting <- chopped_streamflow_results |> # change back to streamflow results if not good
-  drop_na() |> 
+setup_streamflow_results_plotting <- only_calibration_streamflow_results |> 
   pivot_longer(
     cols = ends_with("streamflow"),
     names_to = "modelled_or_observed",
@@ -94,6 +94,10 @@ ggsave(
 )
 
 
+
+
+
+stop_here <- 1
 # TESTING
 # Determining a3 parameter bounds ----------------------------------------------
 lambda <- seq(from = 0, to = 1.5, by = 0.01)
@@ -154,3 +158,23 @@ example <- gauge |>
 
 parameters <- example |> 
   parameters_summary()
+
+
+# removed
+#chopped_streamflow_results <- streamflow_results |> 
+#  drop_na() |> 
+#  mutate(
+#    lag_year = dplyr::lag(year, n = 1L),
+#    .by = c(gauge, streamflow_model, objective_function),
+#    .after = 1
+#  ) |> 
+#  mutate(
+#    diff_year = year - lag_year,
+#    .after = 2
+#  ) |> 
+#  mutate(
+#    diff_year = if_else(is.na(diff_year), 1, diff_year)
+#  ) |> 
+#  filter(
+#    diff_year == 1 # only have consecutive observed years in data
+#  )
