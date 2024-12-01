@@ -13,7 +13,15 @@ source("./Functions/boxcox_transforms.R")
 
 
 # Import data ------------------------------------------------------------------
-CMAES_results <- read_csv("./Results/my_cmaes/CMAES_parameter_results_20241108.csv", show_col_types = FALSE)
+data <- read_csv(
+  "Data/Tidy/with_NA_yearly_data_CAMELS.csv",
+  show_col_types = FALSE
+)
+
+CMAES_results <- read_csv(
+  "./Results/my_cmaes/CMAES_parameter_results_20241130.csv", 
+  show_col_types = FALSE
+  )
 
 data <- readr::read_csv(
   "./Data/Tidy/with_NA_yearly_data_CAMELS.csv",
@@ -21,7 +29,8 @@ data <- readr::read_csv(
   show_col_types = FALSE
 )
 
-streamflow_results <- read_csv("Results/my_cmaes/CMAES_streamflow_results_20241108.csv",
+streamflow_results <- read_csv(
+  "Results/my_cmaes/CMAES_streamflow_results_20241130.csv",
   show_col_types = FALSE,
   col_select = !optimiser
 )
@@ -44,11 +53,6 @@ vic_map <- read_sf(
 )
 
 
-# Gauges that do weird things - remove for now ---------------------------------
-## Gauges visually inspected using check_model_fit in graphs
-#removed_gauges <- c("G0060005", "A2390531")
-
-
 
 # Map plots --------------------------------------------------------------------
 # For a given catchment work out if a model with CO2 outperforms a model without CO2
@@ -60,7 +64,6 @@ vic_map <- read_sf(
 # for each catchment (gauge) get the two lowest AIC values by contains_CO2
 
 best_CO2_and_non_CO2_per_catchment <- CMAES_results |>
-  #filter(!gauge %in% removed_gauges) |>
   select(!c(parameter, parameter_value, optimiser, loglikelihood, exit_message, near_bounds)) |>
   unite(
     col = streamflow_model_objective_function,
@@ -234,29 +237,22 @@ best_streamflow_results <- streamflow_results |>
   )
 
 
-## Remove non-consectutive years of observed and modelled streamflow ===========
-chopped_streamflow_results <- best_streamflow_results |> 
-  drop_na() |> 
-  mutate(
-    lag_year = dplyr::lag(year, n = 1L),
-    .by = c(gauge, streamflow_model, objective_function),
-    .after = 1
+## Only include best streamflow that was calibrated on =========================
+## join the included_in_calibration column
+in_calibration <- data |> 
+  select(year, gauge, included_in_calibration)
+
+best_calibration_streamflow_results <-  best_streamflow_results |> 
+  left_join(
+    in_calibration,
+    by = join_by(year, gauge)
   ) |> 
-  mutate(
-    diff_year = year - lag_year,
-    .after = 2
-  ) |> 
-  mutate(
-    diff_year = if_else(is.na(diff_year), 1, diff_year)
-  ) |> 
-  filter(
-    diff_year == 1 # only have consecutive observed years in data
-  )
+  filter(included_in_calibration)
 
 
 
 ## Summarise results into a tidy format ========================================
-tidy_boxcox_streamflow <- chopped_streamflow_results |>
+tidy_boxcox_streamflow <- best_calibration_streamflow_results |>
   drop_na() |>  # only include if observed streamflow is present
   pivot_longer(
     cols = c(observed_boxcox_streamflow, modelled_boxcox_streamflow),
@@ -338,8 +334,7 @@ difference_to_observed_streamflow <- tidy_streamflow |>
     values_from = streamflow,
   ) |>
   mutate(
-    CO2_minus_non_CO2 = CO2 - non_CO2,
-    standardised_CO2_minus_non_CO2 = (CO2 - non_CO2) / precipitation#,
+    CO2_minus_non_CO2 = CO2 - non_CO2
     #observed_minus_CO2 = observed - CO2,
     #observed_minus_non_CO2 = observed - non_CO2
   )
@@ -352,28 +347,26 @@ totals_and_averages_streamflow <- difference_to_observed_streamflow |>
     #sum_CO2 = sum(CO2, na.rm = TRUE),
     #sum_non_CO2 = sum(non_CO2, na.rm = TRUE),
     sum_CO2_minus_non_CO2 = sum(CO2_minus_non_CO2, na.rm = TRUE),
-    sum_standardised_CO2_minus_non_CO2 = sum(standardised_CO2_minus_non_CO2, na.rm = TRUE),
     #sum_observed_minus_CO2 = sum(observed_minus_CO2, na.rm = TRUE),
     #sum_observed_minus_non_CO2 = sum(observed_minus_non_CO2, na.rm = TRUE),
     .by = gauge
   ) |>
   mutate(
-    ave_CO2_minus_non_CO2 = sum_CO2_minus_non_CO2 / n,
-    ave_standardised_CO2_minus_non_CO2 = sum_standardised_CO2_minus_non_CO2 / n
+    ave_CO2_minus_non_CO2 = sum_CO2_minus_non_CO2 / n
   ) |> 
-  arrange(desc(ave_standardised_CO2_minus_non_CO2)) |> 
   left_join(
     evidence_ratio_calc,
     by = join_by(gauge)
   ) |> 
-  select(!c(no_CO2, CO2, AIC_difference))#, #sum_CO2, sum_observed, sum_non_CO2))
-
+  select(!c(no_CO2, CO2, AIC_difference)) |> #, #sum_CO2, sum_observed, sum_non_CO2))
+  arrange(evidence_ratio)
 
 
 
 
 
 # How do the fitted parameters compared to the observed ones in RQ1? -----------
+# RQ1 USED CAMELS-AUSv2 not v2. Expect to be slightly different.
 RQ1_parameters <- c("a0", "a0_d", "a0_n", "a1", "a2", "sd")
 
 RQ1_parameter_comparison <- CMAES_results |> 
@@ -525,50 +518,63 @@ parameter_utilisation <- CMAES_results |>
   ) |>
   select(!streamflow_model_objective_function) 
 
-# Some catchments peform best when not all parameters are utilised. This is bad
+# Some catchments peform best when not all parameters are utlised. This is bad
+utilisation_tolerence <- 1E-5
+
 check_near_zero <- parameter_utilisation |>
-  filter(abs(parameter_value) < 1E-6) |>  # sd and scale_CO2 are okay
+  filter(abs(parameter_value) < utilisation_tolerence) |>  
   semi_join(
     best_model_combination_per_catchment,
     by = join_by(gauge, streamflow_model, objective_function)
   )
 
+filter_check_near_zero <- check_near_zero |> 
+  filter(parameter != "a5") 
 
-# Get next best model for non-utlised parameter model objective function combs.
-# sd or CO2 has to have some impact. Deemed impactful if I can see the numbers in console i.e., 7.3E-5 + (30 * 3.9E-2) vs. 7.3E-8 + (30 * 3.9E-2)
+# if sd is close to zero we have a problem
 
-x <- CMAES_results |> 
-  filter(gauge %in% check_near_zero$gauge) |> 
+
+# ISSUE: Sometimes the model with CO2 not doing anything does "better" ---------
+# the a model without the CO2 value. CHECK this.
+
+assess_non_utilised_parmeters <- CMAES_results |> 
+  filter(gauge %in% filter_check_near_zero$gauge) |> 
   anti_join(
-    check_near_zero,
+    filter_check_near_zero,
     by = join_by(gauge, streamflow_model, objective_function) # remove non-utiliesd combiations
   ) |> 
-  #filter(gauge == "A5130501") |> 
   arrange(AIC)
 
 
-# Not okay = 137101A REPLACE streamflow_model_separate_shifted_CO2_seasonal_ratio CO2_variable_objective_function
-#          = 215207 REPLACE streamflow_model_drought_precip_seasonal_ratio_auto constant_sd_objective_function
-#          = 216004 REPLACE streamflow_model_separate_shifted_CO2_auto CO2_variable_objective_function
-#          = 415237 REPLACE streamflow_model_precip_seasonal_ratio_auto CO2_variable_objective_function
-#          = 138004B streamflow_model_precip_only CO2_variable_objective_function
-#          = A5130501 streamflow_model_precip_seasonal_ratio_auto constant_sd_objective_function
+# Using the assess_non_ultised_parameters find the next best model/obj combination
+# that has all parameters utilised. Go down the list for each gauge.
+# Approach: for each gauge, see if the model-objective function combination
+#           has any parameter values that are extremely small. If so discard and
+#           take the next best model-objective function combination.
 
+check_unutilised_parameters <- assess_non_utilised_parmeters |> 
+  mutate(
+    is_not_utilised = parameter_value < utilisation_tolerence
+  ) |> 
+  summarise(
+    sum_not_utilised = sum(is_not_utilised),
+    AIC = max(AIC),
+    .by = c(gauge, streamflow_model, objective_function)
+  )
 
-# does near zero scale CO2 and sd catchments always perform worse? No. Sometimes they are better.
-AIC_check_near_zero <- evidence_ratio_calc |> 
-  filter(gauge %in% check_near_zero$gauge) |> 
-  filter(AIC_difference < 0)
-
-
-check_a5 <- parameter_utilisation |> 
-  filter(parameter == "a5") |> 
-  filter(parameter_value > 118.81) # good - nothing is greater than this, meaning the AIC successfully ignored the catchments
-
+# REPLACE NOT UTLISED CATCHMENT-MODEL-OBJECTIVEFUNCTION COMBINATIONS -----------
 # What does a very small sd or scale CO2 mean?
 # a very low scale CO2 means -> variable_sd <- reshape_constant_sd + (reshape_scale_CO2 * reshape_CO2)
 # the optimiser is setting something to zero
 # I don't know why sd want to be really small for the constant objective functions? THIS DOES NOT OCCUR
+
+
+
+
+
+
+# ignore from here
+
 
 
 
