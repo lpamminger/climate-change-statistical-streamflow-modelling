@@ -52,9 +52,10 @@ validate_catchment_data_blueprint <- function(catchment_data_blueprint) {
   values <- unclass(catchment_data_blueprint)
   
   ## precipitation, observed_boxcox_streamflow, is_drought_year, CO2, seasonal_ratio all must be the same length
-  check_length_values <- values[c("precipitation", "observed_boxcox_streamflow", "is_drought_year", "CO2", "seasonal_ratio")]
   
-  if (length(unique(lengths(check_length_values))) != 1) {
+  check_length_values <- lengths(values$full_data_set) # This does not work values[c("precipitation", "observed_boxcox_streamflow", "is_drought_year", "CO2", "seasonal_ratio")]
+  
+  if (length(unique(check_length_values)) > 1) {
     stop(
       "precipitation, observed_boxcox_streamflow, is_drought_year, CO2, seasonal_ratio all must be the same length",
       call. = FALSE
@@ -64,6 +65,15 @@ validate_catchment_data_blueprint <- function(catchment_data_blueprint) {
   ## if NA present in boxcox streamflow and start stop is not provided throw an error
   
   ## Start stop must have index values applicable to the precipitation... vectors
+  
+  # is the dataset empty?
+  if (is_empty_tibble(values$full_data_set)) {
+    stop(
+      "The tibble containing data is empty. Maybe the gauge_ID is not in the observed data."
+    )
+  }
+
+  # stop return message
   
   # Invisibly return input
   catchment_data_blueprint
@@ -78,6 +88,7 @@ catchment_data_blueprint <- function(gauge_ID, observed_data, start_stop_indexes
   # Two options:
   # 1. provide all variables individually i.e., year, precip etc
   # 2. just provide observed data with variables for extraction
+  
   
   ## Option 1 ==================================================================
   # If observed_data is null the user must enter gauge_ID, year, etc. manually
@@ -97,6 +108,7 @@ catchment_data_blueprint <- function(gauge_ID, observed_data, start_stop_indexes
   
   
   ## Option 2 ================================================================== 
+  
   # Split up data based on start and stop indexes
   single_gauge_observed_data <- observed_data |> 
     dplyr::filter(gauge == {{ gauge_ID }})
