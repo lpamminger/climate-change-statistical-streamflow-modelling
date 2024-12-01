@@ -94,6 +94,7 @@ best_model_combination_per_catchment <- best_CO2_and_non_CO2_per_catchment |>
 
 
 
+
 # Evidence ratio calculation ---------------------------------------------------
 # What to do (Taken from Burnham and Anderson 2002):
 ## - assume non-CO2 is the best. best_CO2_AIC - best_non_CO2_AIC = AIC_diff. (This assumption does not impact the results. See chapter 2.11.2)
@@ -326,6 +327,8 @@ ggsave(
 ## Examine the difference to the observed ======================================
 ### i.e., observed - best_CO2 and observed - best_non_CO2
 
+# REMOVE (start)?
+
 difference_to_observed_streamflow <- tidy_streamflow |>
   select(!c(bc_lambda, boxcox_streamflow)) |>
   distinct() |>
@@ -361,7 +364,7 @@ totals_and_averages_streamflow <- difference_to_observed_streamflow |>
   select(!c(no_CO2, CO2, AIC_difference)) |> #, #sum_CO2, sum_observed, sum_non_CO2))
   arrange(evidence_ratio)
 
-
+### (end)
 
 
 
@@ -536,6 +539,9 @@ filter_check_near_zero <- check_near_zero |>
 
 # ISSUE: Sometimes the model with CO2 not doing anything does "better" ---------
 # the a model without the CO2 value. CHECK this.
+# When selecting the best_model_combination_per_catchment we must 
+# ensure each parameter is being utlised e.g., sd is being set to zero
+
 
 assess_non_utilised_parmeters <- CMAES_results |> 
   filter(gauge %in% filter_check_near_zero$gauge) |> 
@@ -568,9 +574,18 @@ check_unutilised_parameters <- assess_non_utilised_parmeters |>
 # the optimiser is setting something to zero
 # I don't know why sd want to be really small for the constant objective functions? THIS DOES NOT OCCUR
 
+# of the best_model_combination_per_catchment replace if parameters are not
+# being utlised
 
+new_best_model_combination_per_catchment <- best_model_combination_per_catchment |> 
+  anti_join(
+    check_unutilised_parameters,
+    by = join_by(gauge, streamflow_model, objective_function)
+  )
 
-
+# If the size of new_best_model_combination_per_catchment and
+# best_model_combination_per_catchment are the same them all parameters 
+# in the best_model_combination_per_catchment are being utilised
 
 
 # ignore from here
