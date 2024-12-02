@@ -298,23 +298,54 @@ tidy_streamflow <- tidy_boxcox_streamflow |>
 
 
 ## Plot results ================================================================
-plot_streamflow_timeseries <- tidy_streamflow |>
-  ggplot(aes(x = year, y = streamflow, colour = streamflow_type)) +
-  geom_line(na.rm = TRUE, alpha = 0.5) +
-  geom_point(na.rm = TRUE, size = 0.5, alpha = 0.5) +
-  theme_bw() +
-  scale_colour_brewer(palette = "Set1") +
-  labs(
-    x = "Year",
-    y = "Streamflow (mm)"
-  ) +
-  facet_wrap(~gauge, scales = "free_y") +
-  theme(legend.title = element_blank())
+### having 534 graphs on a single page is too much = slows pc.
+### Spread across multiple
+
+# rep by gauge
+
+# Split the tibble into X groups
+# Gauges must not be across multiple groups
+# Randomly assign 1,2 or 3 to each group then split? This works
+# but is probably not the best way of doing it
+ready_split_tidy_streamflow <- tidy_streamflow |> 
+  mutate(
+    split = sample(c(1, 2, 3), size = 1, replace = TRUE),
+    .by = gauge,
+    .before = 1
+  ) 
+ 
+split_tidy_streamflow <- ready_split_tidy_streamflow |> 
+  split(f = ready_split_tidy_streamflow$split)
+  
+
+chunk_streamflow_timeseries_plot <- function(data) {
+  
+  data |>
+    ggplot(aes(x = year, y = streamflow, colour = streamflow_type)) +
+    geom_line(na.rm = TRUE, alpha = 0.5) +
+    geom_point(na.rm = TRUE, size = 0.5, alpha = 0.5) +
+    theme_bw() +
+    scale_colour_brewer(palette = "Set1") +
+    labs(
+      x = "Year",
+      y = "Streamflow (mm)"
+    ) +
+    facet_wrap(~gauge, scales = "free_y") +
+    theme(legend.title = element_blank())
+  
+}
+
+
+plot_streamflow_timeseries <- map(
+  .x = split_tidy_streamflow,
+  .f = chunk_streamflow_timeseries_plot
+)
+
 
 
 ggsave(
   filename = paste0("streamflow_timeseries_comparison_", get_date(), ".pdf"),
-  plot = plot_streamflow_timeseries,
+  plot = gridExtra::marrangeGrob(plot_streamflow_timeseries, nrow = 1, ncol = 1),
   device = "pdf",
   path = "./Graphs/CMAES_graphs",
   width = 1189,
