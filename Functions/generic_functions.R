@@ -42,38 +42,98 @@ get_exit_message.dream <- function(dream) {
 
 
 ## dream only - get the range of values tested =================================
+transform_to_realspace <- function(x, ...) { # generic ... allows extra arguments
+  UseMethod("transform_to_realspace")
+}
+
+
+single_col_mcmc_transform_to_realspace <- function(single_col_mcmc_result, transform_function, lower_bound, upper_bound, scale) {
+  
+  transform_function <- noquote(transform_function)
+  
+  transform_function(
+    parameter_set = single_col_mcmc_result,
+    lower_bound = lower_bound,
+    upper_bound = upper_bound,
+    scale = 100
+  )
+  
+}
+
+transform_to_realspace.mcmc <- function(mcmc_result, transform_functions, lower_bounds, upper_bounds, scale) {
+  
+  # Convert mcmc_result into list for pmap
+  mcmc_as_list <- mcmc_result |> 
+    unclass() |> 
+    as_tibble() |> 
+    as.list()
+  
+  
+  # Map over each column
+  real_space_as_list <- pmap(
+    .l = list(mcmc_as_list, transform_functions, lower_bounds, upper_bounds),
+    .f = single_col_mcmc_transform_to_realspace,
+    scale = scale
+  ) 
+  
+  # convert back to mcmc
+  real_space_as_matrix <- do.call(cbind, real_space_as_list)
+  colnames(real_space_as_matrix) <- paste0("par", seq_len(ncol(real_space_as_matrix)))
+  
+  return(as.mcmc(real_space_as_matrix))
+  
+}
+
+
+transform_to_realspace.mcmc.list <- function(mcmc_result, transform_functions, lower_bounds, upper_bounds, scale) {
+  
+  # repeat based on the length of mcmc.list
+  real_space_as_list <- map(
+    .x = mcmc_result,
+    .f = transform_to_realspace,
+    transform_functions = transform_functions,
+    lower_bounds = lower_bounds,
+    upper_bounds = upper_bounds,
+    scale = scale
+  )
+  
+  return(as.mcmc.list(real_space_as_list))
+  
+}
+
+transform_to_realspace.dream <- function(mcmc_result, transform_functions, lower_bounds, upper_bounds, scale) {
+  
+  Sequences <- transform_to_realspace(
+    mcmc_result = mcmc_result[["Sequences"]],
+    transform_functions = transform_functions,
+    lower_bounds = lower_bounds,
+    upper_bounds = upper_bounds,
+    scale = scale
+  )
+  
+  mcmc_result$Sequences <- Sequences
+  return(mcmc_result)
+}
+
+
+
+
+
 get_sequences <- function(x, ...) { # generic ... allows extra arguments
   UseMethod("get_sequences")
 }
 
-organsise_dream_sequences <- function(dream_sequences) {
-  tibble::as_tibble(unclass(dream_sequences))
-}
 
 get_sequences.dream <- function(dream) {
-  
-  sequences <- purrr::map(
-    .x = dream$Sequences,
-    .f = organsise_dream_sequences
-  ) |>
-    purrr::list_rbind() |> # covert to real space. Use the transform function in dream_optimiser_set apply each model to a column
-    t() # transpose because transform_parameter_method works transforms along rows not columns
-  
-  real_space_sequences <- purrr::pmap( 
-    .l = list(
-      dream$numerical_optimiser_setup$transform_parameter_methods, 
-      seq(from = 1, to = nrow(sequences)), 
-      dream$numerical_optimiser_setup$lower_bound, 
-      dream$numerical_optimiser_setup$upper_bound
-    ),
-    .f = transform_parameter_method,
-    parameter_set = sequences,
+  # This is an mcmc object
+  transform_to_realspace(
+    mcmc_result = dream$Sequences,
+    transform_functions = dream$numerical_optimiser_setup$transform_parameter_methods, 
+    lower_bounds = dream$numerical_optimiser_setup$lower_bound, 
+    upper_bounds = dream$numerical_optimiser_setup$upper_bound, 
     scale = dream$numerical_optimiser_setup$scale
-  ) 
-  
-  names(real_space_sequences) <- dream$numerical_optimiser_setup$parameter_names
-  
-  return(as_tibble(real_space_sequences))
+  )
+
 }
 
 
