@@ -170,5 +170,5 @@ CO2_variable_objective_function <- function(modelled_streamflow, observed_stream
 
 # Get function -----------------------------------------------------------------
 get_all_objective_functions <- function() {
-  c(constant_sd_objective_function, CO2_variable_objective_function)
+  c(constant_sd_objective_function)
 }

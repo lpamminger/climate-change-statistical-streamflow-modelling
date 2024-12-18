@@ -2,7 +2,7 @@
 cat("\014") # clear console
 
 # Import libraries--------------------------------------------------------------
-pacman::p_load(tidyverse, dream, coda, tictoc, furrr, parallel, truncnorm, sloop, tictoc)
+pacman::p_load(tidyverse, dream, coda, lattice, tictoc, furrr, parallel, truncnorm, sloop, tictoc)
 # install dream using: install.packages("dream", repos="http://R-Forge.R-project.org")
 # install.packages("coda")
 
@@ -28,9 +28,10 @@ gauge_information <- readr::read_csv(
   show_col_types = FALSE
 )
 
-CMAES_results <- read_csv("./Results/my_cmaes/CMAES_parameter_results_20241108.csv",
+CMAES_results <- read_csv("./Results/my_cmaes/CMAES_parameter_results_20241130.csv",
   show_col_types = FALSE
-)
+) |> 
+  filter(objective_function != "CO2_variable_objective_function") # temporary solution
 
 ## Utility functions ===========================================================
 source("./Functions/utility.R")
@@ -47,9 +48,6 @@ source("./Functions/generic_functions.R")
 source("./Functions/my_dream.R")
 source("./Functions/objective_function_setup.R")
 source("./Functions/result_set.R")
-
-
-
 
 
 
@@ -78,20 +76,20 @@ best_model_combination_per_catchment <- CMAES_results |>
 # 138004B streamflow_model_precip_only CO2_variable_objective_function
 # A5130501 streamflow_model_precip_seasonal_ratio_auto constant_sd_objective_function
 
-hard_code_change <- tribble(
-  ~gauge,      ~streamflow_model_name,                                  ~objective_function_name,
-  "137101A",   "streamflow_model_separate_shifted_CO2_seasonal_ratio",  "CO2_variable_objective_function",
-  "215207",    "streamflow_model_drought_precip_seasonal_ratio_auto",   "constant_sd_objective_function",
-  "216004",    "streamflow_model_separate_shifted_CO2_auto",            "CO2_variable_objective_function",
-  "415237",    "streamflow_model_precip_seasonal_ratio_auto",           "CO2_variable_objective_function",
-  "138004B",   "streamflow_model_precip_only",                          "CO2_variable_objective_function",
-  "A5130501",  "streamflow_model_precip_seasonal_ratio_auto",           "constant_sd_objective_function"
-)
+#hard_code_change <- tribble(
+#  ~gauge,      ~streamflow_model_name,                                  ~objective_function_name,
+#  "137101A",   "streamflow_model_separate_shifted_CO2_seasonal_ratio",  "CO2_variable_objective_function",
+#  "215207",    "streamflow_model_drought_precip_seasonal_ratio_auto",   "constant_sd_objective_function",
+#  "216004",    "streamflow_model_separate_shifted_CO2_auto",            "CO2_variable_objective_function",
+#  "415237",    "streamflow_model_precip_seasonal_ratio_auto",           "CO2_variable_objective_function",
+#  "138004B",   "streamflow_model_precip_only",                          "CO2_variable_objective_function",
+#  "A5130501",  "streamflow_model_precip_seasonal_ratio_auto",           "constant_sd_objective_function"
+#)
 
 
-best_model_combination_per_catchment <- best_model_combination_per_catchment |> 
-  filter(!gauge %in% hard_code_change$gauge) |> 
-  rbind(hard_code_change)
+#best_model_combination_per_catchment <- best_model_combination_per_catchment |> 
+ # filter(!gauge %in% hard_code_change$gauge) |> 
+  #rbind(hard_code_change)
 
 
 ## Use a join to assign each row the correct streamflow and objective function =====

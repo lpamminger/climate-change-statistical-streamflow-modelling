@@ -21,7 +21,8 @@ data <- read_csv(
 CMAES_results <- read_csv(
   "./Results/my_cmaes/CMAES_parameter_results_20241130.csv", 
   show_col_types = FALSE
-  )
+  ) |> 
+  filter(objective_function != "CO2_variable_objective_function") # temporary solution
 
 data <- readr::read_csv(
   "./Data/Tidy/with_NA_yearly_data_CAMELS.csv",
@@ -167,7 +168,7 @@ evidence_ratio_by_state <- function(state, evidence_ratio_data, map_data) {
     geom_point(
       data = state_evidence_ratio,
       aes(x = lon, y = lat, colour = evidence_ratio),
-      show.legend = TRUE,
+      show.legend = FALSE,
       size = 0.5
     ) +
     binned_scale( # binned scale code taken from: https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
@@ -186,7 +187,9 @@ evidence_ratio_by_state <- function(state, evidence_ratio_data, map_data) {
     ) +
     theme(
       legend.key.height = unit(25, "mm"),
-      legend.frame = element_rect(colour = "black")
+      legend.frame = element_rect(colour = "black"),
+      axis.title = element_blank(),
+      axis.text = element_text(size = 6)
     )
 }
 
@@ -196,6 +199,8 @@ by_state_plots <- map(
   evidence_ratio_data = plot_ready_data,
   map_data = aus_map
 )
+
+names(by_state_plots) <- aus_map |> pull(state) |> unique()
 
 ## By country ==================================================================
 aus_evidence_ratio_map <- ggplot() +
@@ -225,17 +230,30 @@ aus_evidence_ratio_map <- ggplot() +
     colour = "Evidence Ratio"
   ) +
   theme(
-    legend.key.height = unit(25, "mm"),
-    legend.frame = element_rect(colour = "black")
+    legend.key.height = unit(4, "mm"),
+    legend.key.width = unit(40, "mm"),
+    legend.frame = element_rect(colour = "black"),
+    legend.position = "bottom"
   )
 
 
-
+aus_evidence_ratio_map
 
 ## Combine to make a paper ready plot ==========================================
-# make it look nice
-nice_plot <- reduce(.x = by_state_plots, .f = `+`) + aus_evidence_ratio_map + plot_layout(guides = 'collect')
+# make it look nice 
+# reduce(.x = by_state_plots, .f = `+`)
+#nice_plot <- (by_state_plots[[1]] | by_state_plots[[2]] | by_state_plots[[3]] | by_state_plots[[4]] | by_state_plots[[5]]) / 
+ # (by_state_plots[[6]] + aus_evidence_ratio_map + by_state_plots[[7]]) + plot_layout(guides = "collect") + 
+  #plot_annotation(tag_levels = "a")
+
+top_nice_plot <- by_state_plots[["TAS"]] | by_state_plots[["QLD"]] | by_state_plots[["WA"]] | by_state_plots[["SA"]] | by_state_plots[["NT"]]
+bottom_nice_plot <- by_state_plots[["VIC"]] | aus_evidence_ratio_map | by_state_plots[["NSW"]]
+nice_plot <- top_nice_plot / bottom_nice_plot / guide_area() +
+  plot_layout(guides = "collect") +
+  plot_annotation(tag_levels = "a")
+
 nice_plot
+
 ggsave(
   filename = paste0("nice_plot_", get_date(), ".pdf"),
   plot = nice_plot,

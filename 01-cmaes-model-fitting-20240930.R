@@ -85,7 +85,6 @@ all_catchment_data <- purrr::map(
   start_stop_indexes = start_stop_indexes
 )
 
-all_catchment_data <- all_catchment_data
 
 
 ### Drought ####################################################################
