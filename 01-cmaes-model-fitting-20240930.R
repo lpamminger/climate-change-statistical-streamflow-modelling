@@ -54,7 +54,7 @@ source("./Functions/result_set.R")
 #  ) |>
 #  numerical_optimiser_setup_vary_inputs(
 #    streamflow_model = streamflow_model_separate_shifted_CO2,
-#    objective_function = CO2_variable_objective_function,
+#    objective_function = constant_sd_objective_function,
 #    bounds_and_transform_method = make_default_bounds_and_transform_methods(),
 #    minimise_likelihood = TRUE
 #  ) |>
@@ -246,7 +246,7 @@ get_parameter_number <- function(streamflow_model, objective_function) {
 
 
 
-# THIS WILL BREAK IF ANOTHER OBJECTIVE FUNCTION IS ADDED
+# THIS WILL BREAK IF ANOTHER OBJECTIVE FUNCTION IS ADDED OR REMOVED
 parameter_combinations <- map(
   .x = c(all_streamflow_models, drought_streamflow_models),
   .f = get_parameter_number,
@@ -254,14 +254,14 @@ parameter_combinations <- map(
 ) |> 
   list_rbind()
 
-parameter_combinations_2 <- map(
-  .x = c(all_streamflow_models, drought_streamflow_models),
-  .f = get_parameter_number,
-  objective_function = all_objective_functions[[2]]
-) |> 
-  list_rbind()
+#parameter_combinations_2 <- map(
+#  .x = c(all_streamflow_models, drought_streamflow_models),
+#  .f = get_parameter_number,
+#  objective_function = all_objective_functions[[2]]
+#) |> 
+#  list_rbind()
 
-all_parameter_combinations <- rbind(parameter_combinations, parameter_combinations_2)
+all_parameter_combinations <- parameter_combinations # rbind(parameter_combiations1, 2 etc.)
 
 
 
