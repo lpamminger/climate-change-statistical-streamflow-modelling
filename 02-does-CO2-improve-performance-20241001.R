@@ -22,7 +22,7 @@ CMAES_results <- read_csv(
   "./Results/my_cmaes/CMAES_parameter_results_20241130.csv", 
   show_col_types = FALSE
   ) |> 
-  filter(objective_function != "CO2_variable_objective_function") # temporary solution
+  filter(objective_function != "CO2_variable_objective_function") # temporary solution - saves me re-running the 01-script
 
 data <- readr::read_csv(
   "./Data/Tidy/with_NA_yearly_data_CAMELS.csv",
@@ -411,40 +411,40 @@ ggsave(
 
 # REMOVE (start)?
 
-difference_to_observed_streamflow <- tidy_streamflow |>
-  select(!c(bc_lambda, boxcox_streamflow)) |>
-  distinct() |>
-  pivot_wider(
-    names_from = streamflow_type,
-    values_from = streamflow,
-  ) |>
-  mutate(
-    CO2_minus_non_CO2 = CO2 - non_CO2
+#difference_to_observed_streamflow <- tidy_streamflow |>
+#  select(!c(bc_lambda, boxcox_streamflow)) |>
+#  distinct() |>
+#  pivot_wider(
+#    names_from = streamflow_type,
+#    values_from = streamflow,
+#  ) |>
+#  mutate(
+#    CO2_minus_non_CO2 = CO2 - non_CO2
     #observed_minus_CO2 = observed - CO2,
     #observed_minus_non_CO2 = observed - non_CO2
-  )
+#  )
 
 # Totals and averages (not standardised meaning catchments with high rainfall will be larger)
-totals_and_averages_streamflow <- difference_to_observed_streamflow |>
-  summarise(
-    n = n(),
+#totals_and_averages_streamflow <- difference_to_observed_streamflow |>
+#  summarise(
+#    n = n(),
     #sum_observed = sum(observed, na.rm = TRUE),
     #sum_CO2 = sum(CO2, na.rm = TRUE),
     #sum_non_CO2 = sum(non_CO2, na.rm = TRUE),
-    sum_CO2_minus_non_CO2 = sum(CO2_minus_non_CO2, na.rm = TRUE),
+#    sum_CO2_minus_non_CO2 = sum(CO2_minus_non_CO2, na.rm = TRUE),
     #sum_observed_minus_CO2 = sum(observed_minus_CO2, na.rm = TRUE),
     #sum_observed_minus_non_CO2 = sum(observed_minus_non_CO2, na.rm = TRUE),
-    .by = gauge
-  ) |>
-  mutate(
-    ave_CO2_minus_non_CO2 = sum_CO2_minus_non_CO2 / n
-  ) |> 
-  left_join(
-    evidence_ratio_calc,
-    by = join_by(gauge)
-  ) |> 
-  select(!c(no_CO2, CO2, AIC_difference)) |> #, #sum_CO2, sum_observed, sum_non_CO2))
-  arrange(evidence_ratio)
+#    .by = gauge
+#  ) |>
+#  mutate(
+#    ave_CO2_minus_non_CO2 = sum_CO2_minus_non_CO2 / n
+#  ) |> 
+#  left_join(
+#    evidence_ratio_calc,
+#    by = join_by(gauge)
+#  ) |> 
+#  select(!c(no_CO2, CO2, AIC_difference)) |> #, #sum_CO2, sum_observed, sum_non_CO2))
+#  arrange(evidence_ratio)
 
 ### (end)
 
@@ -557,6 +557,9 @@ same_model_except_with_CO2_check <- best_CO2_and_non_CO2_per_catchment |>
   pull(gauge)
 
 
+test <- CMAES_results |> 
+  filter(gauge %in% same_model_except_with_CO2_check) |> 
+  filter(gauge == same_model_except_with_CO2_check[1])
 
 # Answering the first question =================================================\
 cat(
@@ -566,12 +569,12 @@ cat(
   "catchments have the equivalent CO2 and non CO2 models (i.e., same model except one has CO2)" # they also have the same objective function
 )
 
-cat(
-  length(same_streamflow_model_different_objective_function),
-  "out of",
-  length(unique(best_CO2_and_non_CO2_per_catchment$gauge)),
-  "catchments have the equivalent CO2 and non CO2 objective functions with the same streamflow model"
-)
+#cat(
+#  length(same_streamflow_model_different_objective_function),
+#  "out of",
+#  length(unique(best_CO2_and_non_CO2_per_catchment$gauge)),
+#  "catchments have the equivalent CO2 and non CO2 objective functions with the same streamflow model"
+#)
 
 
 
