@@ -66,30 +66,6 @@ best_model_combination_per_catchment <- CMAES_results |>
   ) 
 
 
-## Mannually replace these catchments ==========================================
-## Non-utilised variable is performing better than models with all parameters used
-
-# 137101A REPLACE streamflow_model_separate_shifted_CO2_seasonal_ratio CO2_variable_objective_function
-# 215207 REPLACE streamflow_model_drought_precip_seasonal_ratio_auto constant_sd_objective_function
-# 216004 REPLACE streamflow_model_separate_shifted_CO2_auto CO2_variable_objective_function
-# 415237 REPLACE streamflow_model_precip_seasonal_ratio_auto CO2_variable_objective_function
-# 138004B streamflow_model_precip_only CO2_variable_objective_function
-# A5130501 streamflow_model_precip_seasonal_ratio_auto constant_sd_objective_function
-
-#hard_code_change <- tribble(
-#  ~gauge,      ~streamflow_model_name,                                  ~objective_function_name,
-#  "137101A",   "streamflow_model_separate_shifted_CO2_seasonal_ratio",  "CO2_variable_objective_function",
-#  "215207",    "streamflow_model_drought_precip_seasonal_ratio_auto",   "constant_sd_objective_function",
-#  "216004",    "streamflow_model_separate_shifted_CO2_auto",            "CO2_variable_objective_function",
-#  "415237",    "streamflow_model_precip_seasonal_ratio_auto",           "CO2_variable_objective_function",
-#  "138004B",   "streamflow_model_precip_only",                          "CO2_variable_objective_function",
-#  "A5130501",  "streamflow_model_precip_seasonal_ratio_auto",           "constant_sd_objective_function"
-#)
-
-
-#best_model_combination_per_catchment <- best_model_combination_per_catchment |> 
- # filter(!gauge %in% hard_code_change$gauge) |> 
-  #rbind(hard_code_change)
 
 
 ## Use a join to assign each row the correct streamflow and objective function =====
