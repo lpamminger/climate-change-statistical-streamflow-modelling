@@ -119,28 +119,28 @@ transform_to_realspace.dream <- function(mcmc_result, transform_functions, lower
 
 
 
-get_sequences <- function(x, ...) { # generic ... allows extra arguments
-  UseMethod("get_sequences")
-}
+#get_sequences <- function(x, ...) { # generic ... allows extra arguments
+#  UseMethod("get_sequences")
+#}
 
 
-get_sequences.dream <- function(dream) {
+#get_sequences.dream <- function(dream) {
   # This is an mcmc object
-  transform_to_realspace(
-    mcmc_result = dream$Sequences,
-    transform_functions = dream$numerical_optimiser_setup$transform_parameter_methods, 
-    lower_bounds = dream$numerical_optimiser_setup$lower_bound, 
-    upper_bounds = dream$numerical_optimiser_setup$upper_bound, 
-    scale = dream$numerical_optimiser_setup$scale
-  )
+ # transform_to_realspace(
+  #  mcmc_result = dream$Sequences,
+   # transform_functions = dream$numerical_optimiser_setup$transform_parameter_methods, 
+    #lower_bounds = dream$numerical_optimiser_setup$lower_bound, 
+    #upper_bounds = dream$numerical_optimiser_setup$upper_bound, 
+    #scale = dream$numerical_optimiser_setup$scale
+  #)
 
-}
+#}
 
 
 
-get_sequences.default <- function(x, ...) {
-  NULL
-}
+#get_sequences.default <- function(x, ...) {
+ # NULL
+#}
 
 
 ## AIC =========================================================================
