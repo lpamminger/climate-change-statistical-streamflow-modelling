@@ -67,6 +67,17 @@ source("./Functions/result_set.R")
 #    check convergence using gg_trace_plot, put converged dream objects 
 #    back into DREAM function with altered controls
 
+# I have all functions required to complete the DREAM analysis. 
+# I need to integrate them in and find a way to run them many times.
+# Ideas:
+
+# 1. Run a chunk until convergence. Check trace. If good then run to get nice distributions
+#### This is more involved. Maybe test a single chunk (after testing a single catchment) like this.
+#### Once I am satisfied it works with the test chunk then move to idea 2.
+
+# 2. Run a all chunks until convergence. Check all traces. If good run all to get nice distributions. 
+
+
 
 
 
@@ -488,9 +499,39 @@ gg_trace_plot <- function(dream_object) {
 }
 
 
-plot <- gg_trace_plot(dream_object = example_DREAM)
-plot
+trace_plot <- gg_trace_plot(dream_object = example_DREAM)
+trace_plot
 
+
+gg_distribution_plot <- function(dream_object) {
+  dream_object |>
+    mcmc_list_to_tibble() |>
+    ggplot(aes(x = parameter_value)) +
+    geom_histogram(
+      binwidth = binwidth_bins(30),
+      fill = "darkgrey",
+      colour = "black"
+    ) +
+    labs(
+      x = "Parameter Value",
+      y = "Count",
+      title = paste0(
+        "Gauge: ",
+        dream_object$numerical_optimiser_setup$catchment_data$gauge_ID,
+        "\n",
+        "Model: ",
+        dream_object$numerical_optimiser_setup$streamflow_model()$name
+      )
+    ) +
+    theme_bw() +
+    facet_wrap(~parameter, scales = "free") +
+    theme(
+      plot.title = element_text(hjust = 0.5)
+    )
+}
+
+dist_plot <- gg_distribution_plot(example_DREAM)
+dist_plot
 
 # use the conversion build into dream
 1 - rejectionRate(y)
