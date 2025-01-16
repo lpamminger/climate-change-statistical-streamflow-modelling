@@ -34,6 +34,7 @@ correct_mean_flow <- function(uncorrected_mean_flow, uncorrected_uncertainty) {
   
 }
 
+
 correct_uncertainty_flow <- function(uncorrected_mean_flow, uncorrected_uncertainty) {
   
   alpha <- lower_bound_correction(
@@ -169,6 +170,7 @@ CO2_variable_objective_function <- function(modelled_streamflow, observed_stream
 
 
 # Get function -----------------------------------------------------------------
+## Remove CO2_variable_objective_function from objective functions tested
 get_all_objective_functions <- function() {
   c(constant_sd_objective_function)
 }
