@@ -58,6 +58,15 @@ source("./Functions/result_set.R")
 
 
 
+# What I have so far:
+# 1. DREAM function 
+# 2. gg_trace_plot function
+
+# What I need:
+# 1. a method for chunking i.e., run DREAM many times (save dream objects),
+#    check convergence using gg_trace_plot, put converged dream objects 
+#    back into DREAM function with altered controls
+
 
 
 
@@ -299,7 +308,21 @@ DREAM <- function(input, controls) {
   
   ## Add numerical optimiser object to dream object ============================
   dream_result$numerical_optimiser_setup <- numerical_optimiser_setup
-  return(dream_result)
+  
+  
+  ## Add controls to dream object ==============================================
+  dream_result$controls <- controls
+  
+  ## Convert the sequences from transformed to real-space ======================
+  transform_to_realspace(
+    mcmc_result = dream_result,
+    transform_functions = numerical_optimiser_setup$transform_parameter_methods, 
+    lower_bounds = numerical_optimiser_setup$lower_bound, 
+    upper_bounds = numerical_optimiser_setup$upper_bound, 
+    scale = numerical_optimiser_setup$scale
+  )
+  
+
 }
 
 
@@ -347,9 +370,9 @@ example_DREAM <- most_complex_gauge |>
   ) |> 
   DREAM(controls = user_DREAM_control)
 
-
-example_DREAM_again <- DREAM(example_DREAM, control = user_DREAM_control)
-
+# ERROR
+# example_DREAM_again <- DREAM(example_DREAM, control = user_DREAM_control) # this causes an error. Hopefully it resolves itself when I do it properly
+# "Error in if (!any(delta.tot > 0)) stop("AdaptpCR: no changes in X, would cause NaN in pCR") : missing value where TRUE/FALSE needed"
 
 # Check convergence criteria
 # Gelman should be converged because its build in
@@ -357,15 +380,120 @@ example_DREAM_again <- DREAM(example_DREAM, control = user_DREAM_control)
 # Acceptance rate
 # Autocorrelation?
 
+# I can make custom plots using ggplot or use mcmc?
+
+# Q. Do I convert to real-space before plotting?
+# A. Yes
+
+# Q. Should the sequences be converted to realspace in the DREAM function?
+# A. Should be converted in the DREAM function.
+
+
+# Q. Which plotting method do I use?
+# A. ggplot gives me the most flexibility, mcmc is the easiest. 
+#    Commit to ggplot.
+
+
+# Q. How to extract traces from dream object?
+# A. use get_sequences function in generic_functions.R. This gives me a
+#    mcmc object. I want a tibble. Need to convert.
+
+
 # Visually inspect trace diagrams for each catchments.
 # Make a mega plot to see if traces are stationary and mixing well.
 # If okay then build distributions using converged chains. Use previous code by
 # adjust the control parameter of dream
 
 
+# Order for plotting
+# 1. get sequences
+# 2. remove burn-in (window method or use burn-in from controls)
+# 3. current form is a mcmc.list object. I want it as a tibble. Conversion
+#    involves: unclassing, see x <- map... below
+
+
+get_sequences <- function(dream_object) {
+  dream_object$Sequences
+}
+
+remove_burnin_from_trace <- function(dream_object) {
+  
+  sequences <- get_sequences(dream_object)
+  burn_in <- dream_object$controls$burn_in_per_chain
+  
+  window(sequences, start = (burn_in + 1))
+}
 
 
 
+mcmc_list_to_tibble <- function(dream_object) {
+  burnt_in_trace <- remove_burnin_from_trace(dream_object)
+
+  map(
+    .x = burnt_in_trace,
+    .f = unclass
+  ) |>
+    map(.f = as_tibble) |>
+    map2(
+      .y = seq(1, length(burnt_in_trace)),
+      .f = add_column,
+      .before = 1,
+    ) |>
+    map(
+      .f = `colnames<-`,
+      value = c("chain", dream_object$numerical_optimiser_setup$parameter_names)
+    ) |>
+    list_rbind() |> # not sure to include this or not
+    mutate(
+      n = row_number(),
+      .by = chain
+    ) |>
+    pivot_longer(
+      cols = !c(chain, n),
+      names_to = "parameter",
+      values_to = "parameter_value"
+    )
+}
+
+
+gg_trace_plot <- function(dream_object) {
+  
+  dream_object |>
+    mcmc_list_to_tibble() |>
+    ggplot(
+      aes(
+        x = n,
+        y = parameter_value,
+        colour = as.factor(chain)
+      )
+    ) +
+    geom_line(show.legend = FALSE) +
+    labs(
+      x = "Iterations",
+      y = "Parameter Value",
+      title = paste0(
+        "Gauge: ",
+        dream_object$numerical_optimiser_setup$catchment_data$gauge_ID,
+        "\n",
+        "Model: ",
+        dream_object$numerical_optimiser_setup$streamflow_model()$name
+      )
+    ) +
+    theme_bw() +
+    facet_wrap(~parameter, scales = "free") +
+    theme(
+      plot.title = element_text(hjust = 0.5)
+    )
+  
+}
+
+
+plot <- gg_trace_plot(dream_object = example_DREAM)
+plot
+
+
+# use the conversion build into dream
+1 - rejectionRate(y)
 
 
 
