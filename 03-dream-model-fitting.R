@@ -2,7 +2,7 @@
 cat("\014") # clear console
 
 # Import libraries--------------------------------------------------------------
-pacman::p_load(tidyverse, dream, coda, lattice, tictoc, furrr, parallel, truncnorm, sloop, tictoc)
+pacman::p_load(tidyverse, dream, coda, lattice, tictoc, furrr, parallel, truncnorm, sloop)
 # install dream using: install.packages("dream", repos="http://R-Forge.R-project.org")
 # install.packages("coda")
 
@@ -45,7 +45,7 @@ source("./Functions/cmaes_dream_summaries.R")
 source("./Functions/objective_functions.R")
 source("./Functions/numerical_optimiser_setup.R")
 source("./Functions/generic_functions.R")
-source("./Functions/my_dream.R")
+source("./Functions/DREAM.R")
 source("./Functions/objective_function_setup.R")
 source("./Functions/result_set.R")
 
@@ -159,14 +159,55 @@ chunked_ready_for_optimisation <- split( # required for chunking in parallel
 )
 
 
+# Everything is working as expected for gauge 003303A
+
+test_numerical_optimiser_setup <- chunked_ready_for_optimisation[[1]][[2]] # change second [[1]] for other cathcment in chunk 1
+
+# run convergence 
+
+test_convergence_DREAM <- DREAM(
+  input = test_numerical_optimiser_setup, 
+  controls = list(check_convergence_steps = 1000)
+  )
+
+
+
+# look at plot
+plot <- gg_trace_plot(test_convergence_DREAM)
+plot
+
+
+
+# make summary table of convergence statistics
+dream_convergence_statistics <- get_convergence_statistics(test_convergence_DREAM)
+
+
+# put back into DREAM and run without convergences to build the distribution?
+test_distribution_DREAM <- DREAM(
+  input = test_convergence_DREAM,
+  controls = list(
+    check_convergence_steps = 0, # don't check for convergence,
+    thinning = 10
+  )
+)
+
+distribution_plot <- gg_distribution_plot(test_distribution_DREAM)
+distribution_plot
+
+
+
+stop_here <- 1
+# replace current optimisation strategy
 
 
 # Run the optimiser (calibration) ----------------------------------------------
 
 ## Non-drought optimising ======================================================
-plan(multisession, workers = length(availableWorkers())) # set once for furrr
+
+# tactical typo to stop runaway code when run all is used
+tactical_typo_plan(multisession, workers = length(availableWorkers())) # set once for furrr
 iwalk(
-  .x = chunked_ready_for_optimisation,
+  .x = chunked_ready_for_optimisation, 
   .f = run_and_save_chunks_optimiser_parallel,
   optimiser = my_dream,
   save_streamflow = FALSE,
