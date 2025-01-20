@@ -163,7 +163,7 @@ make_default_bounds_and_transform_methods <- function() {
     "a2",        -1,             1,             linear_parameter_transform, # autocorrelation
     "a3",        -25,            50,            linear_parameter_transform, # CO2 coefficient 
     "a4",        -250,           600,           linear_parameter_transform, # seasonal parameter
-    "a5",         0,             150,           linear_parameter_transform, # 97.70 is CO2 - 280 at 2004. CO2 shift parameter - 118.81 HARD CODED - SHOULD CHANGE BASED ON CO2 INPUT
+    "a5",         0,             150,           linear_parameter_transform, # 97.70 is CO2 - 280 at 2004. CO2 shift parameter - 138.53 HARD CODED - SHOULD CHANGE BASED ON CO2 INPUT. not all gauges reach max CO2. Record ends earlier for some
     "sd",         1E-8,          200,           logarithmic_parameter_transform, # constant sd objective function 
     "scale_CO2",  1E-8,          2,             logarithmic_parameter_transform # CO2 scaler for objective function
   )
