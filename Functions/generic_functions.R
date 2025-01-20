@@ -42,6 +42,10 @@ get_exit_message.dream <- function(dream) {
 
 
 ## dream only - get the range of values tested =================================
+# future does not like local generics. If I want to make this work 
+# I need to turn it into a package
+# Solution copy each function
+
 transform_to_realspace <- function(x, ...) { # generic ... allows extra arguments
   UseMethod("transform_to_realspace")
 }
@@ -59,6 +63,35 @@ single_col_mcmc_transform_to_realspace <- function(single_col_mcmc_result, trans
   )
   
 }
+
+
+# DELETE when package is made
+transform_to_realspace_mcmc <- function(mcmc_result, transform_functions, lower_bounds, upper_bounds, scale) {
+  
+  # Convert mcmc_result into list for pmap
+  mcmc_as_list <- mcmc_result |> 
+    unclass() |> 
+    as_tibble() |> 
+    as.list()
+  
+  
+  # Map over each column
+  real_space_as_list <- pmap(
+    .l = list(mcmc_as_list, transform_functions, lower_bounds, upper_bounds),
+    .f = single_col_mcmc_transform_to_realspace,
+    scale = scale
+  ) 
+  
+  # convert back to mcmc
+  real_space_as_matrix <- do.call(cbind, real_space_as_list)
+  colnames(real_space_as_matrix) <- paste0("par", seq_len(ncol(real_space_as_matrix)))
+  
+  return(as.mcmc(real_space_as_matrix))
+  
+}
+
+
+
 
 transform_to_realspace.mcmc <- function(mcmc_result, transform_functions, lower_bounds, upper_bounds, scale) {
   
@@ -84,6 +117,22 @@ transform_to_realspace.mcmc <- function(mcmc_result, transform_functions, lower_
   
 }
 
+# DELETE with package
+transform_to_realspace_mcmc_list <- function(mcmc_result, transform_functions, lower_bounds, upper_bounds, scale) {
+  
+  # repeat based on the length of mcmc.list
+  real_space_as_list <- map(
+    .x = mcmc_result,
+    .f = transform_to_realspace_mcmc,
+    transform_functions = transform_functions,
+    lower_bounds = lower_bounds,
+    upper_bounds = upper_bounds,
+    scale = scale
+  )
+  
+  return(as.mcmc.list(real_space_as_list))
+  
+}
 
 transform_to_realspace.mcmc.list <- function(mcmc_result, transform_functions, lower_bounds, upper_bounds, scale) {
   
@@ -101,6 +150,22 @@ transform_to_realspace.mcmc.list <- function(mcmc_result, transform_functions, l
   
 }
 
+
+transform_to_realspace_dream <- function(mcmc_result, transform_functions, lower_bounds, upper_bounds, scale) {
+  
+  Sequences <- transform_to_realspace_mcmc_list(
+    mcmc_result = mcmc_result[["Sequences"]],
+    transform_functions = transform_functions,
+    lower_bounds = lower_bounds,
+    upper_bounds = upper_bounds,
+    scale = scale
+  )
+  
+  mcmc_result$Sequences <- Sequences
+  return(mcmc_result)
+}
+
+
 transform_to_realspace.dream <- function(mcmc_result, transform_functions, lower_bounds, upper_bounds, scale) {
   
   Sequences <- transform_to_realspace(
@@ -115,6 +180,11 @@ transform_to_realspace.dream <- function(mcmc_result, transform_functions, lower
   return(mcmc_result)
 }
 
+
+
+dream_transform_to_realspace <- function(mcmc_result, transform_functions, lower_bounds, upper_bounds, scale) {
+  
+}
 
 
 
