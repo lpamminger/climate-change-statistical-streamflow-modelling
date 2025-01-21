@@ -38,11 +38,13 @@ make_dream_pars <- function(numerical_optimiser_setup) {
 control_DREAM_defaults <- function(numerical_optimiser_setup) {
   
   parameter_number <- length(numerical_optimiser_setup$parameter_names)
-  chain_number <-  (2 * parameter_number) + 1
+  chain_number <-  4 * parameter_number
+  de_pairs <- floor((chain_number - 1) / 2) 
+  parameter_number <- length(numerical_optimiser_setup$parameter_names)
   
   list(
     parameter_number = parameter_number,
-    chain_number = chain_number, 
+    chain_number = chain_number, # is user manually changes chain_number error because DEpairs does not get updated
     warm_up_per_chain = 5E4,
     burn_in_per_chain = 1E4, 
     iterations_after_burn_in_per_chain = 1E4, 
@@ -50,11 +52,11 @@ control_DREAM_defaults <- function(numerical_optimiser_setup) {
     convergence_gelman = 1.2, 
     check_convergence_steps = 200, # checks for convergences every specified iterations 
     thinning = 1, 
-    gamma = 1, # idk
-    nCR = 3, # idk
-    eps = 0.05, #  idk
-    steps = 10,# idk
-    DEpairs = floor((chain_number - 1) / 2) 
+    gamma = 0, 
+    nCR = parameter_number, 
+    eps = 0.05, 
+    steps = 10,
+    DEpairs = de_pairs # this is the maximum value it can be
   )
   
 }
@@ -65,6 +67,7 @@ check_user_DREAM_controls <- function(DREAM_controls) {
   
   # Probably should put a type check here
   
+  # Update DEpairs if chain_number was altered (TODO)
   
   # Specific parameter checks
   if (DREAM_controls$chain_number < DREAM_controls$parameter_number) {
@@ -226,7 +229,7 @@ DREAM <- function(input, controls) {
   ## Check type ================================================================
   ### input can either be a numerical_optimiser_setup object
   ### or a previously run dream object
-  check_type <- s3_class(input)[1]
+  check_type <- sloop::s3_class(input)[1]
   stopifnot(check_type %in% c("dream", "numerical_optimiser_setup"))
   
   
@@ -284,7 +287,9 @@ DREAM <- function(input, controls) {
   
   
   ## Convert the sequences from transformed to real-space ======================
-  transform_to_realspace(
+  # future does not like this function. This is because its a generic
+  # IT IS BAD PRACTICE HAVING LOCAL S3 METHODS. MAKE PACKAGE.
+  transform_to_realspace_dream( 
     mcmc_result = dream_result,
     transform_functions = numerical_optimiser_setup$transform_parameter_methods, 
     lower_bounds = numerical_optimiser_setup$lower_bound, 
@@ -298,7 +303,7 @@ DREAM <- function(input, controls) {
 # DREAM summary statistics -----------------------------------------------------
 get_convergence_statistics <- function(dream_object) {
   
-  # dream calculates gelman over the entire period
+  # dream calculates gelman using 50 % of burn-in sequences if burn-in is complete
   
   acceptance_rate <- 1 - rejectionRate(dream_object$Sequences) 
   
@@ -311,6 +316,7 @@ get_convergence_statistics <- function(dream_object) {
     gauge = dream_object$numerical_optimiser_setup$catchment_data$gauge_ID,
     model = dream_object$numerical_optimiser_setup$streamflow_model()$name,
     parameter = dream_object$numerical_optimiser_setup$parameter_names, 
+    exit_message = dream_object$EXITMSG,
     acceptance_rate = acceptance_rate, 
     gelman_statistic = gelman_statistic[[1]][,1] 
   ) |> 
@@ -341,7 +347,8 @@ gg_trace_plot <- function(dream_object) {
         "\n",
         "Model: ",
         dream_object$numerical_optimiser_setup$streamflow_model()$name
-      )
+      ),
+      subtitle = dream_object$EXITMSG
     ) +
     theme_bw() +
     facet_wrap(~parameter, scales = "free") +
