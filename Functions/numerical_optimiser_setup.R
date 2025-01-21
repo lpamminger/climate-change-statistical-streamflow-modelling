@@ -153,7 +153,14 @@ numerical_optimiser_setup_vary_inputs <- function(catchment_data, ...) {
 
 
 # Make default bounds and transfer methods -------------------------------------
-make_default_bounds_and_transform_methods <- function() {
+## 1. repeat this function but have catchment_data as input
+## 2. find maximum CO2 value used in calibrate 
+## 3. replace upper bound for a5 with that value
+make_default_bounds_and_transform_methods <- function(catchment_data_set) {
+  
+  # get the largest CO2 from last tibble in stop_start_data_set
+  upper_a5_bound <- max(catchment_data_set$stop_start_data_set[[length(catchment_data_set$stop_start_data_set)]]$CO2)
+  
   tibble::tribble(
     ~parameter, ~lower_bound,   ~upper_bound,  ~transform_method,
     "a0",        -300,           100,           linear_parameter_transform, # intercept
@@ -163,7 +170,7 @@ make_default_bounds_and_transform_methods <- function() {
     "a2",        -1,             1,             linear_parameter_transform, # autocorrelation
     "a3",        -25,            50,            linear_parameter_transform, # CO2 coefficient 
     "a4",        -250,           600,           linear_parameter_transform, # seasonal parameter
-    "a5",         0,             150,           linear_parameter_transform, # 97.70 is CO2 - 280 at 2004. CO2 shift parameter - 138.53 HARD CODED - SHOULD CHANGE BASED ON CO2 INPUT. not all gauges reach max CO2. Record ends earlier for some
+    "a5",         0,             upper_a5_bound,        linear_parameter_transform, # 97.70 is CO2 - 280 at 2004. CO2 shift parameter - 138.53 HARD CODED - SHOULD CHANGE BASED ON CO2 INPUT. not all gauges reach max CO2. Record ends earlier for some
     "sd",         1E-8,          200,           logarithmic_parameter_transform, # constant sd objective function 
     "scale_CO2",  1E-8,          2,             logarithmic_parameter_transform # CO2 scaler for objective function
   )
