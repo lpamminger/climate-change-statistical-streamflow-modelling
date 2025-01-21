@@ -45,24 +45,26 @@ source("./Functions/result_set.R")
 
 
 # Remove testing - I think changes are good. Ready to rock and roll.
-#gauge <- "915011A"
+gauge <- "915011A"
 
-#example <- gauge |>
-#   catchment_data_blueprint(
-#    observed_data = data,
-#    start_stop_indexes = start_stop_indexes
-#  ) |>
-#  numerical_optimiser_setup_vary_inputs(
-#    streamflow_model = streamflow_model_separate_shifted_CO2,
-#    objective_function = constant_sd_objective_function,
-#    bounds_and_transform_method = make_default_bounds_and_transform_methods(),
-#    minimise_likelihood = TRUE
-#  ) |>
-#  my_cmaes(print_monitor = TRUE) |>
-#  result_set()
+example_catchment <- gauge |>
+   catchment_data_blueprint(
+    observed_data = data,
+    start_stop_indexes = start_stop_indexes
+  ) 
 
-#x <- parameters_summary(example)
-#plot(example) 
+results <- example_catchment |> 
+  numerical_optimiser_setup_vary_inputs(
+    streamflow_model = streamflow_model_separate_shifted_CO2,
+    objective_function = constant_sd_objective_function,
+    bounds_and_transform_method = make_default_bounds_and_transform_methods(example_catchment),
+    minimise_likelihood = TRUE
+  ) |>
+  my_cmaes(print_monitor = TRUE) |>
+  result_set()
+
+#x <- parameters_summary(results)
+plot(results) 
 
 
 
@@ -113,9 +115,17 @@ ready_for_iteration <- tidyr::expand_grid(
   all_catchment_data,
   all_streamflow_models,
   all_objective_functions
-) |>
+) |> 
   dplyr::distinct() # make sure there are no double ups
 
+### Add bounds to ready_for_iteration ###
+extracted_catchment_data <- ready_for_iteration |> dplyr::pull(all_catchment_data)
+all_bounds <- map(
+  .x = extracted_catchment_data,
+  .f = make_default_bounds_and_transform_methods
+)
+
+ready_for_iteration$bounds <- all_bounds
 
 ### Drought ####################################################################
 drought_ready_for_iteration <- tidyr::expand_grid(
@@ -125,7 +135,15 @@ drought_ready_for_iteration <- tidyr::expand_grid(
 ) |>
   dplyr::distinct()
 
+### Add bounds to drought_ready_for_iteration ###
+extracted_drought_catchment_data <- drought_ready_for_iteration |> dplyr::pull(drought_catchment_data)
 
+drought_bounds <- map(
+  .x = extracted_drought_catchment_data,
+  .f = make_default_bounds_and_transform_methods
+)
+
+drought_ready_for_iteration$bounds <- drought_bounds
 
 
 ## Make numerical_optimiser_setup using ready_for_iteration tibble =============
@@ -133,10 +151,10 @@ all_numerical_optimisers_cmaes <- pmap(
   .l = list(
     ready_for_iteration |> dplyr::pull(all_streamflow_models),
     ready_for_iteration |> dplyr::pull(all_objective_functions),
-    ready_for_iteration |> dplyr::pull(all_catchment_data)
+    ready_for_iteration |> dplyr::pull(all_catchment_data),
+    ready_for_iteration |> dplyr::pull(bounds)
   ),
   .f = numerical_optimiser_setup,
-  bounds_and_transform_method = make_default_bounds_and_transform_methods(),
   minimise_likelihood = TRUE # cmaes = TRUE, dream = FALSE
 )
 
@@ -156,10 +174,10 @@ drought_numerical_optimisers_cmaes <- pmap(
   .l = list(
     drought_ready_for_iteration |> dplyr::pull(drought_streamflow_models),
     drought_ready_for_iteration |> dplyr::pull(all_objective_functions),
-    drought_ready_for_iteration |> dplyr::pull(drought_catchment_data)
+    drought_ready_for_iteration |> dplyr::pull(drought_catchment_data),
+    drought_ready_for_iteration |> dplyr::pull(bounds)
   ),
   .f = numerical_optimiser_setup,
-  bounds_and_transform_method = make_default_bounds_and_transform_methods(),
   minimise_likelihood = TRUE # cmaes = TRUE, dream = FALSE
 )
 
