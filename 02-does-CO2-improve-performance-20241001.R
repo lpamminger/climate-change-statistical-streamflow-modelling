@@ -4,7 +4,7 @@
 cat("\014") # clear console
 
 # Import libraries--------------------------------------------------------------
-pacman::p_load(tidyverse, ozmaps, sf, patchwork)
+pacman::p_load(tidyverse, ozmaps, sf, patchwork) # need to update this linux
 
 
 # Import functions -------------------------------------------------------------
@@ -19,10 +19,9 @@ data <- read_csv(
 )
 
 CMAES_results <- read_csv(
-  "./Results/my_cmaes/CMAES_parameter_results_20241130.csv", 
+  "./Results/my_cmaes/CMAES_parameter_results_20250122.csv", 
   show_col_types = FALSE
-  ) |> 
-  filter(objective_function != "CO2_variable_objective_function") # temporary solution - saves me re-running the 01-script
+  ) 
 
 data <- readr::read_csv(
   "./Data/Tidy/with_NA_yearly_data_CAMELS.csv",
@@ -31,7 +30,7 @@ data <- readr::read_csv(
 )
 
 streamflow_results <- read_csv(
-  "Results/my_cmaes/CMAES_streamflow_results_20241130.csv",
+  "Results/my_cmaes/CMAES_streamflow_results_20250122.csv",
   show_col_types = FALSE,
   col_select = !optimiser
 )
@@ -506,6 +505,7 @@ compare_objective_function <- function(streamflow_models, objective_functions) {
   }
 }
 
+# THis can be removed - there is only a single objective function
 same_streamflow_model_different_objective_function <- best_CO2_and_non_CO2_per_catchment |>
   summarise(
     same_model_different_objective_function = compare_objective_function(streamflow_model, objective_function),
@@ -558,8 +558,7 @@ same_model_except_with_CO2_check <- best_CO2_and_non_CO2_per_catchment |>
 
 
 test <- CMAES_results |> 
-  filter(gauge %in% same_model_except_with_CO2_check) |> 
-  filter(gauge == same_model_except_with_CO2_check[1])
+  filter(gauge %in% same_model_except_with_CO2_check) 
 
 # Answering the first question =================================================\
 cat(

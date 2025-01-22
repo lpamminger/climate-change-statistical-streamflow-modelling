@@ -45,26 +45,26 @@ source("./Functions/result_set.R")
 
 
 # Remove testing - I think changes are good. Ready to rock and roll.
-gauge <- "915011A"
+#gauge <- "121003A"
 
-example_catchment <- gauge |>
-   catchment_data_blueprint(
-    observed_data = data,
-    start_stop_indexes = start_stop_indexes
-  ) 
+#example_catchment <- gauge |>
+#   catchment_data_blueprint(
+#    observed_data = data,
+#    start_stop_indexes = start_stop_indexes
+#  ) 
 
-results <- example_catchment |> 
-  numerical_optimiser_setup_vary_inputs(
-    streamflow_model = streamflow_model_separate_shifted_CO2,
-    objective_function = constant_sd_objective_function,
-    bounds_and_transform_method = make_default_bounds_and_transform_methods(example_catchment),
-    minimise_likelihood = TRUE
-  ) |>
-  my_cmaes(print_monitor = TRUE) |>
-  result_set()
+#results <- example_catchment |> 
+#  numerical_optimiser_setup_vary_inputs(
+#    streamflow_model = streamflow_model_drought_separate_shifted_CO2_seasonal_ratio_auto,
+#    objective_function = constant_sd_objective_function,
+#    bounds_and_transform_method = make_default_bounds_and_transform_methods(example_catchment),
+#    minimise_likelihood = TRUE
+#  ) |>
+#  my_cmaes(print_monitor = TRUE) |>
+#  result_set()
 
 #x <- parameters_summary(results)
-plot(results) 
+#plot(results) 
 
 
 
@@ -125,7 +125,7 @@ all_bounds <- map(
   .f = make_default_bounds_and_transform_methods
 )
 
-ready_for_iteration$bounds <- all_bounds
+ready_for_iteration$bounds <- all_bounds 
 
 ### Drought ####################################################################
 drought_ready_for_iteration <- tidyr::expand_grid(
@@ -159,7 +159,7 @@ all_numerical_optimisers_cmaes <- pmap(
 )
 
 
-repeat_all_numerical_optimisers_cmaes <- rep(all_numerical_optimisers_cmaes, each = REPEATS)
+repeat_all_numerical_optimisers_cmaes <- rep(all_numerical_optimisers_cmaes, each = REPEATS) # this is 23 Gb
 
 
 chunk_repeat_all_numerical_optimisers_cmaes <- split( # required for chunking in parallel

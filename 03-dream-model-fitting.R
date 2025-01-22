@@ -2,7 +2,7 @@
 cat("\014") # clear console
 
 # Import libraries--------------------------------------------------------------
-pacman::p_load(tidyverse, dream, coda, lattice, tictoc, furrr, parallel, truncnorm, sloop, snow)
+pacman::p_load(tidyverse, dream, coda, lattice, tictoc, furrr, parallel, truncnorm, sloop)
 # install dream using: install.packages("dream", repos="http://R-Forge.R-project.org")
 # install.packages("coda")
 
@@ -28,10 +28,9 @@ gauge_information <- readr::read_csv(
   show_col_types = FALSE
 )
 
-CMAES_results <- read_csv("./Results/my_cmaes/CMAES_parameter_results_20241130.csv",
+CMAES_results <- read_csv("./Results/my_cmaes/CMAES_parameter_results_20250122.csv",
   show_col_types = FALSE
-) |> 
-  filter(objective_function != "CO2_variable_objective_function") # temporary solution
+) 
 
 ## Utility functions ===========================================================
 source("./Functions/utility.R")
@@ -259,7 +258,9 @@ chunked_ready_for_optimisation <- split( # required for chunking in parallel
 ## Test 10: Vary chains. 4 * param number. Does it matter? Yes, more chains = better. Did not converge.
 ## Test 11: Full gas. nCR = param, limit bounds, eps = 0.1, steps = 500, double iterations for everything
 ##          results - Everything is good except for the CO2 models. I think
-##          I should redo the CMAES with the adjusted limits or at least test them
+##          I should redo the CMAES with the adjusted limits or at least test them.
+##          If the a5 parameter is near the end I am sceptical.
+##          Used around ~ 6Gbs
 
 
 # idea: make nCR equal to hte number of parameters?
@@ -317,31 +318,28 @@ chunked_ready_for_optimisation <- split( # required for chunking in parallel
 # For non-converged either increase iterations or 
 
 ## An efficient way to see if the changes have worked is test the single catchments
-#test_catchment <- chunked_ready_for_optimisation[[1]][[8]] # 11 = non-converging (700 sec steps = 200, max iter limit)
+test_catchment <- chunked_ready_for_optimisation[[1]][[8]] # 11 = non-converging (700 sec steps = 200, max iter limit)
 
 
-
-
-
-#set.seed(1)
-#test_converged_dream <- DREAM(
- # input = test_catchment,
-#  controls = list(
- #   check_convergence_steps = 1000,
-  #  warm_up_per_chain = 1E5,
-  #  burn_in_per_chain = 1E4, 
-  #  iterations_after_burn_in_per_chain = 1E4, 
-  #  nCR = 8,
-  #  eps = 0.1,
-  #  steps = 10 
-  #  )
-#)
+set.seed(1)
+test_converged_dream <- DREAM(
+  input = test_catchment,
+  controls = list(
+    check_convergence_steps = 1000,
+    warm_up_per_chain = 1E3, # 1E5,
+    burn_in_per_chain = 1E3, # 1E4,
+    iterations_after_burn_in_per_chain = 1E3, # 1E4, 
+    nCR = 8,
+    eps = 0.1,
+    steps = 10 
+    )
+)
 
 
 # nCR = 3, eps = 0.1 and steps = 7 = convergences for non-converging catchment, chain = 3 * param number 
-#test_converged_dream$time
-#gg_trace_plot(test_converged_dream)
-#get_convergence_statistics(test_converged_dream)
+test_converged_dream$time
+gg_trace_plot(test_converged_dream)
+get_convergence_statistics(test_converged_dream)
 
 # lower acceptance rate means (< 15 %) indicates the posterior surface
 # is difficult to traverse in pursuit of the target distribution. Can reduce 
@@ -373,6 +371,8 @@ converged_dream_objects <- future_map(
   )
 
 toc()
+
+
 converged_trace_plots <- map( 
   .x = converged_dream_objects,
   .f = gg_trace_plot
@@ -398,6 +398,21 @@ converged_stats <- map(
     file = paste0("./Results/my_dream/test_11_converged_stats_chunk_", CHUNK_ITER, "_", get_date(), ".csv")
   )
 
+
+converged_distributions_plots <- map(
+  .x = converged_dream_objects,
+  .f = gg_distribution_plot
+)
+
+ggsave(
+  filename = paste0("test_11_distribution_plots_chunk_", CHUNK_ITER, "_", get_date(), ".pdf"),
+  plot = gridExtra::marrangeGrob(converged_distributions_plots, nrow = 1, ncol = 1),
+  device = "pdf",
+  path = "./Graphs/DREAM_graphs",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
 
 stop_here <- 1
 
