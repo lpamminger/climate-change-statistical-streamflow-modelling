@@ -504,6 +504,15 @@ extracted_replace_non_CO2_outperform_worst_CO2 <- parameter_results |>
   distinct()
 
 
+### Add flag to altered gauges/models ##########################################
+with_flag <- rbind(
+  extracted_replace_alternative_CO2_models_non_utilised_a5, 
+  extracted_replace_non_CO2_outperform_worst_CO2
+) |> 
+  add_column(flag = "modified") |> 
+  select(gauge, streamflow_model, contains_CO2, flag) |> 
+  distinct()
+
 
 ## The modified_best_CO2_and_non_CO2_per_catchment =============================
 ### Join everything together
@@ -511,10 +520,14 @@ modified_best_CO2_and_non_CO2_per_catchment <- rbind(
   best_CO2_and_non_CO2_per_catchment_without_non_utilised,
   extracted_replace_alternative_CO2_models_non_utilised_a5,
   extracted_replace_non_CO2_outperform_worst_CO2
-)
+) |> 
+  left_join(
+    with_flag,
+    by = join_by(gauge, streamflow_model, contains_CO2)
+  )
 
-### CHECKED ## 
 
+### CHECKED - I am not missing any ### 
 
 
 
