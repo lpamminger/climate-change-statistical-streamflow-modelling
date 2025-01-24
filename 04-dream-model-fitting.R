@@ -32,6 +32,11 @@ CMAES_results <- read_csv("./Results/my_cmaes/CMAES_parameter_results_20250122.c
   show_col_types = FALSE
 ) 
 
+best_CO2_non_CO2_per_gauge <- read_csv(
+  "./Results/my_cmaes/best_CO2_non_CO2_per_catchment_CMAES_20250124.csv",
+  show_col_types = FALSE
+) 
+
 ## Utility functions ===========================================================
 source("./Functions/utility.R")
 
@@ -51,8 +56,8 @@ source("./Functions/result_set.R")
 
 
 # Identify best model combination for DREAM gauges -----------------------------
-best_model_combination_per_catchment <- CMAES_results |>
-  select(!c(parameter, parameter_value, optimiser, loglikelihood, exit_message, near_bounds)) |>
+best_model_combination_per_catchment <- best_CO2_non_CO2_per_gauge |>
+  select(gauge, streamflow_model, AIC) |> 
   slice_min(
     AIC,
     by = gauge
@@ -60,9 +65,12 @@ best_model_combination_per_catchment <- CMAES_results |>
   distinct() |> 
   select(!AIC) |> 
   rename(
-    streamflow_model_name = streamflow_model,
-    objective_function_name = objective_function
-  ) 
+    streamflow_model_name = streamflow_model
+  ) |> 
+  add_column(
+    objective_function_name = constant_sd_objective_function()$name,
+    .after = 2
+    )
 
 
 
@@ -318,7 +326,7 @@ chunked_ready_for_optimisation <- split( # required for chunking in parallel
 # For non-converged either increase iterations or 
 
 ## An efficient way to see if the changes have worked is test the single catchments
-test_catchment <- chunked_ready_for_optimisation[[1]][[8]] # 11 = non-converging (700 sec steps = 200, max iter limit)
+test_catchment <- chunked_ready_for_optimisation[[1]][[1]] # 11 = non-converging (700 sec steps = 200, max iter limit)
 
 
 set.seed(1)

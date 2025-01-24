@@ -1,6 +1,29 @@
 # Map plots - work out if models with CO2 perform better than ones without
 # Streamflow-time plots - what is the difference in streamflow?
 
+
+### ORGANIZE THIS ###
+
+# - Plotting can be its own script
+# - assessing parameter usage can be its own script
+# - there is some things here that I think I can get rid of (save locally somewhere)
+
+# Things to check:
+# 1. graphs - do they look okay? Every single graph (check_model_fit). 
+##   pretty much all of them look good. Few exceptions are catchments with
+##   long periods of zero flow (700000 series)
+
+
+# 2. check whether all parameters are utilised i.e., are there
+##   parameters that are zero that should not be zero? Alternatively,
+##   are there any a5 values near the CO2 limit? 
+##   Use the function in make_default_param... to add another column of 
+##   max CO2 to utilised_parameter of equivalent. I think if it is near the 
+##   bound it wants to turn it off - check if better than non-CO2 models.
+
+###               ###
+
+
 cat("\014") # clear console
 
 # Import libraries--------------------------------------------------------------
@@ -618,6 +641,11 @@ check_near_zero <- parameter_utilisation |>
 filter_check_near_zero <- check_near_zero |> 
   filter(parameter != "a5") 
 
+# check if a5 near upper bound - some look very close
+x <- parameter_utilisation |> 
+  filter(parameter == "a5") |> 
+  arrange(desc(parameter_value))
+  
 # if sd is close to zero we have a problem
 
 
