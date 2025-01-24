@@ -162,17 +162,17 @@ make_default_bounds_and_transform_methods <- function(catchment_data_set) {
   upper_a5_bound <- max(catchment_data_set$stop_start_data_set[[length(catchment_data_set$stop_start_data_set)]]$CO2)
   
   tibble::tribble(
-    ~parameter, ~lower_bound,   ~upper_bound,  ~transform_method,
-    "a0",        -300,           100,           linear_parameter_transform, # intercept
-    "a0_d",      -300,           50,            linear_parameter_transform, # intercept - no drought
-    "a0_n",      -300,           50,            linear_parameter_transform, # intercept - drought
-    "a1",         1E-5 ,         1,             logarithmic_parameter_transform, # slope
-    "a2",        -1,             1,             linear_parameter_transform, # autocorrelation
-    "a3",        -25,            50,            linear_parameter_transform, # CO2 coefficient 
-    "a4",        -250,           600,           linear_parameter_transform, # seasonal parameter
-    "a5",         0,             upper_a5_bound,        linear_parameter_transform, # 97.70 is CO2 - 280 at 2004. CO2 shift parameter - 138.53 HARD CODED - SHOULD CHANGE BASED ON CO2 INPUT. not all gauges reach max CO2. Record ends earlier for some
-    "sd",         1E-8,          200,           logarithmic_parameter_transform, # constant sd objective function 
-    "scale_CO2",  1E-8,          2,             logarithmic_parameter_transform # CO2 scaler for objective function
+    ~parameter, ~lower_bound,   ~upper_bound,       ~transform_method,
+    "a0",        -300,           100,               linear_parameter_transform, # intercept
+    "a0_d",      -300,           50,                linear_parameter_transform, # intercept - no drought
+    "a0_n",      -300,           50,                linear_parameter_transform, # intercept - drought
+    "a1",         1E-5 ,         1,                 logarithmic_parameter_transform, # slope
+    "a2",        -1,             1,                 linear_parameter_transform, # autocorrelation
+    "a3",        -25,            50,                linear_parameter_transform, # CO2 coefficient 
+    "a4",        -250,           600,               linear_parameter_transform, # seasonal parameter
+    "a5",         0,             upper_a5_bound,    linear_parameter_transform, # Changes depending on last CO2 value in calibration
+    "sd",         1E-8,          200,               logarithmic_parameter_transform, # constant sd objective function 
+    "scale_CO2",  1E-8,          2,                 logarithmic_parameter_transform # CO2 scaler for objective function
   )
 }
 
