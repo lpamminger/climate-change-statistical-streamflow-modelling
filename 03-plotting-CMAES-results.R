@@ -159,41 +159,69 @@ custom_palette <- function(x) {
   ))
 }
 
-aus_evidence_ratio_map <- ggplot() +
-  geom_sf(
-    data = aus_map,
-    colour = "black",
-    fill = "grey50"
-  ) +
-  coord_sf(xlim = c(110, 155)) +
-  geom_point(
-    data = plot_ready_data,
-    aes(x = lon, y = lat, colour = evidence_ratio, shape = flag),
-    size = 0.75
-  ) +
-  binned_scale( # binned scale code taken from: https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
-    aesthetics = "colour",
-    palette = custom_palette, # length should be length(breaks + limits) - 1
-    breaks = c(-1E4, -1E3, -1E2, -1E1, 1E1, 1E2, 1E3, 1E4, 1E6),
-    limits = c(-1E6, 1E20),
-    show.limits = TRUE,
-    guide = "coloursteps"
-  ) +
-  theme_bw() +
-  labs(
-    x = "Longitude",
-    y = "Latitude",
-    colour = "Evidence Ratio",
-    shape = "Flag"
-  ) +
-  theme(
-    legend.key.height = unit(4, "mm"),
-    legend.key.width = unit(40, "mm"),
-    legend.frame = element_rect(colour = "black"),
-    legend.position = "bottom",
-    legend.text = element_text(size = 11)
-  )
 
+## Plotting function ===========================================================
+
+# This is very similar to the entire map
+# maybe adjust it for everything and reuse it
+gg_evidence_ratio_map <- function(state = NULL, evidence_ratio_data, map_data) {
+  
+  # use state as key to extract correct polygon from map_data and evidence_ratio_data
+  if (!is.null(state)) {
+    
+    map_data <- map_data |> 
+      filter(state == {{ state }})
+    
+    evidence_ratio_data <- evidence_ratio_data |> 
+      filter(state == {{ state }})
+    
+  }
+  
+
+  
+  ggplot() +
+    geom_sf(
+      data = map_data,
+      colour = "black",
+      fill = "grey50"
+    ) +
+    geom_point(
+      data = evidence_ratio_data,
+      aes(x = lon, y = lat, colour = evidence_ratio, shape = flag),
+      size = 0.75
+    ) +
+    #coord_sf(xlim = c(110, 155)) +
+    binned_scale( # binned scale code taken from: https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+      aesthetics = "colour",
+      palette = custom_palette, # length should be length(breaks + limits) - 1
+      breaks = c(-1E4, -1E3, -1E2, -1E1, 1E1, 1E2, 1E3, 1E4, 1E6),
+      limits = c(-1E6, 1E20),
+      show.limits = TRUE,
+      guide = "coloursteps"
+    ) +
+    theme_bw() +
+    labs(
+      x = "Longitude",
+      y = "Latitude",
+      colour = "Evidence Ratio",
+      shape = "Flag"
+    ) +
+    theme(
+      legend.key.height = unit(4, "mm"),
+      legend.key.width = unit(40, "mm"),
+      legend.frame = element_rect(colour = "black"),
+      legend.position = "bottom",
+      legend.text = element_text(size = 11)
+    )
+
+
+}
+
+
+aus_evidence_ratio_map <- gg_evidence_ratio_map(
+  evidence_ratio_data = plot_ready_data,
+  map_data = aus_map
+)
 
 
 ggsave(
@@ -210,53 +238,12 @@ ggsave(
 
 # 2. Patchwork plots by state --------------------------------------------------
 
-evidence_ratio_by_state <- function(state, evidence_ratio_data, map_data) {
-  
-  # use state as key to extract correct polygon from map_data and evidence_ratio_data
-  state_map <- map_data |> 
-    filter(state == {{ state }})
-  
-  state_evidence_ratio <- evidence_ratio_data |> 
-    filter(state == {{ state }})
-  
-  ggplot() +
-    geom_sf(
-      data = state_map,
-      colour = "black",
-      fill = "grey50"
-    ) +
-    geom_point(
-      data = state_evidence_ratio,
-      aes(x = lon, y = lat, colour = evidence_ratio),
-      show.legend = FALSE,
-      size = 0.5
-    ) +
-    binned_scale( # binned scale code taken from: https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
-      aesthetics = "colour",
-      palette = function(x) c("#f7f7f7", "#fddbc7", "#f4a582",  "#d6604d", "#b2182b", "#67001f"), # length should be length(breaks + limits) - 1
-      breaks = c(1E1, 1E2, 1E3, 1E4, 1E6),
-      limits = c(-1E1, 1E27),
-      show.limits = TRUE,
-      guide = "coloursteps"
-    ) +
-    theme_bw() +
-    labs(
-      x = "Longitude",
-      y = "Latitude",
-      colour = "Evidence Ratio"
-    ) +
-    theme(
-      legend.key.height = unit(25, "mm"),
-      legend.frame = element_rect(colour = "black"),
-      axis.title = element_blank(),
-      axis.text = element_text(size = 6)
-    )
-}
+
 
 by_state_plots <- map(
   .x = aus_map |> pull(state) |> unique(),
-  .f = evidence_ratio_by_state,
-  evidence_ratio_data = plot_ready_data |> select(!flag),
+  .f = gg_evidence_ratio_map,
+  evidence_ratio_data = plot_ready_data,
   map_data = aus_map
 )
 
