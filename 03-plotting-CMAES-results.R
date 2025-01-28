@@ -44,7 +44,7 @@ gauge_information <- read_csv(
 ) # CAMELS is Australia wide.
 
 best_CO2_non_CO2_per_gauge <- read_csv(
-  "./Results/my_cmaes/best_CO2_non_CO2_per_catchment_CMAES_20250124.csv",
+  "./Results/my_cmaes/unmodified_best_CO2_non_CO2_per_catchment_CMAES_20250128.csv",
   show_col_types = FALSE
 ) 
   
@@ -59,10 +59,11 @@ best_CO2_non_CO2_per_gauge <- read_csv(
 # The flag column is produces errors here
 # When pivot_wider is called flag modified and unmodified are on separate rows
 # I want them on the same row. The easiest way is a left join of best_CO2...
-flag_per_gauge <- best_CO2_non_CO2_per_gauge |> 
-  select(gauge, flag) |> 
-  distinct() |> 
-  filter(flag == "modified")
+
+#flag_per_gauge <- best_CO2_non_CO2_per_gauge |> 
+#  select(gauge, flag) |> 
+#  distinct() |> 
+#  filter(flag == "modified")
 
 
 evidence_ratio_calc <- best_CO2_non_CO2_per_gauge |>
@@ -86,15 +87,15 @@ evidence_ratio_calc <- best_CO2_non_CO2_per_gauge |>
       AIC_difference > 0 ~ -exp(0.5 * abs(AIC_difference)) # when non-CO2 model is better
     )
   ) |> 
-  arrange(evidence_ratio) |> 
+  arrange(evidence_ratio) #|> 
   # Add flag back in
-  left_join(
-    flag_per_gauge,
-    by = join_by(gauge)
-  ) |> 
-  mutate(
-    flag = if_else(is.na(flag), "unmodified", flag)
-  )
+  #left_join(
+  #  flag_per_gauge,
+  #  by = join_by(gauge)
+  #) |> 
+  #mutate(
+  #  flag = if_else(is.na(flag), "unmodified", flag)
+  #)
 
 
 ### Get into plot ready form ###################################################
@@ -151,11 +152,11 @@ custom_palette <- function(x) {
   "#d6604d",
   "#f4a582",
   "#fddbc7",
-  "#f7f7f7",
-  "#d1e5f0",
-  "#4393c3",
-  "#2166ac",
-  "#053061"
+  "#f7f7f7"#,
+  #"#d1e5f0",
+  #"#4393c3",
+  #"#2166ac",
+  #"#053061"
   ))
 }
 
@@ -187,15 +188,15 @@ gg_evidence_ratio_map <- function(state = NULL, evidence_ratio_data, map_data) {
     ) +
     geom_point(
       data = evidence_ratio_data,
-      aes(x = lon, y = lat, colour = evidence_ratio, shape = flag),
+      aes(x = lon, y = lat, colour = evidence_ratio), #shape = flag),
       size = 0.75
     ) +
     #coord_sf(xlim = c(110, 155)) +
     binned_scale( # binned scale code taken from: https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
       aesthetics = "colour",
       palette = custom_palette, # length should be length(breaks + limits) - 1
-      breaks = c(-1E4, -1E3, -1E2, -1E1, 1E1, 1E2, 1E3, 1E4, 1E6),
-      limits = c(-1E6, 1E20),
+      breaks = c(1E1, 1E2, 1E3, 1E4, 1E6),
+      limits = c(-1E1, 1E20),
       show.limits = TRUE,
       guide = "coloursteps"
     ) +
@@ -203,8 +204,8 @@ gg_evidence_ratio_map <- function(state = NULL, evidence_ratio_data, map_data) {
     labs(
       x = "Longitude",
       y = "Latitude",
-      colour = "Evidence Ratio",
-      shape = "Flag"
+      colour = "Evidence Ratio"#,
+      #shape = "Flag"
     ) +
     theme(
       legend.key.height = unit(4, "mm"),
