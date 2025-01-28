@@ -208,6 +208,12 @@ best_CO2_and_non_CO2_per_catchment <- parameter_results |>
   distinct()
 
 
+write_csv(
+  best_CO2_and_non_CO2_per_catchment,
+  file = paste0("./Results/my_cmaes/unmodified_best_CO2_non_CO2_per_catchment_CMAES_", get_date(), ".csv")
+)
+
+
 
 ## Check if parameters are being set to zero ===================================
 ### This represents one ways of parameters being "turned-off"
@@ -244,7 +250,7 @@ last_row_start_stop <- start_stop_indexes |>
   slice_tail(by = gauge) |> 
   select(c(gauge, end_index)) |> 
   mutate(
-    second_last_index = end_index - 10 # 10 year before end
+    second_last_index = end_index - 5 # ori -> 10 year before end
   )
 
 
@@ -524,10 +530,87 @@ modified_best_CO2_and_non_CO2_per_catchment <- rbind(
   left_join(
     with_flag,
     by = join_by(gauge, streamflow_model, contains_CO2)
-  )
+  ) |> 
+  arrange(gauge)
 
 
 ### CHECKED - I am not missing any ### 
+
+## Do my changes cause any big swings in AIC differences? ======================
+## If so it probably requires a rethink
+original_evi_ratio <- best_CO2_and_non_CO2_per_catchment |> 
+  select(gauge, contains_CO2, AIC) |> 
+  distinct() |> 
+  pivot_wider(
+    names_from = contains_CO2,
+    values_from = AIC
+  ) |> 
+  mutate(
+    CO2_model = `TRUE`,
+    non_CO2_model = `FALSE`,
+    .keep = "unused"
+  ) |> 
+  mutate(
+    AIC_difference = CO2_model - non_CO2_model # CO2 is smaller than non-CO2 then negative and CO2 is better
+  ) |>
+  mutate(
+    evidence_ratio = case_when(
+      AIC_difference < 0 ~ exp(0.5 * abs(AIC_difference)), # when CO2 model is better
+      AIC_difference > 0 ~ -exp(0.5 * abs(AIC_difference)) # when non-CO2 model is better
+    )
+  ) |> 
+  select(gauge, evidence_ratio) |> 
+  rename(original_evidence_ratio = evidence_ratio)
+
+
+flag_per_gauge <- modified_best_CO2_and_non_CO2_per_catchment |> 
+  select(gauge, flag) |> 
+  distinct() |> 
+  filter(flag == "modified")
+
+
+swings_in_evi_ratio <- modified_best_CO2_and_non_CO2_per_catchment |>
+  select(gauge, contains_CO2, AIC) |> 
+  distinct() |> 
+  pivot_wider(
+    names_from = contains_CO2,
+    values_from = AIC
+  ) |> 
+  mutate(
+    CO2_model = `TRUE`,
+    non_CO2_model = `FALSE`,
+    .keep = "unused"
+  ) |> 
+  mutate(
+    AIC_difference = CO2_model - non_CO2_model # CO2 is smaller than non-CO2 then negative and CO2 is better
+  ) |>
+  mutate(
+    evidence_ratio = case_when(
+      AIC_difference < 0 ~ exp(0.5 * abs(AIC_difference)), # when CO2 model is better
+      AIC_difference > 0 ~ -exp(0.5 * abs(AIC_difference)) # when non-CO2 model is better
+    )
+  ) |> 
+  # Add flag back in
+  left_join(
+    flag_per_gauge,
+    by = join_by(gauge)
+  ) |> 
+  mutate(
+    flag = if_else(is.na(flag), "unmodified", flag)
+  ) |> 
+  rename(
+    modified_evi_ratio = evidence_ratio
+  ) |> 
+  select(gauge, modified_evi_ratio, flag) |> 
+  arrange(flag, modified_evi_ratio) |> 
+  left_join(
+    original_evi_ratio,
+    by = join_by(gauge)
+  ) |> 
+  relocate(
+    flag,
+    .after = 4
+  )
 
 
 
@@ -540,7 +623,9 @@ near_bounds_parameters <- parameter_results |>
   ) |> 
   filter(near_bounds) 
 
-# There is a single catchment (112101B) with bounds at boundary
+# There is catchment near bounds.
+
+# Use to be a single catchment (112101B) with bounds at boundary
 # Catchment has really high rainfall. Rainfall > bc_q
 # Redo and replace the .csv directly saves time
 
