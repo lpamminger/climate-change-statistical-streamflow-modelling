@@ -182,9 +182,6 @@ transform_to_realspace.dream <- function(mcmc_result, transform_functions, lower
 
 
 
-dream_transform_to_realspace <- function(mcmc_result, transform_functions, lower_bounds, upper_bounds, scale) {
-  
-}
 
 
 
