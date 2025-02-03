@@ -190,11 +190,13 @@ remove_burnin_from_trace <- function(dream_object) {
 
 
 
-mcmc_list_to_tibble <- function(dream_object) {
+mcmc_list_to_tibble <- function(dream_object, add_gauge = FALSE) {
   
+  stopifnot(sloop::s3_class(dream_object)[1] == "dream") # only accept dream objects
   burnt_in_trace <- remove_burnin_from_trace(dream_object)
   
-  map(
+  
+  sequences <- map(
     .x = burnt_in_trace,
     .f = unclass
   ) |>
@@ -218,6 +220,14 @@ mcmc_list_to_tibble <- function(dream_object) {
       names_to = "parameter",
       values_to = "parameter_value"
     )
+  
+  if (add_gauge) {
+    gauge <- dream_object$numerical_optimiser_setup$catchment_data$gauge_ID
+    sequences <- sequences |> 
+      add_column(gauge, .before = 1)
+  }
+  
+  return(sequences)
 }
 
 
@@ -360,8 +370,24 @@ gg_trace_plot <- function(dream_object) {
 
 
 gg_distribution_plot <- function(dream_object) {
-  dream_object |>
-    mcmc_list_to_tibble() |>
+  
+  # Add so it can use the dream_object or .csv tibble
+  if(sloop::s3_class(dream_object)[1] == "dream") {
+    
+    tibble_for_plotting <- dream_object |>
+      mcmc_list_to_tibble()
+    
+    gauge <- dream_object$numerical_optimiser_setup$catchment_data$gauge_ID
+    
+  } else if (is_tibble(dream_object)) {
+    
+    tibble_for_plotting <- dream_object
+    gauge <- tibble_for_plotting$gauge[1]
+    
+  }
+  
+  
+  tibble_for_plotting |> 
     ggplot(aes(x = parameter_value)) +
     geom_histogram(
       binwidth = binwidth_bins(30),
@@ -373,10 +399,10 @@ gg_distribution_plot <- function(dream_object) {
       y = "Count",
       title = paste0(
         "Gauge: ",
-        dream_object$numerical_optimiser_setup$catchment_data$gauge_ID,
-        "\n",
-        "Model: ",
-        dream_object$numerical_optimiser_setup$streamflow_model()$name
+        gauge#,
+        #"\n",
+        #"Model: ",
+        #dream_object$numerical_optimiser_setup$streamflow_model()$name
       )
     ) +
     theme_bw() +
