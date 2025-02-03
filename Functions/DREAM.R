@@ -328,7 +328,8 @@ get_convergence_statistics <- function(dream_object) {
     parameter = dream_object$numerical_optimiser_setup$parameter_names, 
     exit_message = dream_object$EXITMSG,
     acceptance_rate = acceptance_rate, 
-    gelman_statistic = gelman_statistic[[1]][,1] 
+    gelman_statistic = gelman_statistic[[1]][,1],
+    best_coefficients = coef(dream_object, method = "sample.ml")
   ) |> 
     as_tibble()
   
