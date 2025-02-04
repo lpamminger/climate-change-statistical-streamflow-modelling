@@ -154,8 +154,6 @@ ready_for_optimisation <- pmap(
 )
 
 
-
-
 # Split ready_for_optimisation objects into chunks to avoid exceeding RAM ------
 # Subject to change. I need to work out RAM requirements
 
@@ -175,14 +173,14 @@ chunked_ready_for_optimisation <- split( # required for chunking in parallel
 
 
 
+
 # Findings (text-only) ---------------------------------------------------------
-# Everything is working as expected for gauge 003303A and 105101A
+# Everything is working as expected for gauge 003303A and 105101Aa
 
 # Plan for scaling up:
 # 1. Run DREAM with convergence for a given chunk.
 # 2. Save dream_objects, trace plots (plots in list and gridExtra::marrangeGrob) and convergences stats (save .csv)
-# 3. Inspect if the trace plots and stats are good
-# 4. If good DREAM without convergence. Save sequences and distribution plots. See
+# 3. If good DREAM without convergence. Save sequences and distribution plots. See
 #    if I can repurpose run_and_save_chunks_optimiser_parallel to save results
 
 # Size information:
@@ -191,15 +189,10 @@ chunked_ready_for_optimisation <- split( # required for chunking in parallel
 # during convergence with 20 per chunk RAM maxed out at 5gb. 
 # this suggests I could increase it?
 
-# I think it will be start with a chunk. 
-# Run to converge then run to make distribution angle.
-# RAM limitations.
-# Manually rince and repeat
-# Maximum chunk size is around 20. This means I must repeat the process
-# 27 times :(
 
 
-# Learning from trace plots:
+
+# Learning from trace plots (all text) -----------------------------------------
 
 ## First (mk_1)
 ## 1. Single catchment did not converge (121003A). Failed in burn-in (burn.in flag is TRUE)
@@ -210,7 +203,7 @@ chunked_ready_for_optimisation <- split( # required for chunking in parallel
 
 ## Second (mk_2)
 ## 1. Still not enough wiggle for some catchments. For example, 107001B is 
-##    not exploring the sample space efficiently. However with enough iterations
+##    not exploring the sample space efficiently. However, with enough iterations
 ##    the problem will go away. I would like to improve the efficiency (more up/down).
 ##    Ways to improve efficiency are more chains, gamma?, nCR?, eps?, DEpairs (DEpairs default is maximum allowed. I can make it smaller but I think this would harm)
 ##    See paper for question marks
@@ -254,6 +247,7 @@ chunked_ready_for_optimisation <- split( # required for chunking in parallel
 ##    - increase eps, increase nCR, adjust bounds, increase iterations, check if model is correct
 ## 3. I am not concerned with 122004A. Cranking steps should fix the issue.
 
+### mk_4 rapid fire testing:
 ## Default (check_convergence_steps = 1000, warm_up_per_chain = 5E4, burn_in_per_chain = 5E3, iterations_after_burn_in_per_chain = 5E3, nCR = 3, eps = 0.1, steps = 10,
 ## Test 1: increase nCR from 3 to 6 --> result: no noticeable impact
 ## Test 2: increase eps from 0.1 to 0.5 --> result: worse for a0_d and a5
@@ -273,31 +267,30 @@ chunked_ready_for_optimisation <- split( # required for chunking in parallel
 ##          Used around ~ 6Gbs
 
 
-# idea: make nCR equal to hte number of parameters?
 
 ## Lessons from mk_4
 ## 1. a5 bound must be adjusted to the maximum CO2 for the given catchment.
-##    This means the a5 upper bound must change for each catchment - recoding required
+##    This means the a5 upper bound must change for each catchment. CHANGE MADE
+## 
 
 
-# From dream manual
+# Dream manual research (text only) ---------------------------------------
+# Direct parameters:
 # nCR = 3 works well in practice but larger nCR maybe required for high-dimensional problems (d > 50)
 # nCR = alters pCR (cross-over or selection probability). Larger nCR smaller pCR (1/nCR). Smaller jumps?
 # eps = 0.1 (is it c? pg. 20) random error for ergodicity (is this randomisation or ergodicity or combination of the two)
-# I don't think eps is connected to anything
-# gamma is used in CalcCbWb(gamma) equation Thiemann et al. WRR 2001 equation 20. I don't think it is connected to anything? See GenCR function
-# steps seems like T value from matlab (number of generations)
-# maybe a side-by-side of code is required to work out what parameters do what.
-# steps is the number of times through loops. This looks the same as DREAM. I think it represents number of samples from the prior distribution. How did vrugt pick T in manual?
+# gamma is used in CalcCbWb(gamma) equation Thiemann et al. WRR 2001 equation 20. Does not do anything if func.type = "log-posterior"
+# steps is the number of times through loops. This looks the same as DREAM. I think it represents number of samples from the prior distribution. 
 # gamma = kurtosis parameter baysian (is this the shaping factor in manual)
 # "rand" bounds handling is good for me - fold is preferred statistically (dream manual) but if posterior is on edege of search domain problems
 
-# functions that take control as an input
-# GenCR (only nCR), AdaptCR (), metrop, CompDensity (gamma, Wb, Cb), offde, 
-# in CompDensity gamma has no impact on logposterior.density
-# Adapt CR similar to genCR. Only nCR
-# metrop gamma has no impact on logposterior.density
-# offde = eps = 1e-6 * randn(nseq, ndim). eps is being used for noise.x
+# Functions that take control parameters as an input (hidden to user): 
+# GenCR, AdaptCR, metrop, CompDensity (gamma, Wb, Cb) and offde 
+# - GenCR takes nCR
+# - in CompDensity gamma has no impact on logposterior.density
+# - Adapt CR similar to genCR. Only nCR
+# - metrop gamma does not do anything if func.type = "logposterior.density"
+# - offde = eps = 1e-6 * randn(nseq, ndim). eps is being used for noise.x
 #         There are 2 eps values. This reminds me of kernel_adapt from fmcmc
 #         In fmcmc eps both sets the initital scale for the multivariate normal kernel (replaced with actual variance-covariance of model after warmup)
 #         and ensures the variance-covariance is greater than zero. The fixed eps looks like it ensures variance-cov is greater than zero.
@@ -310,17 +303,13 @@ chunked_ready_for_optimisation <- split( # required for chunking in parallel
 # There is no jump-rate parameter in dream R. It is done for you.
 # The larger nCR is the larger steps needs to be
 
-# From research:
-# gamma has no impact because func.type = "logposterior.density"
-# eps does not matter as it gets replaced with iterations after warm-up. Pick a sensible value i.e., default
-# a larger eps does seem to matter for convergence. Larger value better spread around chain
-# larger nCR encourages smaller jumps. If too small it cannot improve getting stuck = error. Can be fixed by increasing steps.
-# steps is the number of generations (in the examples T = 5000)
-# large nCR, small steps requires large eps
+# Summary:
+# gamma has no impact because 
 # The parameters are dependent on the posterior. Problem is I don't know the 
-# posterior. Requires trial-and-error
-# Get steps small = speeeeeed.
-# steps large = really good mixing = slow. Scales linearly i.e., double steps = double time
+# posterior. Requires trial-and-error. Hopefully, I can use a single control
+# parameter set. I think I can
+# Small steps = speeeeeed.
+# Large steps = really good mixing = slow. Scales linearly i.e., double steps = double time
 # The more steps the better. For [[11]] max steps out, apply for 
 # every other catchment. This will likely take a while
 # Steps of 200 worked really well for catchment [[1]] 
@@ -329,6 +318,11 @@ chunked_ready_for_optimisation <- split( # required for chunking in parallel
 # lower acceptance rate means (< 15 %) indicates the posterior surface
 # is difficult to traverse in pursuit of the target distribution. Can reduce 
 # jump rate to increase acceptance rate (not in R). Alternatively, lower nCR
+# For non-converged either increase iterations (burn-in mainly), nCR or chains
+# A low acceptance rate means (< 15 %) indicates the posterior surface
+# is difficult to traverse in pursuit of the target distribution. In other languages 
+# you would reduce jump rate. Jump rate is fixed in DREAM R. Instead we could
+# reduce eps or increase nCR. If all else fails more chains and iterations.
 
 
 # Run DREAM --------------------------------------------------------------------
