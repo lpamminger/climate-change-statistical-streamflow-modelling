@@ -6,8 +6,7 @@ pacman::p_load(tidyverse, dream, coda, lattice, tictoc, furrr, parallel, truncno
 # install dream using: install.packages("dream", repos="http://R-Forge.R-project.org")
 # install.packages("coda")
 
-# floor(RAM / 3Gb) = CHUNK_SIZE
-
+# TODO -> run it with all catchments
 
 # Import and prepare data-------------------------------------------------------
 
@@ -33,7 +32,7 @@ CMAES_results <- read_csv("./Results/my_cmaes/CMAES_parameter_results_20250122.c
 ) 
 
 best_CO2_non_CO2_per_gauge <- read_csv(
-  "./Results/my_cmaes/best_CO2_non_CO2_per_catchment_CMAES_20250124.csv",
+  "./Results/my_cmaes/unmodified_best_CO2_non_CO2_per_catchment_CMAES_20250128.csv",
   show_col_types = FALSE
 ) 
 
@@ -156,15 +155,18 @@ ready_for_optimisation <- pmap(
 
 
 
-# See if the change in make_default_bounds_and_transform_methods works
-
-
-
-
 
 # Split ready_for_optimisation objects into chunks to avoid exceeding RAM ------
 # Subject to change. I need to work out RAM requirements
-CHUNK_SIZE <- 16 # 28 double change size?
+
+# 16 * number_of_catchments_in_chunk * RAM_usage_of_single_catchment < 32 * 0.7 
+# Assume RAM_usage_of_single_catchment is 0.5 Gb
+# Solve or number_of_catchments_in_chunk:
+# number_of_catchments_in_chunk < (32 * 0.7) / (16 * 0.5) ~ 2.8
+# I think this is worst than running the chunks in series but catchments in
+# parallel
+
+CHUNK_SIZE <- 32
 
 chunked_ready_for_optimisation <- split( # required for chunking in parallel
   ready_for_optimisation,
@@ -173,7 +175,7 @@ chunked_ready_for_optimisation <- split( # required for chunking in parallel
 
 
 
-
+# Findings (text-only) ---------------------------------------------------------
 # Everything is working as expected for gauge 003303A and 105101A
 
 # Plan for scaling up:
@@ -324,200 +326,158 @@ chunked_ready_for_optimisation <- split( # required for chunking in parallel
 # Steps of 200 worked really well for catchment [[1]] 
 # Increasing steps will be really good for converged catchments
 # For non-converged either increase iterations or 
-
-## An efficient way to see if the changes have worked is test the single catchments
-test_catchment <- chunked_ready_for_optimisation[[1]][[1]] # 11 = non-converging (700 sec steps = 200, max iter limit)
-
-
-set.seed(1)
-test_converged_dream <- DREAM(
-  input = test_catchment,
-  controls = list(
-    check_convergence_steps = 1000,
-    warm_up_per_chain = 1E3, # 1E5,
-    burn_in_per_chain = 1E3, # 1E4,
-    iterations_after_burn_in_per_chain = 1E3, # 1E4, 
-    nCR = 8,
-    eps = 0.1,
-    steps = 10 
-    )
-)
-
-
-# nCR = 3, eps = 0.1 and steps = 7 = convergences for non-converging catchment, chain = 3 * param number 
-test_converged_dream$time
-gg_trace_plot(test_converged_dream)
-get_convergence_statistics(test_converged_dream)
-
 # lower acceptance rate means (< 15 %) indicates the posterior surface
 # is difficult to traverse in pursuit of the target distribution. Can reduce 
 # jump rate to increase acceptance rate (not in R). Alternatively, lower nCR
-# 
 
-# Convergence check ------------------------------------------------------------
-CHUNK_ITER <- 1 # length(chunked_ready_for_optimisation)
 
-plan(multisession, workers = length(availableWorkers())) # set once for furrr
+# Run DREAM --------------------------------------------------------------------
 
-tic()
-converged_dream_objects <- future_map(
-  .x = chunked_ready_for_optimisation[[CHUNK_ITER]], # this must be repeated for all chunks
-  .f = DREAM,
-  controls = list(
-    check_convergence_steps = 1000,
-    warm_up_per_chain = 1E5,
-    burn_in_per_chain = 3E4, 
-    iterations_after_burn_in_per_chain = 3E4, 
-    eps = 0.1,
-    steps = 500
-    ),
-  .options = furrr_options(
-    seed = TRUE
-    # Future cannot resolve local S3 methods 
-    # I have added work around functions in generic functions. These are ugly
+## Run dream on chunks and save results ========================================
+# Ideally this would use run_and_save_chunks_optimiser_parallel but
+# for now this is good enough
+optimise_chunks <- function(chunk_ready_for_optimisation, chunk_iter, chunk_controls) {
+  
+  tic()
+  
+  ## Run dream for each catchment in chunk =====================================
+  converged_dream_objects <- future_map(
+    .x = chunk_ready_for_optimisation, # this must be repeated for all chunks
+    .f = DREAM,
+    controls = chunk_controls,
+    .options = furrr_options(
+      seed = TRUE
+      # Future cannot resolve local S3 methods 
+      # I have added work around functions in generic functions. These are ugly
     )
   )
-
-toc()
-
-
-converged_trace_plots <- map( 
-  .x = converged_dream_objects,
-  .f = gg_trace_plot
-) 
-
-ggsave(
-  filename = paste0("test_11_trace_plots_chunk_", CHUNK_ITER, "_", get_date(), ".pdf"),
-  plot = gridExtra::marrangeGrob(converged_trace_plots, nrow = 1, ncol = 1),
-  device = "pdf",
-  path = "./Graphs/DREAM_graphs",
-  width = 297,
-  height = 210,
-  units = "mm"
-)
-
-
-converged_stats <- map( 
-  .x = converged_dream_objects, 
-  .f = get_convergence_statistics
-) |> 
-  list_rbind() |> 
-  write_csv(
-    file = paste0("./Results/my_dream/test_11_converged_stats_chunk_", CHUNK_ITER, "_", get_date(), ".csv")
+  
+  ## Create and save trace diagrams ============================================
+  converged_trace_plots <- map( 
+    .x = converged_dream_objects,
+    .f = gg_trace_plot
+  ) 
+  
+  ggsave(
+    filename = paste0("trace_plots_chunk_", chunk_iter, "_", get_date(), ".pdf"),
+    plot = gridExtra::marrangeGrob(
+      converged_trace_plots, 
+      nrow = 1, 
+      ncol = 1,
+      top = NULL
+      ),
+    device = "pdf",
+    path = "./Graphs/DREAM_graphs",
+    width = 297,
+    height = 210,
+    units = "mm"
   )
-
-
-converged_distributions_plots <- map(
-  .x = converged_dream_objects,
-  .f = gg_distribution_plot
-)
-
-ggsave(
-  filename = paste0("test_11_distribution_plots_chunk_", CHUNK_ITER, "_", get_date(), ".pdf"),
-  plot = gridExtra::marrangeGrob(converged_distributions_plots, nrow = 1, ncol = 1),
-  device = "pdf",
-  path = "./Graphs/DREAM_graphs",
-  width = 297,
-  height = 210,
-  units = "mm"
-)
-
-stop_here <- 1
-
-gg_distribution_plot(converged_dream_objects[[8]])
-
-# based on the look of the distributions and trace diagrams, I might
-# not every need the second pass.
-
-# put back into DREAM and run without convergences to build the distribution?
-test_distribution_DREAM <- tactical_typo_DREAM(
-  input = test_convergence_DREAM,
-  controls = list(
-    check_convergence_steps = 0, # don't check for convergence,
-    thinning = 10
+  
+  ## Create and save convergence statistics ====================================
+  converged_stats <- map( 
+    .x = converged_dream_objects, 
+    .f = get_convergence_statistics
+  ) |> 
+    list_rbind() |> 
+    write_csv(
+      file = paste0("./Results/my_dream/converged_stats_chunk_", chunk_iter, "_", get_date(), ".csv")
+    )
+  
+  ## Create and save distribution plots ========================================
+  converged_distributions_plots <- map(
+    .x = converged_dream_objects,
+    .f = gg_distribution_plot
   )
+  
+  ggsave(
+    filename = paste0("distribution_plots_chunk_", chunk_iter, "_", get_date(), ".pdf"),
+    plot = gridExtra::marrangeGrob(
+      converged_distributions_plots, 
+      nrow = 1, 
+      ncol = 1,
+      top = NULL
+      ),
+    # remove page numbers
+    device = "pdf",
+    path = "./Graphs/DREAM_graphs",
+    width = 297,
+    height = 210,
+    units = "mm"
+  )
+  
+  cat(paste0("Chunk ", chunk_iter, " complete "))
+  toc()
+  cat("\n")
+}
+
+
+## DREAM controls ==============================================================
+chunk_controls <- list(
+  check_convergence_steps = 1000,
+  warm_up_per_chain = 1E5,
+  burn_in_per_chain = 3E4, 
+  iterations_after_burn_in_per_chain = 3E4, 
+  eps = 0.1,
+  steps = 500
 )
 
-distribution_plot <- gg_distribution_plot(test_distribution_DREAM)
-distribution_plot
-
-
-
-stop_here <- 1
-# replace current optimisation strategy
-
-
-# Run the optimiser (calibration) ----------------------------------------------
-
-## Non-drought optimising ======================================================
-
-# tactical typo to stop runaway code when run all is used
-tactical_typo_plan(multisession, workers = length(availableWorkers())) # set once for furrr
+## Run it all ==================================================================
+plan(multisession, workers = length(availableWorkers())) # set once for furrr
 iwalk(
-  .x = chunked_ready_for_optimisation, 
-  .f = run_and_save_chunks_optimiser_parallel,
-  optimiser = my_dream,
-  save_streamflow = FALSE,
-  save_sequences = TRUE,
-  is_drought = FALSE
+  .x = chunked_ready_for_optimisation,
+  .f = optimise_chunks,
+  chunk_controls = chunk_controls
 )
 
 
+## Combine chunks into single file (plots and stats) and removes chunks ========
 
+### .csv's #####################################################################
 
-# Join everything into a single file and save ----------------------------------
-## Parameters ==================================================================
-parameters_list_of_files <- list.files(
+converge_stats_list_of_files <- list.files( # get
   path = "./Results/my_dream/",
   recursive = FALSE, # I don't want it looking in other folders
-  pattern = "parameter",
+  pattern = "converged_stats_chunk",
   full.names = TRUE
 )
 
-
-
-parameters_list_of_files |>
-  readr::read_csv(show_col_types = FALSE) |>
-  dplyr::slice_min(
-    loglikelihood,
-    by = c(gauge, streamflow_model, objective_function) # only get the minimum LL for gauge, streamflow model and objective function combination
-  ) |>
-  readr::write_csv(
-    file = paste0("./Results/my_dream/DREAM_parameter_results.csv")
+converge_stats_list_of_files |> # merge and save
+  read_csv(show_col_types = FALSE) |> 
+  write_csv(
+    paste0("./Results/my_dream/converged_stats_", get_date(), ".csv")
   )
 
+converge_stats_list_of_files |> file.remove() # remove chunks
 
-## Sequences ===================================================================
-sequences_list_of_files <- list.files(
-  path = "./Results/my_dream/",
+
+### .pdfs ######################################################################
+trace_plots_list_of_files <- list.files( # get
+  path = "./Graphs/DREAM_graphs/",
   recursive = FALSE, # I don't want it looking in other folders
-  pattern = "sequences",
+  pattern = "trace_plots_chunk",
   full.names = TRUE
 )
 
 
-sequences_list_of_files |>
-  readr::read_csv(show_col_types = FALSE) |>
-  readr::write_csv(
-    file = paste0("./Results/my_dream/DREAM_sequence_results.csv")
-  )
+qpdf::pdf_combine( # combine
+  input = trace_plots_list_of_files, 
+  output = paste0("./Graphs/DREAM_graphs/trace_plots_", get_date(), ".pdf")
+)
 
 
-## Delete all files ending with .csv ===========================================
- delete_files <- list.files(
-  path = "./Results/my_dream/",
+distribution_plots_list_of_files <- list.files( # get 
+  path = "./Graphs/DREAM_graphs/", 
   recursive = FALSE, # I don't want it looking in other folders
-  pattern = "chunk", # remove all chunk files
+  pattern = "distribution_plots_chunk",
   full.names = TRUE
- ) |>
-  file.remove()
+)
 
+qpdf::pdf_combine( # combine
+  input = distribution_plots_list_of_files, 
+  output = paste0("./Graphs/DREAM_graphs/distribution_plots_", get_date(), ".pdf")
+)
 
-
-
-
-
-
+c(trace_plots_list_of_files, distribution_plots_list_of_files) |> file.remove() # remove
 
 
 
