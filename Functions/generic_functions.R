@@ -1,5 +1,8 @@
 # Generic functions ------------------------------------------------------------
 
+## override coef.dream because it doesn't work well ============================
+# the default coef.dream does not work when the mcmc.list has be transformed
+# Instead, I transform in DREAM function itself
 
 ## get the best parameters from the optimiser (still in scaled form) ===========
 coef.cma_result <- function(cma_result) {

@@ -35,6 +35,8 @@ restarts_summary <- function(x) {
 
 sequences_summary <- function(x) {
   
+  # This only take a result_object 
+  
   x$sequences |> 
     tidyr::pivot_longer(
       cols = everything(),

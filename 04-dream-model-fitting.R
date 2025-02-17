@@ -7,6 +7,10 @@ pacman::p_load(tidyverse, dream, coda, lattice, tictoc, furrr, parallel, truncno
 # install.packages("coda")
 
 # TODO -> run it with all catchments
+# - change parallel processing method
+# - Thinning breaks the model. Makes graphs look bad and does not save values
+
+
 
 # Import and prepare data-------------------------------------------------------
 
@@ -51,7 +55,6 @@ source("./Functions/generic_functions.R")
 source("./Functions/DREAM.R")
 source("./Functions/objective_function_setup.R")
 source("./Functions/result_set.R")
-
 
 
 # Identify best model combination for DREAM gauges -----------------------------
@@ -164,7 +167,7 @@ ready_for_optimisation <- pmap(
 # I think this is worst than running the chunks in series but catchments in
 # parallel
 
-CHUNK_SIZE <- 32
+CHUNK_SIZE <- 2
 
 chunked_ready_for_optimisation <- split( # required for chunking in parallel
   ready_for_optimisation,
@@ -335,16 +338,16 @@ optimise_chunks <- function(chunk_ready_for_optimisation, chunk_iter, chunk_cont
   tic()
   
   ## Run dream for each catchment in chunk =====================================
-  converged_dream_objects <- future_map(
+  converged_dream_objects <- map(
     .x = chunk_ready_for_optimisation, # this must be repeated for all chunks
     .f = DREAM,
-    controls = chunk_controls,
-    .options = furrr_options(
-      seed = TRUE
+    controls = chunk_controls#,
+    #.options = furrr_options(
+    #  seed = TRUE
       # Future cannot resolve local S3 methods 
       # I have added work around functions in generic functions. These are ugly
     )
-  )
+  #)
   
   ## Create and save trace diagrams ============================================
   converged_trace_plots <- map( 
@@ -412,15 +415,60 @@ chunk_controls <- list(
   burn_in_per_chain = 3E4, 
   iterations_after_burn_in_per_chain = 3E4, 
   eps = 0.1,
-  steps = 500
+  steps = 300,
+  thinning = 1
 )
 
 ## Run it all ==================================================================
-plan(multisession, workers = length(availableWorkers())) # set once for furrr
-iwalk(
-  .x = chunked_ready_for_optimisation,
+## The series and parallel method is too slow (8gb) used.
+# the iwalk need to be futured (un-future the optimise_chunks)
+
+# Minimum is 16 at a time.
+# Test 16 at at time with 2 catchment in chunk
+# RAM for a single is 
+RAM_usage_chunks_ready_for_optimisation <- chunked_ready_for_optimisation[1:16]
+
+test_chunk <- chunked_ready_for_optimisation[1]
+# Error produces on line 374 (get_convergence_statistics function)
+# Trace plots look successful (some need to be shorter)
+# Test if optimise_chunks works
+test_chunk_controls <- list(
+  check_convergence_steps = 1000,
+  warm_up_per_chain = 1E3,
+  burn_in_per_chain = 3E3, 
+  iterations_after_burn_in_per_chain = 3E3, 
+  eps = 0.1,
+  steps = 10,
+  thinning = 2 
+)
+
+# dream automatically applies thinning to $Sequences
+# Thining with convergence criteria does not mix well
+# What about thining and non-conv criteria? Looks good - nice trace
+# coef.dream errors with thining > 1. I think its due to window.dream()
+# Problem - sometimes is breaks and sometimes it does not break
+
+# In code I transform all data into realspace then extract maxLL parameters.
+# This causes an error.
+# Instead, I must transform the 0-100 parameters before
+
+
+optimise_chunks(
+  chunk_ready_for_optimisation = test_chunk[[1]], 
+  chunk_iter = 69, 
+  chunk_controls = test_chunk_controls
+)
+
+stop_here <- 1
+
+tactical_typo_plan(multisession, workers = length(availableWorkers())) # set once for furrr
+future_iwalk(
+  .x = RAM_usage_chunks_ready_for_optimisation,
   .f = optimise_chunks,
-  chunk_controls = chunk_controls
+  chunk_controls = chunk_controls,
+  .options = furrr_options(
+    seed = TRUE
+  )
 )
 
 

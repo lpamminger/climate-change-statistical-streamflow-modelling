@@ -292,9 +292,25 @@ DREAM <- function(input, controls) {
   ## Add controls to dream object ==============================================
   dream_result$controls <- dream_controls 
   
-  ## TEMPORARY - save transformed best coefs for re-inputting into dream =======
+  ## TEMPORARY - save best coefs for re-inputting into dream ===================
+  # This is atrocious 
   dream_result$transformed_coefs <- coef(dream_result, method = "sample.ml")
   
+  # Coef.dream sometimes does not work after mcmc.list has been
+  # transformed to real space. Instead do it directly to transformed_coefs
+  dream_result$real_coefs <- pmap(
+    .l = list(
+      dream_result$numerical_optimiser_setup$transform_parameter_methods, 
+      seq_along(dream_result$transformed_coefs), 
+      dream_result$numerical_optimiser_setup$lower_bound, 
+      dream_result$numerical_optimiser_setup$upper_bound
+      ),
+    .f = transform_parameter_method,
+    parameter_set = dream_result$transformed_coefs,
+    scale = dream_result$numerical_optimiser_setup$scale
+  ) |> 
+    unlist(use.names = FALSE) |> 
+    `names<-`(names(dream_result$transformed_coefs))
   
   ## Convert the sequences from transformed to real-space ======================
   # future does not like this function. This is because its a generic
@@ -306,7 +322,7 @@ DREAM <- function(input, controls) {
     upper_bounds = numerical_optimiser_setup$upper_bound, 
     scale = numerical_optimiser_setup$scale
   )
-  
+
 }
 
 
@@ -314,7 +330,6 @@ DREAM <- function(input, controls) {
 get_convergence_statistics <- function(dream_object) {
   
   # dream calculates gelman using 50 % of burn-in sequences if burn-in is complete
-  
   acceptance_rate <- 1 - rejectionRate(dream_object$Sequences) 
   
   gelman_statistic <- gelman.diag(
@@ -329,7 +344,7 @@ get_convergence_statistics <- function(dream_object) {
     exit_message = dream_object$EXITMSG,
     acceptance_rate = acceptance_rate, 
     gelman_statistic = gelman_statistic[[1]][,1],
-    best_coefficients = coef(dream_object, method = "sample.ml")
+    best_coefficients = dream_object$real_coefs
   ) |> 
     as_tibble()
   
