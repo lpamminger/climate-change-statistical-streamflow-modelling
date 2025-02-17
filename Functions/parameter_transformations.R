@@ -19,6 +19,12 @@ no_parameter_transform <- function(parameter_set, lower_bound = NULL, upper_boun
 
 # Transform parameters from 0-scale to real parameter values
 transform_parameter_method <- function(method, idx, lower_bound, upper_bound, parameter_set, scale) {
+  
+  # Convert to matrix is a vector is given
+  if(!is.matrix(parameter_set)) {
+    parameter_set <- matrix(parameter_set, nrow = length(parameter_set))
+  }
+  
   method <- noquote(method)
   
   # parameter_set is a matrix
