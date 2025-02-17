@@ -326,7 +326,6 @@ tidy_boxcox_streamflow <- best_calibration_streamflow_results |>
     )
 
 
-
 ## Convert from box-cox space to real space ====================================
 ### bc lambda found in gauge_information
 # boxcox_inverse_transform()
@@ -340,6 +339,10 @@ tidy_streamflow <- tidy_boxcox_streamflow |>
     streamflow = boxcox_inverse_transform(yt = boxcox_streamflow, lambda = bc_lambda, lambda_2 = 1),
     .by = gauge
   )
+
+
+
+
 
 
 ## Plot results ================================================================
@@ -363,6 +366,58 @@ split_tidy_streamflow <- ready_split_tidy_streamflow |>
   split(f = ready_split_tidy_streamflow$split)
 
 
+## Plot rainfall-runoff relationships ==========================================
+## Need to split plot into smaller chunks. PC struggles to load it.
+
+repeat_rainfall_runoff_plots <- function(segmented_tidy_streamflow) {
+  rainfall_runoff_plots <- segmented_tidy_streamflow |> 
+    ggplot(
+      aes(
+        x = precipitation, 
+        y = boxcox_streamflow, 
+        colour = legend, 
+        shape = legend
+        )
+      ) +
+    geom_point() +
+    geom_line(
+      stat = "smooth",
+      method = "lm",
+      formula = y ~ x,
+      alpha = 0.4,
+      linewidth = 1
+    ) +
+    labs(
+      x = "Annual Precipitation (mm)",
+      y = "Annual Boxcox Streamflow (mm)"
+    ) +
+    scale_colour_brewer(palette = "Set1") +
+    theme_bw() +
+    facet_wrap(~gauge, scales = "free") +
+    theme(
+      legend.title = element_blank(),
+      legend.position = "bottom"
+    )
+}
+
+
+rainfall_runoff_graphs <- map(
+  .x = split_tidy_streamflow,
+  .f = repeat_rainfall_runoff_plots
+)
+
+ggsave(
+  filename = paste0("rainfall_runoff_comparison_", get_date(), ".pdf"),
+  plot = gridExtra::marrangeGrob(rainfall_runoff_graphs, nrow = 1, ncol = 1),
+  device = "pdf",
+  path = "./Graphs/CMAES_graphs",
+  width = 1189,
+  height = 841,
+  units = "mm"
+)
+
+
+## Plot streamflow time ========================================================
 chunk_streamflow_timeseries_plot <- function(data) {
   
   data |>
