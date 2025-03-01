@@ -294,7 +294,7 @@ make_DREAM_a3_bounds <- function(catchment_a3_value, all_catchments_a3_values, t
 
 
 
-DREAM_bounds_and_transform_methods <- function(catchment_data_set, best_CMAES_parameters) {
+make_DREAM_bounds_and_transform_methods <- function(catchment_data_set, best_CMAES_parameters) {
   
   # get the largest CO2 from last tibble in stop_start_data_set
   upper_a5_bound <- max(catchment_data_set$stop_start_data_set[[length(catchment_data_set$stop_start_data_set)]]$CO2)

@@ -7,10 +7,13 @@ pacman::p_load(tidyverse, dream, coda, lattice, tictoc, furrr, parallel, truncno
 # install.packages("coda")
 
 # TODO -> run it with all catchments
+# - Adjust the number of chains based on parameters (trial and error)
 
 # get packages used in script (requires NCmisc package)
 #functions_used <- list.functions.in.file("04-dream-model-fitting.R")
 #names(functions_used)
+
+
 # Import and prepare data-------------------------------------------------------
 
 ## Import annual streamflow, precip, CO2 and gauge data ========================
@@ -73,7 +76,16 @@ best_model_combination_per_catchment <- best_CO2_non_CO2_per_gauge |>
     .after = 2
     )
 
+## Need best_CMAES_parameters for making DREAM bounds ==========================
+filter_table <- best_model_combination_per_catchment |> 
+  rename(streamflow_model = streamflow_model_name)
 
+# THIS IS A REQUIRED INPUT FOR BUILDING DREAM BOUNDS
+best_CMAES_parameters <- best_CO2_non_CO2_per_gauge |> 
+  semi_join(
+    filter_table,
+    by = join_by(gauge, streamflow_model)
+  ) 
 
 
 ## Use a join to assign each row the correct streamflow and objective function =====
@@ -129,7 +141,7 @@ gauge_streamflow_model_objective_function_combinations <- best_model_combination
 
 
 # Produce numerical_optimiser_objects ready for the optimiser ------------------
-numerical_optimiser_objects <- function(gauge, streamflow_model, objective_function, data, start_stop) {
+numerical_optimiser_objects <- function(gauge, streamflow_model, objective_function, data, start_stop, best_CMAES_parameters) {
   
   catchment_data_set <- gauge |>
     catchment_data_blueprint(
@@ -141,7 +153,10 @@ numerical_optimiser_objects <- function(gauge, streamflow_model, objective_funct
     numerical_optimiser_setup_vary_inputs(
       streamflow_model = streamflow_model,
       objective_function = objective_function,
-      bounds_and_transform_method = make_default_bounds_and_transform_methods(catchment_data_set), # this must adjust for CO2 from catchment_data_set
+      bounds_and_transform_method = make_DREAM_bounds_and_transform_methods(
+        catchment_data_set = catchment_data_set, 
+        best_CMAES_parameters = best_CMAES_parameters
+      ),
       minimise_likelihood = FALSE
     )
 }
@@ -152,7 +167,8 @@ ready_for_optimisation <- pmap(
   .l = gauge_streamflow_model_objective_function_combinations,
   .f = numerical_optimiser_objects,
   data = data,
-  start_stop = start_stop_indexes
+  start_stop = start_stop_indexes,
+  best_CMAES_parameters = best_CMAES_parameters
 )
 
 
@@ -294,7 +310,7 @@ chunked_ready_for_optimisation <- split( # required for chunking in parallel
 # - metrop gamma does not do anything if func.type = "logposterior.density"
 # - offde = eps = 1e-6 * randn(nseq, ndim). eps is being used for noise.x
 #         There are 2 eps values. This reminds me of kernel_adapt from fmcmc
-#         In fmcmc eps both sets the initital scale for the multivariate normal kernel (replaced with actual variance-covariance of model after warmup)
+#         In fmcmc eps both sets the initial scale for the multivariate normal kernel (replaced with actual variance-covariance of model after warmup)
 #         and ensures the variance-covariance is greater than zero. The fixed eps looks like it ensures variance-cov is greater than zero.
 # DEstrategy
 
@@ -317,12 +333,9 @@ chunked_ready_for_optimisation <- split( # required for chunking in parallel
 # Steps of 200 worked really well for catchment [[1]] 
 # Increasing steps will be really good for converged catchments
 # For non-converged either increase iterations or 
-# lower acceptance rate means (< 15 %) indicates the posterior surface
-# is difficult to traverse in pursuit of the target distribution. Can reduce 
-# jump rate to increase acceptance rate (not in R). Alternatively, lower nCR
 # For non-converged either increase iterations (burn-in mainly), nCR or chains
 # A low acceptance rate means (< 15 %) indicates the posterior surface
-# is difficult to traverse in pursuit of the target distribution. In other languages 
+# is difficult to traverse in pursuit of the target distribution. In other packages/methods 
 # you would reduce jump rate. Jump rate is fixed in DREAM R. Instead we could
 # reduce eps or increase nCR. If all else fails more chains and iterations.
 
@@ -441,19 +454,15 @@ chunk_controls <- list(
 # 2. play with parameters? a3 does well with a small eps. Other parameters not so much
 #    Try small eps (0.05) with max settings - no dice same result
 
-tic()
-testing <- DREAM(
-  input = x <- chunked_ready_for_optimisation[[10]][[1]],
-  controls = chunk_controls
-)
-toc()
-gg_trace_plot(testing)
-get_convergence_statistics(testing)
+#TESTING - GAUGE = , lower a3 bounds
+
+#gg_trace_plot(testing)
+#get_convergence_statistics(testing)
 
 # Minimum is 16 at a time.
 # Test 16 at at time with 2 catchment in chunk
 # RAM for a single is ~ 14 gb. Use 3 catchments per chunk for safety
-RAM_usage_chunks_ready_for_optimisation <- chunked_ready_for_optimisation[1:16]
+#RAM_usage_chunks_ready_for_optimisation <- chunked_ready_for_optimisation[1:16]
 
 start_time <- Sys.time()
 plan(multisession, workers = length(availableWorkers())) # set once for furrr
