@@ -305,17 +305,22 @@ DREAM_bounds_and_transform_methods <- function(catchment_data_set, best_CMAES_pa
   filter_a3_values <- best_CMAES_parameters |> 
     filter(parameter == "a3") 
   
-  specific_catchment_a3 <- filter_a3_values |> 
-    filter(gauge == {{ gauge }}) |> 
-    pull(parameter_value)
-  
-  just_a3_vector <- filter_a3_values |> pull(parameter_value)
-  
-  # Make bounds range of a3 values
-  a3_bounds <- make_DREAM_a3_bounds(
-    catchment_a3_value = specific_catchment_a3, 
-    all_catchments_a3_values = just_a3_vector
-  )
+  if (gauge %in% filter_a3_values$gauge) {
+    specific_catchment_a3 <- filter_a3_values |> 
+      filter(gauge == {{ gauge }}) |> 
+      pull(parameter_value)
+    
+    just_a3_vector <- filter_a3_values |> pull(parameter_value)
+    
+    # Make bounds range of a3 values
+    a3_bounds <- make_DREAM_a3_bounds(
+      catchment_a3_value = specific_catchment_a3, 
+      all_catchments_a3_values = just_a3_vector
+    )
+  } else {
+    a3_bounds <- c(NA, NA) # stops errors. Not used in calibration
+  }
+
   
   tibble::tribble(
     ~parameter, ~lower_bound,   ~upper_bound,       ~transform_method,
