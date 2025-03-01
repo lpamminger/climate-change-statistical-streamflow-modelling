@@ -38,7 +38,7 @@ make_dream_pars <- function(numerical_optimiser_setup) {
 control_DREAM_defaults <- function(numerical_optimiser_setup) {
   
   parameter_number <- length(numerical_optimiser_setup$parameter_names)
-  chain_number <-  4 * parameter_number
+  chain_number <-  32 * parameter_number # o.g was 4. This should not be linear.
   de_pairs <- floor((chain_number - 1) / 2) 
   parameter_number <- length(numerical_optimiser_setup$parameter_names)
   
@@ -53,7 +53,7 @@ control_DREAM_defaults <- function(numerical_optimiser_setup) {
     check_convergence_steps = 200, # checks for convergences every specified iterations 
     thinning = 1, 
     gamma = 0, 
-    nCR = parameter_number, 
+    nCR = 3 * parameter_number, 
     eps = 0.05, 
     steps = 10,
     DEpairs = de_pairs # this is the maximum value it can be
@@ -179,7 +179,7 @@ remove_burnin_from_trace <- function(dream_object) {
   # Take half of iterations otherwise we get the initial wiggles
   if(dream_object$in.burnin) {
     sequences <- get_sequences(dream_object)
-    return(window(sequences, start = end(sequences) / 2))
+    return(window(sequences, start = end(sequences) / 1.25))
   }
   
   sequences <- get_sequences(dream_object)
@@ -228,6 +228,108 @@ mcmc_list_to_tibble <- function(dream_object, add_gauge = FALSE) {
   }
   
   return(sequences)
+}
+
+
+# Building bounds tibble for dream ---------------------------------------------
+## The method involves adjusting the a3 bounds based on the calibrated CMAES
+## parameters. 
+## Rough outline includes:
+### - build bounds using the range of a3 values. The steps are in 10's i.e.,
+###   1E-3, 1E-2 etc.
+### - For the calibrated a3 assign appropriate bounds i.e., if a3 = 0.4
+###   then bounds are -1 to 1
+### - Check is calibrated a3 is near the bounds. If the calibrated a3 is 
+###   within 25 % of bound expand the bound by a multiple of 2 (both a params)
+
+
+make_a3_bounds_ranges <- function(a3_values) {
+  # input is a vector of all possible a3 values
+  # output is the two values: lower exponential and upper exponential 
+  lower_exponential <- a3_values |> 
+    abs() |> 
+    min() |> 
+    log10() |> 
+    round_any(accuracy = 1, f = floor)
+  
+  upper_exponential <- a3_values |> 
+    abs() |> 
+    max() |> 
+    log10() |> 
+    round_any(accuracy = 1, f = ceiling)
+  
+  return(c(lower_exponential, upper_exponential))
+}
+
+make_DREAM_a3_bounds <- function(catchment_a3_value, all_catchments_a3_values, tol_near_bounds = 0.25, expand_near_bounds = 2) {
+  
+  # Get range exponential
+  all_catchments_a3_range <- make_a3_bounds_ranges(all_catchments_a3_values)
+  
+  # Calculate range of upper bounds
+  ranges_upper_a3_bound <- 10^seq(from = min(all_catchments_a3_range), to = max(all_catchments_a3_range), by = 1)
+  
+  # Calculate upper bounds
+  upper_bound <- min(ranges_upper_a3_bound[which(abs(catchment_a3_value) < ranges_upper_a3_bound)])
+  
+  # Lower bound is complement to upper
+  lower_bound <- -1 * upper_bound
+  
+  # Check if a3 is within X % (tol_near_bounds) of upper or lower bounds. If yes, then expand
+  # by expand_near_bounds
+  upper_bound <- if_else(
+    catchment_a3_value > upper_bound * (1 - tol_near_bounds), 
+    upper_bound * expand_near_bounds,
+    upper_bound
+  )
+  
+  lower_bound <- if_else(
+    catchment_a3_value < lower_bound * (1 - tol_near_bounds), 
+    lower_bound * expand_near_bounds,
+    lower_bound
+  )
+  
+  return(c(lower_bound, upper_bound))
+}
+
+
+
+DREAM_bounds_and_transform_methods <- function(catchment_data_set, best_CMAES_parameters) {
+  
+  # get the largest CO2 from last tibble in stop_start_data_set
+  upper_a5_bound <- max(catchment_data_set$stop_start_data_set[[length(catchment_data_set$stop_start_data_set)]]$CO2)
+  
+  # the a3 bound may need to be adjusted on a per gauge basis
+  gauge <- catchment_data_set$gauge_ID
+  
+  filter_a3_values <- best_CMAES_parameters |> 
+    filter(parameter == "a3") 
+  
+  specific_catchment_a3 <- filter_a3_values |> 
+    filter(gauge == {{ gauge }}) |> 
+    pull(parameter_value)
+  
+  just_a3_vector <- filter_a3_values |> pull(parameter_value)
+  
+  # Make bounds range of a3 values
+  a3_bounds <- make_DREAM_a3_bounds(
+    catchment_a3_value = specific_catchment_a3, 
+    all_catchments_a3_values = just_a3_vector
+  )
+  
+  tibble::tribble(
+    ~parameter, ~lower_bound,   ~upper_bound,       ~transform_method,
+    "a0",        -300,           100,               linear_parameter_transform, # intercept
+    "a0_d",      -300,           50,                linear_parameter_transform, # intercept - no drought
+    "a0_n",      -300,           50,                linear_parameter_transform, # intercept - drought
+    "a1",         1E-5 ,         1,                 logarithmic_parameter_transform, # slope
+    "a2",        -1,             1,                 linear_parameter_transform, # autocorrelation
+    "a3",         a3_bounds[1],  a3_bounds[2],      linear_parameter_transform, # CO2 coefficient 
+    "a4",        -250,           600,               linear_parameter_transform, # seasonal parameter
+    "a5",         0,             upper_a5_bound,    linear_parameter_transform, # Changes depending on last CO2 value in calibration
+    "sd",         1E-8,          200,               logarithmic_parameter_transform, # constant sd objective function 
+    "scale_CO2",  1E-8,          2,                 logarithmic_parameter_transform # CO2 scaler for objective function
+  )
 }
 
 
@@ -348,6 +450,13 @@ get_convergence_statistics <- function(dream_object) {
   ) |> 
     as_tibble()
   
+}
+
+# Save sequences as tibble -----------------------------------------------------
+save_sequences <- function(dream_object, ...) {
+  dream_object |> 
+    mcmc_list_to_tibble(add_gauge = TRUE) |> 
+    write_csv(...)
 }
 
 
