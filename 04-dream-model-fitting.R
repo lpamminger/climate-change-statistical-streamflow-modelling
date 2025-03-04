@@ -7,7 +7,8 @@ pacman::p_load(tidyverse, dream, coda, lattice, tictoc, furrr, parallel, truncno
 # install.packages("coda")
 
 # TODO -> run it with all catchments
-# - Adjust the number of chains based on parameters (trial and error)
+
+
 
 # get packages used in script (requires NCmisc package)
 #functions_used <- list.functions.in.file("04-dream-model-fitting.R")
@@ -182,7 +183,7 @@ ready_for_optimisation <- pmap(
 # I think this is worst than running the chunks in series but catchments in
 # parallel
 
-CHUNK_SIZE <- 2 # Maybe go to 4. Risky
+CHUNK_SIZE <- 3 # Maybe go to 4. Risky
 
 chunked_ready_for_optimisation <- split( # required for chunking in parallel
   ready_for_optimisation,
@@ -437,7 +438,7 @@ chunk_controls <- list(
   warm_up_per_chain = 1E5,
   burn_in_per_chain = 3E4, 
   iterations_after_burn_in_per_chain = 3E4, 
-  eps = 0.05, #0.1
+  eps = 1E-6, #0.1
   steps = 300, #300
   thinning = 1
 )
@@ -476,6 +477,7 @@ future_iwalk(
 )
 stop_time <- Sys.time()
 stop_time - start_time
+#stop_here <- tactical_typo_if_breakpoint_fails()
 ## Combine chunks into single file (plots and stats) and removes chunks ========
 
 ### .csv's #####################################################################
@@ -494,6 +496,21 @@ converge_stats_list_of_files |> # merge and save
   )
 
 converge_stats_list_of_files |> file.remove() # remove chunks
+
+sequences_list_of_files <- list.files( # get
+  path = "./Results/my_dream/",
+  recursive = FALSE, # I don't want it looking in other folders
+  pattern = "sequences",
+  full.names = TRUE
+)
+
+sequences_list_of_files |> # merge and save
+  read_csv(show_col_types = FALSE) |> 
+  write_csv(
+    paste0("./Results/my_dream/sequences_", get_date(), ".csv")
+  )
+
+sequences_list_of_files |> file.remove() # remove chunks
 
 
 ### .pdfs ######################################################################
@@ -524,6 +541,7 @@ qpdf::pdf_combine( # combine
 )
 
 c(trace_plots_list_of_files, distribution_plots_list_of_files) |> file.remove() # remove
+
 
 
 
