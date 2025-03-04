@@ -38,7 +38,17 @@ make_dream_pars <- function(numerical_optimiser_setup) {
 control_DREAM_defaults <- function(numerical_optimiser_setup) {
   
   parameter_number <- length(numerical_optimiser_setup$parameter_names)
-  chain_number <-  32 * parameter_number # o.g was 4. This should not be linear.
+  
+  # logic for chain number calculation - subject to change
+  chain_number_based_on_parameter_number <- c(32, 32, 32, 128, 128, 128)
+  names(chain_number_based_on_parameter_number) <- c("3", "4", "5", "6", "7", "8")
+  
+  chain_number <- if_else(
+    is.na(unname(chain_number_based_on_parameter_number[as.character(parameter_number)])),
+    4 * parameter_number, # default is parameter number are not in named vector
+    unname(chain_number_based_on_parameter_number[as.character(parameter_number)])
+  )
+  
   de_pairs <- floor((chain_number - 1) / 2) 
   parameter_number <- length(numerical_optimiser_setup$parameter_names)
   
