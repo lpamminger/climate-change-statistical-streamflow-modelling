@@ -45,7 +45,44 @@ source("./Functions/result_set.R")
 
 
 # Remove testing - I think changes are good. Ready to rock and roll.
-gauge <- "611111"
+# I want to see if at least one catchment does not produce a a5 of > 136
+# Test if streamflow_model_slope_shifted_CO2 works as expected in excel?
+data_for_excel <- data |> 
+  filter(gauge == "410061")
+write_csv(data_for_excel, file = "testing_slope_CO2_model.csv")
+
+# break down each component for the streamflow_model_slope_shifted_CO2 model
+simple_slope_shifted_CO2 <- function(parameters, precip, CO2) {
+  a0 <- parameters[1]
+  a1 <- parameters[2]
+  a3 <- parameters[3]
+  a5 <- parameters[4]
+  
+  # break each component down
+  intercept <- a0
+  rainfall_slope <- a1 * precip
+  CO2_rainfall_slope <- a3 * if_else(a5 > CO2, 0, CO2) * precip
+  
+  together <- intercept + rainfall_slope + CO2_rainfall_slope
+  
+  list(
+    "intercept" = intercept,
+    "rainfall_slope" = rainfall_slope,
+    "CO2_rainfall_slope" = CO2_rainfall_slope,
+    "boxcox_flow" = together
+  ) |> 
+    as_tibble()
+}
+
+CO2 <- data_for_excel |> pull(CO2)
+precip <- data_for_excel |> pull(p_mm)
+x <- simple_slope_shifted_CO2(
+  parameters = c(2.82, 0.009, -0.000065, 100), 
+  CO2 = CO2, 
+  precip = precip
+  )
+
+gauge <- "410061"
 
 example_catchment <- gauge |>
    catchment_data_blueprint(
@@ -105,8 +142,8 @@ drought_catchment_data <- map(
 
 
 # Build objective_functions using the optimiser_set object ---------------------
-all_streamflow_models <- get_non_drought_streamflow_models()
-drought_streamflow_models <- get_drought_streamflow_models()
+all_streamflow_models <- list(streamflow_model_slope_shifted_CO2)#get_non_drought_streamflow_models()
+#drought_streamflow_models <- get_drought_streamflow_models()
 all_objective_functions <- get_all_objective_functions()
 
 
