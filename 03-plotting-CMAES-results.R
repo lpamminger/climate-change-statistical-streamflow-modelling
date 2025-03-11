@@ -202,8 +202,8 @@ gg_evidence_ratio_map <- function(state = NULL, evidence_ratio_data, map_data) {
     ) +
     theme_bw() +
     labs(
-      x = "Longitude",
-      y = "Latitude",
+      x = NULL, # commented out due for final review plot
+      y = NULL, # commented out due for final review plot
       colour = "Evidence Ratio"#,
       #shape = "Flag"
     ) +
@@ -212,7 +212,8 @@ gg_evidence_ratio_map <- function(state = NULL, evidence_ratio_data, map_data) {
       legend.key.width = unit(40, "mm"),
       legend.frame = element_rect(colour = "black"),
       legend.position = "bottom",
-      legend.text = element_text(size = 11)
+      legend.text = element_text(size = 11),
+      axis.text = element_text(size = 6)  # added for final review
     )
 
 
@@ -263,6 +264,26 @@ nice_plot <- top_nice_plot / bottom_nice_plot / guide_area() +
 
 nice_plot
 
+# nice plot for final review
+fr_top <- by_state_plots[["TAS"]] | by_state_plots[["QLD"]] | by_state_plots[["NT"]] | by_state_plots[["SA"]] 
+fr_bottom <- by_state_plots[["WA"]] | by_state_plots[["VIC"]] | by_state_plots[["NSW"]]
+fr_nice_plot <- fr_top / fr_bottom / guide_area() +
+  plot_layout(guides = "collect")
+
+fr_nice_plot
+
+ggsave(
+  filename = paste0("final_review_nice_plot", get_date(), ".pdf"),
+  plot = fr_nice_plot,
+  device = "pdf",
+  path = "./Graphs/CMAES_graphs",
+  height = 210,
+  width = 297,
+  units = "mm"
+)
+
+
+
 ggsave(
   filename = paste0("nice_plot_", get_date(), ".pdf"),
   plot = nice_plot,
@@ -273,6 +294,104 @@ ggsave(
   units = "mm"
 )
 
+## Change the shape of the dot depending on whether the a3 value is:
+### - positive 
+### - negative 
+### - Not applicable
+## Easiest way to do this is get best models, join a3 parameter
+
+# Move to the analysis bit afterwards
+best_model_combination_per_catchment <- best_CO2_non_CO2_per_gauge |>
+  select(gauge, streamflow_model, AIC) |> 
+  slice_min(
+    AIC,
+    by = gauge
+  ) |> 
+  distinct()
+
+direction_of_a3_change <- best_CO2_non_CO2_per_gauge |> 
+  semi_join(
+    best_model_combination_per_catchment,
+    by = join_by(gauge)
+  ) |> 
+  filter(parameter == "a3") |> 
+  select(gauge, streamflow_model, parameter, parameter_value) |> 
+  mutate(
+    CO2_term_impact = if_else(parameter_value < 0, "Negative", "Positive")
+  )
+
+# join to plot ready data
+plot_ready_data_with_a3 <- plot_ready_data |> 
+  left_join(
+    direction_of_a3_change,
+    by = join_by(gauge)
+  ) |> 
+  select(!c(streamflow_model, parameter, parameter_value)) |> 
+  mutate(
+    CO2_term_impact = if_else(evidence_ratio < 0, "Not Applicable", CO2_term_impact)
+  )
+
+# temporary
+gg_evidence_ratio_map_with_a3_direction <- function(state = NULL, evidence_ratio_data, map_data) {
+  
+  # use state as key to extract correct polygon from map_data and evidence_ratio_data
+  if (!is.null(state)) {
+    
+    map_data <- map_data |> 
+      filter(state == {{ state }})
+    
+    evidence_ratio_data <- evidence_ratio_data |> 
+      filter(state == {{ state }})
+    
+  }
+  
+  
+  
+  ggplot() +
+    geom_sf(
+      data = map_data,
+      colour = "black",
+      fill = "grey50"
+    ) +
+    geom_point(
+      data = evidence_ratio_data,
+      aes(x = lon, y = lat, colour = evidence_ratio, shape = CO2_term_impact), 
+      size = 0.75
+    ) +
+    #coord_sf(xlim = c(110, 155)) +
+    binned_scale( # binned scale code taken from: https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+      aesthetics = "colour",
+      palette = custom_palette, # length should be length(breaks + limits) - 1
+      breaks = c(1E1, 1E2, 1E3, 1E4, 1E6),
+      limits = c(-1E1, 1E20),
+      show.limits = TRUE,
+      guide = "coloursteps"
+    ) +
+    theme_bw() +
+    labs(
+      x = NULL, # commented out due for final review plot
+      y = NULL, # commented out due for final review plot
+      colour = "Evidence Ratio",
+      shape = bquote("Contribution of"~CO[2]~"term to annual streamflow")
+    ) +
+    theme(
+      #legend.key.height = unit(4, "mm"),
+      #legend.key.width = unit(40, "mm"),
+      legend.frame = element_rect(colour = "black"),
+      legend.position = "bottom",
+      legend.text = element_text(size = 11),
+      axis.text = element_text(size = 6)  # added for final review
+    )
+  
+  
+}
+
+
+aus_evidence_ratio_map <- gg_evidence_ratio_map_with_a3_direction(
+  evidence_ratio_data = plot_ready_data_with_a3,
+  map_data = aus_map
+)
+aus_evidence_ratio_map
 
 
 # 3. Streamflow plots of best-CO2, best-non-CO2 and observed -------------------
