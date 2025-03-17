@@ -318,7 +318,7 @@ direction_of_a3_change <- best_CO2_non_CO2_per_gauge |>
   select(gauge, streamflow_model, parameter, parameter_value) |> 
   mutate(
     CO2_term_impact = if_else(parameter_value < 0, "Negative", "Positive")
-  )
+  ) 
 
 # join to plot ready data
 plot_ready_data_with_a3 <- plot_ready_data |> 
@@ -329,6 +329,12 @@ plot_ready_data_with_a3 <- plot_ready_data |>
   select(!c(streamflow_model, parameter, parameter_value)) |> 
   mutate(
     CO2_term_impact = if_else(evidence_ratio < 0, "Not Applicable", CO2_term_impact)
+  ) |> 
+  mutate(
+    CO2_term_impact = factor(
+      CO2_term_impact, 
+      levels = c("Positive", "Negative", "Not Applicable")
+      )
   )
 
 # temporary
@@ -375,23 +381,48 @@ gg_evidence_ratio_map_with_a3_direction <- function(state = NULL, evidence_ratio
       shape = bquote("Contribution of"~CO[2]~"term to annual streamflow")
     ) +
     theme(
-      #legend.key.height = unit(4, "mm"),
-      #legend.key.width = unit(40, "mm"),
+      legend.key.height = unit(4, "mm"),
+      legend.key.width = unit(40, "mm"),
       legend.frame = element_rect(colour = "black"),
       legend.position = "bottom",
       legend.text = element_text(size = 11),
       axis.text = element_text(size = 6)  # added for final review
-    )
-  
+    ) + 
+    guides(shape = guide_legend(override.aes = list(size = 5)))
   
 }
 
 
-aus_evidence_ratio_map <- gg_evidence_ratio_map_with_a3_direction(
+#aus_evidence_ratio_map <- gg_evidence_ratio_map_with_a3_direction(
+#  evidence_ratio_data = plot_ready_data_with_a3,
+#  map_data = aus_map
+#)
+
+by_state_plots_a3 <- map(
+  .x = aus_map |> pull(state) |> unique(),
+  .f = gg_evidence_ratio_map_with_a3_direction,
   evidence_ratio_data = plot_ready_data_with_a3,
   map_data = aus_map
 )
-aus_evidence_ratio_map
+
+names(by_state_plots_a3) <- aus_map |> pull(state) |> unique()
+
+fr_top <- by_state_plots_a3[["TAS"]] | by_state_plots_a3[["QLD"]] | by_state_plots_a3[["NT"]] | by_state_plots_a3[["SA"]] 
+fr_bottom <- by_state_plots_a3[["WA"]] | by_state_plots_a3[["VIC"]] | by_state_plots_a3[["NSW"]]
+fr_nice_plot <- fr_top / fr_bottom / guide_area() +
+  plot_layout(guides = "collect")
+
+fr_nice_plot
+
+ggsave(
+  filename = paste0("post_final_review_nice_plot", get_date(), ".pdf"),
+  plot = fr_nice_plot,
+  device = "pdf",
+  path = "./Graphs/CMAES_graphs",
+  height = 210,
+  width = 297,
+  units = "mm"
+)
 
 
 # 3. Streamflow plots of best-CO2, best-non-CO2 and observed -------------------
