@@ -49,10 +49,11 @@ source("./Functions/result_set.R")
 # Test if streamflow_model_slope_shifted_CO2 works as expected in excel?
 data_for_excel <- data |> 
   filter(gauge == "410061")
-write_csv(data_for_excel, file = "testing_slope_CO2_model.csv")
+#write_csv(data_for_excel, file = "testing_slope_CO2_model.csv")
 
 # break down each component for the streamflow_model_slope_shifted_CO2 model
 simple_slope_shifted_CO2 <- function(parameters, precip, CO2) {
+  
   a0 <- parameters[1]
   a1 <- parameters[2]
   a3 <- parameters[3]
@@ -61,7 +62,7 @@ simple_slope_shifted_CO2 <- function(parameters, precip, CO2) {
   # break each component down
   intercept <- a0
   rainfall_slope <- a1 * precip
-  CO2_rainfall_slope <- a3 * if_else(a5 > CO2, 0, CO2) * precip
+  CO2_rainfall_slope <- a3 * precip * if_else(a5 > CO2, 0, CO2)
   
   together <- intercept + rainfall_slope + CO2_rainfall_slope
   
@@ -76,8 +77,11 @@ simple_slope_shifted_CO2 <- function(parameters, precip, CO2) {
 
 CO2 <- data_for_excel |> pull(CO2)
 precip <- data_for_excel |> pull(p_mm)
+
+multiply_CO2_precip <- CO2 * precip 
+
 x <- simple_slope_shifted_CO2(
-  parameters = c(2.82, 0.009, -0.000065, 100), 
+  parameters = c(2.81, 0.00865, -0.0000320, 100), 
   CO2 = CO2, 
   precip = precip
   )
@@ -97,12 +101,12 @@ results <- example_catchment |>
     bounds_and_transform_method = make_default_bounds_and_transform_methods(example_catchment),
     minimise_likelihood = TRUE
   ) |>
-  my_cmaes(print_monitor = TRUE) |>
-  result_set()
+  my_cmaes(print_monitor = TRUE) #|>
+  #result_set()
 
 parameters_summary(results)
 plot(results) 
-
+stop_here <- tactical_typo()
 
 
 
