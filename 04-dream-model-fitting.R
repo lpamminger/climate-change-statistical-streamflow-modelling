@@ -6,7 +6,8 @@ pacman::p_load(tidyverse, dream, coda, lattice, tictoc, furrr, parallel, truncno
 # install dream using: install.packages("dream", repos="http://R-Forge.R-project.org")
 # install.packages("coda")
 
-# TODO -> run it with all catchments
+# TODO 
+# - run it with all catchments
 
 
 
@@ -398,11 +399,17 @@ optimise_chunks <- function(chunk_ready_for_optimisation, chunk_iter, chunk_cont
     )
   
   ## Save sequences ============================================================
-  walk(
+  map(
     .x = converged_dream_objects,
-    .f = save_sequences,
-    file = paste0("./Results/my_dream/sequences_chunk_", chunk_iter, "_", get_date(), ".csv")
-  )
+    .f = mcmc_list_to_tibble,
+    add_gauge = TRUE
+  ) |> 
+    list_rbind() |> 
+    write_csv(
+      file = paste0("./Results/my_dream/sequences_chunk_", chunk_iter, "_", get_date(), ".csv")
+    )
+    
+
   
   ## Create and save distribution plots ========================================
   converged_distributions_plots <- map(
@@ -443,6 +450,16 @@ chunk_controls <- list(
   thinning = 1
 )
 
+#test_chunk_controls <- list(
+#  check_convergence_steps = 1000,
+#  warm_up_per_chain = 1E4,
+#  burn_in_per_chain = 3E3, 
+#  iterations_after_burn_in_per_chain = 3E3, 
+#  eps = 1E-6, #0.1
+#  steps = 30, #300
+#  thinning = 1
+#)
+
 ## Run it all ==================================================================
 ## The series and parallel method is too slow (8gb) used.
 # the iwalk need to be futured (un-future the optimise_chunks)
@@ -463,7 +480,9 @@ chunk_controls <- list(
 # Minimum is 16 at a time.
 # Test 16 at at time with 2 catchment in chunk
 # RAM for a single is ~ 14 gb. Use 3 catchments per chunk for safety
-#RAM_usage_chunks_ready_for_optimisation <- chunked_ready_for_optimisation[1:16]
+#RAM_usage_chunks_ready_for_optimisation <- chunked_ready_for_optimisation[1:3]
+
+
 
 start_time <- Sys.time()
 plan(multisession, workers = length(availableWorkers())) # set once for furrr
