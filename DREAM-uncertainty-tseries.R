@@ -14,7 +14,7 @@
 cat("\014") 
 
 # Import libraries--------------------------------------------------------------
-pacman::p_load(tidyverse, truncnorm, sloop)
+pacman::p_load(tidyverse, truncnorm, sloop, broom)
 
 # Import functions -------------------------------------------------------------
 source("./Functions/streamflow_models.R")
@@ -303,8 +303,8 @@ summary_fitted_values <- fitted_values_sequences |>
     precipitation = max(precipitation),
     upper = max(fitted_values),
     lower = min(fitted_values),
-    percentile_95 = quantile(fitted_values, 0.95),
-    percentile_05 = quantile(fitted_values, 0.05),
+    percentile_95 = quantile(fitted_values, 0.975),
+    percentile_05 = quantile(fitted_values, 0.025),
     .by = year
   ) |> 
   right_join(
@@ -350,3 +350,59 @@ summary_fitted_values |>
     legend.background = element_rect(fill = "white", colour = "black", linewidth = 0.2),
     plot.title = element_text(hjust = 0.5)
   )
+
+
+# Statistical tests (t-test on a3 parameters) ----------------------------------
+# Lets try a single catchment
+# extract all a3 values
+# t.test() see if it is different from zero
+
+# PROBLEM
+# Not all sequences from catchments are saved...
+# Does .csv have a maximum line capacity - max row limit?
+# Something wrong with 04 how I assign gauges?
+
+x <- sequences_DREAM |> 
+  pull(gauge) |> 
+  unique() 
+# I am missing half of the gauges.
+
+only_a3_sequences <- sequences_DREAM |>
+  filter(parameter == "a3") 
+
+# T-test greater than or less than zero function
+# One sided t-test used to compare is statistically different from zero
+# We have an idea of the direction of change based on the histograms
+
+one_sided_t_test_a3 <- function(gauge, only_a3_sequences) {
+  
+  a3_sequences_per_gauge <- only_a3_sequences |> 
+    filter(gauge == {{ gauge }}) |> 
+    pull(parameter_value)
+  
+  # Determine less or greater test
+  a3_mean_per_gauge <- mean(a3_sequences_per_gauge)
+  test_type <- if_else(sign(a3_mean_per_gauge) == -1, "less", "greater")
+  
+  a3_t_test_per_gauge <- a3_sequences_per_gauge |> 
+    t.test(
+      alternative = test_type,
+      mu = 0
+    ) |> 
+    tidy() |> 
+    add_column(
+      gauge = {{ gauge }},
+      .before = 1
+    )
+  
+}
+
+a3_t_test_results <- map(
+  .x = only_a3_sequences |> pull(gauge) |> unique(),
+  .f = one_sided_t_test_a3,
+  only_a3_sequences = only_a3_sequences
+) |> 
+  list_rbind()
+
+
+
