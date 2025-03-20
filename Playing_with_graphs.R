@@ -445,15 +445,15 @@ ToE_hist <- custom_bins_tim_of_emergence |>
     axis.text = element_text(size = 20)
     )
 ToE_hist
-ggsave(
-  filename = "ToE_graphs.pdf",
-  plot = ToE_hist,
-  device = "pdf",
-  path = "./Graphs",
-  width = 297,
-  height = 210,
-  units = "mm"
-)
+#ggsave(
+#  filename = "ToE_graphs.pdf",
+#  plot = ToE_hist,
+#  device = "pdf",
+#  path = "./Graphs",
+#  width = 297,
+#  height = 210,
+#  units = "mm"
+#)
 
 
 ## optimal binwidth calculation
@@ -481,21 +481,21 @@ graphs <- list(
   )
 
 
-ggsave(
-  filename = "playing_with_graphs.pdf",
-  plot = gridExtra::marrangeGrob(
-    graphs, 
-    nrow = 1, 
-    ncol = 1,
-    top = NULL
-  ),
-  # remove page numbers
-  device = "pdf",
-  path = "./Graphs",
-  width = 297,
-  height = 210,
-  units = "mm"
-)
+#ggsave(
+#  filename = "playing_with_graphs.pdf",
+#  plot = gridExtra::marrangeGrob(
+#    graphs, 
+#    nrow = 1, 
+#    ncol = 1,
+#    top = NULL
+#  ),
+#  # remove page numbers
+#  device = "pdf",
+#  path = "./Graphs",
+#  width = 297,
+#  height = 210,
+#  units = "mm"
+#)
 
 
 
@@ -576,6 +576,28 @@ binned_ToE_map_info <- ToE_map_info |>
     )
   )
 
+## Add record length to ToE data to see if ToE is impacted by record length
+record_length_per_gauge <- gauge_information |> 
+  select(gauge, record_length) |> 
+  mutate(
+    record_length_binned = case_when(
+      between(record_length, 30, 39) ~ "30-39",
+      between(record_length, 40, 49) ~ "40-49",
+      between(record_length, 50, 59) ~ "50-59",
+      between(record_length, 60, 69) ~ "60-69",
+      .default = NA
+    )
+  )
+
+binned_ToE_map_info <- binned_ToE_map_info |> 
+  left_join(
+    record_length_per_gauge,
+    by = join_by(gauge)
+  ) |> 
+  mutate(
+    record_length_binned = factor(record_length_binned, levels = c("30-39", "40-49", "50-59", "60-69"))
+  )
+
 
 ## Map 
 ggplot() +
@@ -586,7 +608,7 @@ ggplot() +
   ) +
   geom_point(
     data = binned_ToE_map_info,
-    aes(x = lon, y = lat, colour = custom_bins), #shape = flag),
+    aes(x = lon, y = lat, colour = custom_bins, shape = record_length_binned), #shape = flag),
     size = 0.75
   ) 
 
@@ -608,7 +630,7 @@ gg_map_plot <- function(state, ToE_data, map_data) {
     ) +
     geom_point(
       data = state_ToE_data,
-      aes(x = lon, y = lat, colour = custom_bins), 
+      aes(x = lon, y = lat, colour = custom_bins, shape = record_length_binned), 
       size = 0.75,
       show.legend = TRUE # Required to show ever factor in legend
     ) +
@@ -616,15 +638,19 @@ gg_map_plot <- function(state, ToE_data, map_data) {
       palette = "RdYlBu",
       drop = FALSE # Required to show ever factor in legend
     ) +
+    scale_shape_discrete(
+      drop = FALSE
+    ) +
     labs(
       colour = "Time of Emergence",
       x = NULL,#"Longitude",
-      y = NULL#"Latitude"
+      y = NULL,#"Latitude",
+      shape = "Record Length"
     ) +
     theme_bw() +
     theme(
       legend.key = element_rect(fill = "grey50"),
-      legend.background = element_rect(fill = "grey50", colour = "black", ),
+      legend.background = element_rect(colour = "black"),
       legend.title = element_text(hjust = 0.5),
       axis.text = element_text(size = 4)
     ) +
@@ -647,10 +673,29 @@ by_state_plots <- map(
 
 fr_top <- by_state_plots[["TAS"]] | by_state_plots[["QLD"]] | by_state_plots[["NT"]] | by_state_plots[["SA"]] 
 fr_bottom <- by_state_plots[["WA"]] | by_state_plots[["VIC"]] | by_state_plots[["NSW"]]
-fr_nice_plot <- fr_top / fr_bottom / guide_area() + plot_layout(guides = "collect")
+ToE_record_length_nice_plot <- fr_top / fr_bottom / guide_area() + plot_layout(guides = "collect")
 
-fr_nice_plot
 
+
+
+ToE_vs_record_length <- binned_ToE_map_info |> 
+  ggplot(aes(x = record_length, y = year_ToE)) +
+  geom_jitter() +
+  labs(
+    x = "Record Length",
+    y = "Time of Emergence"
+  ) +
+  theme_bw()
+
+
+binned_ToE_map_info |> 
+  ggplot(aes(x = as.factor(record_length_binned), y = as.factor(custom_bins))) +
+  geom_jitter() +
+  labs(
+    x = "Record Length",
+    y = "Time of Emergence"
+  ) +
+  theme_bw()
 
 
 # Components of best models ----------------------------------------------------
@@ -761,7 +806,7 @@ gg_streamflow_map_plot <- function(state, ToE_data, map_data) {
     theme_bw() +
     theme(
       legend.key = element_rect(fill = "grey50"),
-      legend.background = element_rect(fill = "grey50", colour = "black", ),
+      legend.background = element_rect(fill = "grey50", colour = "black"),
       legend.title = element_text(hjust = 0.5),
       axis.text = element_text(size = 4),
       legend.text = element_text(size = 6)
@@ -796,13 +841,287 @@ ggsave(
   units = "mm"
 )
 
-ggsave(
-  filename = "streamflow_model_nice_plot.pdf",
-  plot = model_nice_plot,
-  device = "pdf",
-  width = 297,
-  height = 210,
-  units = "mm"
-)
+#ggsave(
+#  filename = "streamflow_model_nice_plot.pdf",
+#  plot = model_nice_plot,
+#  device = "pdf",
+#  width = 297,
+#  height = 210,
+#  units = "mm"
+#)
 
+
+
+# Component maps ---------------------------------------------------------------
+# method: make tibble with |model component|australia_shape_file| -> facet_wrap|. 
+# Use the best_model tibble. 
+#Remove a0_d, a5. Replace a2 with auto, replace a3 with CO2, a0_n with drought and a4 with seasonal. 
+#Assign model component and lat long. 
+# Add as other layer 
+
+# Map
+single_aus_map <- ozmaps::ozmap("country") |> 
+  uncount(4) |>  # repeat the geometry 4 times
+  mutate(
+    NAME = c("Drought", "Autocorrelation", "CO2", "Rainfall Seasonality")
+  )
+
+# Best model per gauge adjustment
+simplified_components_best_model_per_gauge <- best_model_per_gauge |> 
+  filter(parameter %in% c("a2", "a3", "a4", "a0_d")) |> 
+  select(gauge, streamflow_model, parameter) |> 
+  mutate(
+    NAME = case_when(
+      parameter == "a0_d" ~ "Drought",
+      parameter == "a2" ~ "Autocorrelation",
+      parameter == "a3" ~ "CO2",
+      parameter == "a4" ~ "Rainfall Seasonality",
+      .default = NA
+    )
+  ) |> 
+  left_join(
+    lat_long_gauge,
+    by = join_by(gauge)
+  )
+
+# Count of components
+total_gauges <- best_model_per_gauge |> pull(gauge) |> unique() |> length()
+count_components <- simplified_components_best_model_per_gauge |> 
+  summarise(
+    n = n(),
+    .by = NAME
+  ) |> 
+  mutate(
+    label = paste0(round((n / total_gauges) * 100, digits = 2), "%", " (n = ", n, ")")
+  ) |> 
+  add_column(
+    lon = 160
+  ) |> 
+  add_column(
+    lat = -15
+  )
+
+# Put it together
+model_components <- single_aus_map |> 
+ggplot(aes(geometry = geometry)) +
+  geom_sf(
+    colour = "black",
+    fill = "grey80"
+  ) +
+  geom_point(
+    mapping = aes(x = lon, y = lat, colour = NAME),
+    data = simplified_components_best_model_per_gauge,
+    inherit.aes = FALSE,
+    size = 0.75,
+    show.legend = FALSE
+  ) +
+  geom_text(
+    mapping = aes(x = lon, y = lat, label = label),
+    data = count_components,
+    inherit.aes = FALSE
+  ) +
+  metR::scale_x_longitude(ticks = 5) +
+  metR::scale_y_latitude(ticks = 5) +
+  labs(
+    x = "Longitude",
+    y = "Latitude",
+    colour = NULL
+  ) +
+  scale_colour_brewer(palette = "Set1") +
+  facet_wrap(~NAME) +
+  theme_bw() +
+  theme(
+    legend.position = "bottom"
+  ) 
+
+
+# transform axis to lat/long degrees and that?
+
+# Bin evidence ratios for qualitative plots---------------------------------------
+# Copied from 03
+evidence_ratio_calc <- best_CO2_non_CO2_per_gauge |>
+  select(gauge, contains_CO2, AIC) |> 
+  distinct() |> 
+  pivot_wider(
+    names_from = contains_CO2,
+    values_from = AIC
+  ) |> 
+  mutate(
+    CO2_model = `TRUE`,
+    non_CO2_model = `FALSE`,
+    .keep = "unused"
+  ) |> 
+  mutate(
+    AIC_difference = CO2_model - non_CO2_model # CO2 is smaller than non-CO2 then negative and CO2 is better
+  ) |>
+  mutate(
+    evidence_ratio = case_when(
+      AIC_difference < 0 ~ exp(0.5 * abs(AIC_difference)), # when CO2 model is better
+      AIC_difference > 0 ~ -exp(0.5 * abs(AIC_difference)) # when non-CO2 model is better
+    )
+  ) |> 
+  arrange(evidence_ratio) 
+
+
+### Get into plot ready form ###################################################
+lat_long_evidence_ratio <- evidence_ratio_calc |>
+  select(!c(AIC_difference)) |>
+  left_join(
+    lat_long_gauge,
+    by = join_by(gauge)
+  ) 
+
+
+# Weak or limited -> 1-10
+# Moderate -> 10-100
+# Moderately strong -> 100-1,000
+# Strong -> 1,000-10,000
+# Very strong -> 10,000-1,000,000
+# Extremely strong ->  >1,000,000
+
+binned_lat_lon_evidence_ratio <- lat_long_evidence_ratio |> 
+  mutate(
+    binned_evidence_ratio = case_when(
+      between(evidence_ratio, -1E1, 1E1) ~ "Weak",
+      between(evidence_ratio,  1E1, 1E2) ~ "Moderate",
+      between(evidence_ratio,  1E2, 1E3) ~ "Moderately Strong",
+      between(evidence_ratio,  1E3, 1E4) ~ "Strong",
+      between(evidence_ratio,  1E4, 1E6) ~ "Very Strong",
+      between(evidence_ratio,  1E6, Inf) ~ "Extremely Strong",
+      .default = NA
+    )
+  ) |> 
+  left_join(
+    state_info,
+    by = join_by(gauge)
+  ) |> 
+  mutate(
+    binned_evidence_ratio = factor(
+      binned_evidence_ratio, 
+      levels = c("Weak", "Moderate", "Moderately Strong", "Strong", "Very Strong", "Extremely Strong")
+      )
+  )
+
+
+# Add the a3 direction here
+direction_of_a3_change <- best_model_per_gauge |> 
+  filter(parameter == "a3") |> 
+  select(gauge, streamflow_model, parameter, parameter_value) |> 
+  mutate(
+    CO2_direction = if_else(parameter_value < 0, "Negative", "Positive")
+  ) |> 
+  select(gauge, CO2_direction)
+
+
+a3_direction_binned_lat_lon_evidence_ratio <- binned_lat_lon_evidence_ratio |> 
+  left_join(
+    direction_of_a3_change,
+    by = join_by(gauge)
+  ) |> 
+  replace_na(list(CO2_direction = "No CO2 Term")) |> 
+  mutate(
+    CO2_direction = factor(CO2_direction, levels = c("Negative", "Positive", "No CO2 Term"))
+  )
+
+
+ggplot() +
+  geom_sf(
+    data = aus_map,
+    colour = "black",
+    fill = "grey50"
+  ) +
+  geom_point(
+    mapping = aes(x = lon, y = lat, colour = binned_evidence_ratio, shape = CO2_direction),
+    data = a3_direction_binned_lat_lon_evidence_ratio,
+    inherit.aes = FALSE
+  )
+
+  
+# function here
+gg_evidence_ratio_map <- function(state = NULL, evidence_ratio_data, map_data) {
+  
+  # use state as key to extract correct polygon from map_data and evidence_ratio_data
+  if (!is.null(state)) {
+    
+    map_data <- map_data |> 
+      filter(state == {{ state }})
+    
+    evidence_ratio_data <- evidence_ratio_data |> 
+      filter(state == {{ state }})
+    
+  }
+  
+  
+  ggplot() +
+    geom_sf(
+      data = map_data,
+      colour = "black",
+      fill = "grey50"
+    ) +
+    geom_point(
+      data = evidence_ratio_data,
+      aes(x = lon, y = lat, colour = binned_evidence_ratio, shape = CO2_direction), #shape = flag),
+      size = 0.75,
+      show.legend = TRUE
+    ) +
+    scale_colour_brewer(
+      palette = "Reds",
+      drop = FALSE
+    ) +
+    theme_bw() +
+    labs(
+      x = NULL, # commented out due for final review plot
+      y = NULL, # commented out due for final review plot
+      colour = "Evidence Ratio",
+      shape = "Contribution of CO2 term to streamflow"
+    ) +
+    theme(
+      legend.key = element_rect(fill = "grey50"),
+      legend.title = element_text(hjust = 0.5),
+      legend.background = element_rect(colour = "black"),
+      axis.text = element_text(size = 6)
+    ) +
+    guides(
+      colour = guide_legend(override.aes = list(size = 5), nrow = 3), # Wrap legend
+      shape = guide_legend(override.aes = list(size = 5))
+      ) 
+  
+  
+}
+
+
+state_evidence <- map(
+  .x = aus_map |> pull(state),
+  .f = gg_evidence_ratio_map,
+  evidence_ratio_data = a3_direction_binned_lat_lon_evidence_ratio,
+  map_data = aus_map
+) |> 
+  `names<-`(aus_map |> pull(state))
+
+
+
+evi_top <- state_evidence[["TAS"]] | state_evidence[["QLD"]] | state_evidence[["NT"]] | state_evidence[["SA"]] 
+evi_bottom <- state_evidence[["WA"]] | state_evidence[["VIC"]] | state_evidence[["NSW"]]
+evi_nice_plot <- (evi_top / evi_bottom / guide_area()) + plot_layout(guides = "collect")
+
+new_graphs <- list(model_components, evi_nice_plot, ToE_vs_record_length, ToE_record_length_nice_plot)
+
+
+my_ggsave <- function(plot, name) {
+  ggsave(
+    filename = paste0(name,".pdf"),
+    plot = plot,
+    device = "pdf",
+    path = "./Graphs",
+    width = 297,
+    height = 210,
+    units = "mm"
+  )
+}
+
+walk2(
+  .x = new_graphs,
+  .y = c("model_components", "evi_nice_plot", "ToE_vs_record_length", "ToE_record_length_nice_plot"),
+  .f = my_ggsave
+)
 
