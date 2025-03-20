@@ -60,7 +60,7 @@ catchment_information <- readr::read_csv(
 
 ## CONSTANTS ===================================================================
 acceptable_missing_streamflow_days <- 10
-minimum_entires_year <- 30 # at least 30 years of data required. Copied from HRS
+min_record_length_years <- 30 # at least 30 years of data required. Copied from HRS
 min_run_length <- 2
 pre_ind_CO2_ppm <- 280
 
@@ -263,14 +263,14 @@ gauge_data <- yearly_data |>
     drought = any(drought == TRUE & included_in_calibration == TRUE), # if there is a drought but we are not calibrating on it we ignore that there is a drought
     max_run_start = max_continuous_run_start_end(q_mm)[1],
     max_run_end = max_continuous_run_start_end(q_mm)[2],
-    entires = sum(included_in_calibration),
+    record_length = sum(included_in_calibration),
     chunks = counting_chunks(q_mm),
     .by = gauge
   ) |>
   mutate(
     max_run = (max_run_end - max_run_start) + 1
   ) |>
-  filter(entires >= minimum_entires_year) |>
+  filter(record_length >= min_record_length_years) |>
   left_join( # Add chunks to gauge_data i.e., continuous runs
     catchment_information, 
     by = join_by(gauge)
@@ -355,84 +355,7 @@ ggsave(
   units = "mm"
 )
 
-## plotting seasonal ratios ====================================================
-
-## warm to cool ratio
-# warm_to_cool_ratio_plot <- data |>
-#                             mutate(
-#                               rolling_ave_seasonal_ratio = rollapply(standardised_warm_to_cool_season_rainfall_ratio, n = 10, f = mean),
-#                               .by = gauge,
-#                               .after = 4
-#                             ) |>
-#                             ggplot(aes(x = year, y = standardised_warm_to_cool_season_rainfall_ratio)) +
-#                             geom_line() +
-#                             #geom_smooth(formula = y ~ x, method = lm) +
-#                             geom_line(aes(y = rolling_ave_seasonal_ratio), colour = "red") +
-#                             facet_wrap(~gauge, scales = "free_y") +
-#                             theme_bw()
-
-
-## warm to annual ratio
-# warn_to_annual_plot <- data |>
-#                         mutate(
-##                           rolling_ave_seasonal_ratio = rollapply(standardised_warm_season_to_annual_rainfall_ratio, n = 10, f = mean),
-#                           .by = gauge,
-#                           .after = 4
-#                         ) |>
-#                         ggplot(aes(x = year, y = standardised_warm_season_to_annual_rainfall_ratio)) +
-#                         geom_line() +
-#                         #geom_smooth(formula = y ~ x, method = lm) +
-#                         geom_line(aes(y = rolling_ave_seasonal_ratio), colour = "red") +
-#                         facet_wrap(~gauge, scales = "free_y") +
-#                         theme_bw()
 
 
 
 
-
-# Continuous stuff - Probably remove -------------------------------------------
-### Remove streamflow if it is discontinuous ###################################
-### - Only include the longest run of continuous streamflow for each catchment
-
-#get_only_continuous_data <- function(gauge_id, start_index, end_index, yearly_data) {
-#  yearly_data |>
-#    filter(gauge == gauge_id) |>
-#    slice(start_index:end_index)
-#}
-
-
-#list_continuous_yearly_data <- pmap(
-#  .l = list(
-#    "gauge" = gauge_data$gauge,
-#    "start" = gauge_data$max_run_start,
-#    "end" = gauge_data$max_run_end
-#  ),
-#  .f = get_only_continuous_data,
-#  yearly_data = acceptable_yearly_data
-#)
-
-
-#continuous_yearly_data <- do.call("rbind", list_continuous_yearly_data)
-
-
-### Add a box-cox streamflow column ############################################
-### - There has to be a better way to do this
-
-#bc_q_list <- map2(
-#  .x = gauge_data$gauge,
-#  .y = gauge_data$bc_lambda,
-#  .f = bc_q_generator,
-#  yearly_data = continuous_yearly_data,
-#  lambda_2 = 1
-#)
-
-#bc_q <- do.call("rbind", bc_q_list)
-
-#names(bc_q) <- "bc_q"
-
-#continuous_yearly_data <- continuous_yearly_data |>
-#  add_column( # add column assumes the rows remain fixed
-#    bc_q,
-#    .before = 6
-#  )
-#write_csv(continuous_yearly_data, paste0("./Data/Tidy/continuous_yearly_data_CAMELS.csv"))
