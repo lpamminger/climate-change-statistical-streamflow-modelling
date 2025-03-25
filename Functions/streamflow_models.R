@@ -192,6 +192,12 @@ streamflow_model_precip_auto <- function(catchment_data, parameter_set) {
   # Get data
   precipitation <- catchment_data$precipitation
   
+  ### TEMPORARY ####
+  if(is.null(precipitation)) {
+    precipitation <- catchment_data$full_data_set$precipitation
+  }
+  ####
+  
   # Get into matrix form
   repeat_precipitation <- matrix(precipitation, ncol = ncol(parameter_set), nrow = length(precipitation), byrow = FALSE) #matrix(rep(precipitation, times = ncol(parameter_set)), ncol = ncol(parameter_set), byrow = FALSE)
   repeat_a0 <- matrix(a0, ncol = ncol(parameter_set), nrow = nrow(repeat_precipitation), byrow = TRUE)
@@ -1327,13 +1333,12 @@ streamflow_model_drought_separate_shifted_CO2_seasonal_ratio_auto <- function(ca
 # CO2 slope streamflow models --------------------------------------------------
 streamflow_model_slope_shifted_CO2 <- function(catchment_data, parameter_set) { 
   
-
   # If no parameters are given return description of model
   if(is.null(names(as.list(match.call())[-1]))) {
     return(
       list(
         "name" = "streamflow_model_slope_shifted_CO2",
-        "parameters" = c("a0", "a1", "a3", "a5")
+        "parameters" = c("a0", "a1", "a3v2", "a5")
       )
     )
   } 
@@ -1346,7 +1351,7 @@ streamflow_model_slope_shifted_CO2 <- function(catchment_data, parameter_set) {
   # Parameters
   a0 <- parameter_set[1, ]
   a1 <- parameter_set[2, ]
-  a3 <- parameter_set[3, ]
+  a3v2 <- parameter_set[3, ]
   a5 <- parameter_set[4, ]
   
   # Get data
@@ -1359,7 +1364,7 @@ streamflow_model_slope_shifted_CO2 <- function(catchment_data, parameter_set) {
   repeat_CO2 <- matrix(CO2, ncol = ncol(parameter_set), nrow = length(CO2), byrow = FALSE) 
   repeat_a0 <- matrix(a0, ncol = ncol(parameter_set), nrow = nrow(repeat_precipitation), byrow = TRUE)
   repeat_a1 <- matrix(a1, ncol = ncol(parameter_set), nrow = nrow(repeat_precipitation), byrow = TRUE)
-  repeat_a3 <- matrix(a3, ncol = ncol(parameter_set), nrow = nrow(repeat_precipitation), byrow = TRUE)
+  repeat_a3v2 <- matrix(a1, ncol = ncol(parameter_set), nrow = nrow(repeat_precipitation), byrow = TRUE)
   repeat_a5 <- matrix(a5, ncol = ncol(parameter_set), nrow = nrow(repeat_precipitation), byrow = TRUE)
   
   # CO2 requirements
@@ -1367,9 +1372,66 @@ streamflow_model_slope_shifted_CO2 <- function(catchment_data, parameter_set) {
   repeat_shifted_CO2[repeat_shifted_CO2 < 0] <- 0 # max(0, CO2 - a5)
   
   # Model
-  repeat_a0 + (repeat_a1 * repeat_precipitation) + (repeat_a3 * repeat_precipitation * repeat_shifted_CO2)
+  repeat_a0 + (repeat_a1 * repeat_precipitation) + (repeat_a3v2 * repeat_precipitation * repeat_shifted_CO2)
   
 }
+
+
+
+streamflow_model_slope_shifted_CO2_v2 <- function(catchment_data, parameter_set) { 
+  
+
+  # If no parameters are given return description of model
+  if(is.null(names(as.list(match.call())[-1]))) {
+    return(
+      list(
+        "name" = "streamflow_model_slope_shifted_CO2_v2",
+        "parameters" = c("a0", "a1", "a3v2", "a5")
+      )
+    )
+  } 
+  
+  # Check if parameter is a matrix - if not coerce
+  if(!is.matrix(parameter_set)) {
+    parameter_set <- as.matrix(parameter_set, ncol = 1)
+  }
+  
+  # Parameters
+  a0 <- parameter_set[1, ]
+  a1 <- parameter_set[2, ]
+  a3v2 <- parameter_set[3, ]
+  a5 <- parameter_set[4, ]
+  
+  # Get data
+  precipitation <- catchment_data$precipitation
+  CO2 <- catchment_data$CO2
+  
+  
+  # Get into matrix form
+  repeat_precipitation <- matrix(precipitation, ncol = ncol(parameter_set), nrow = length(precipitation), byrow = FALSE) #matrix(rep(precipitation, times = ncol(parameter_set)), ncol = ncol(parameter_set), byrow = FALSE)
+  repeat_CO2 <- matrix(CO2, ncol = ncol(parameter_set), nrow = length(CO2), byrow = FALSE) 
+  repeat_a0 <- matrix(a0, ncol = ncol(parameter_set), nrow = nrow(repeat_precipitation), byrow = TRUE)
+  repeat_a1 <- matrix(a1, ncol = ncol(parameter_set), nrow = nrow(repeat_precipitation), byrow = TRUE)
+  repeat_a3v2 <- matrix(a1, ncol = ncol(parameter_set), nrow = nrow(repeat_precipitation), byrow = TRUE)
+  repeat_a5 <- matrix(a5, ncol = ncol(parameter_set), nrow = nrow(repeat_precipitation), byrow = TRUE)
+  
+  # CO2 requirements
+  repeat_shifted_CO2 <- repeat_CO2 - repeat_a5
+  repeat_shifted_CO2[repeat_shifted_CO2 < 0] <- 0 # max(0, CO2 - a5)
+  
+  # Turn off a1 comp when a5 kicks in
+  # Use repeat_shifted_CO2 to make a dummy variable
+  # repeat_shifted_CO2 is a vector of c(0, 0, 50, 60, 70)
+  # coerce to logical c(FALSE, FALSE, TRUE, TRUE, TRUE), invert
+  # repeat_a3v2 is already turned on/off using repeat_shifted_CO2
+  turn_off_precip_slope <- !as.logical(repeat_shifted_CO2) |> 
+    matrix(ncol = ncol(parameter_set), nrow = nrow(repeat_precipitation))
+  
+  # Model
+  repeat_a0 + (repeat_a1 * repeat_precipitation * turn_off_precip_slope) + (repeat_a3v2 * repeat_precipitation * repeat_shifted_CO2)
+  
+}
+
 
 
 

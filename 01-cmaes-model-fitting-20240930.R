@@ -86,7 +86,7 @@ x <- simple_slope_shifted_CO2(
   precip = precip
   )
 
-gauge <- "410061"
+gauge <- "003303A"
 
 example_catchment <- gauge |>
    catchment_data_blueprint(
@@ -96,17 +96,40 @@ example_catchment <- gauge |>
 
 results <- example_catchment |> 
   numerical_optimiser_setup_vary_inputs(
-    streamflow_model = streamflow_model_slope_shifted_CO2,
+    streamflow_model = streamflow_model_slope_shifted_CO2_v2,
     objective_function = constant_sd_objective_function,
     bounds_and_transform_method = make_default_bounds_and_transform_methods(example_catchment),
     minimise_likelihood = TRUE
   ) |>
-  my_cmaes(print_monitor = TRUE) #|>
-  #result_set()
+  my_cmaes(print_monitor = TRUE) |>
+  result_set()
 
-parameters_summary(results)
+x <- parameters_summary(results)
 plot(results) 
 stop_here <- tactical_typo()
+
+# Fixing:
+# - Increase the scale -> does not change the outcome
+# - Reduce a3v2 bounds significantly -> want to make a3v2 zero
+# - Scale and reduce a3v2 bounds ->scale = 1E6 and bounds -1E-5 to 1E-5 -> sets a3v2 to zero and a5 to >136. Turns it off.
+# - Lower tolX (+ scale and bounds) myStopOnTolX(tol = 1E-8) -> very flat graph
+
+# I need to find a catchment where the Scale CO2 model does not set the 
+# CO2 components to zero
+
+# Try using a new model --> streamflow_model_slope_shifted_CO2_v2
+# directly linking CO2 and precip means precip can be turned off
+# default tolX = 1E-6, scale = 100 and bounds a1CO2 -1 to 1
+
+
+# The current model repeat_a0 + (repeat_a1 * repeat_precipitation) + (repeat_a3v2 * repeat_precipitation * repeat_shifted_CO2)
+# is doubling the effects of slope and CO2
+# Find a way to turn this off i.e., using the vector created by repeat_shifted_CO2
+# to make a dummy variable
+# option:
+# repeat_a0 + (repeat_a1 * repeat_precipitation * off_repeat_shifted_CO2) + 
+#  (repeat_a3v2 * repeat_precipitation * repeat_shifted_CO2 * on_repeat_shifted_CO2)
+# Does it work? -> 
 
 
 
