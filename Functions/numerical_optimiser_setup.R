@@ -167,6 +167,7 @@ make_default_bounds_and_transform_methods <- function(catchment_data_set) {
     "a0_d",      -300,           50,                linear_parameter_transform, # intercept - no drought
     "a0_n",      -300,           50,                linear_parameter_transform, # intercept - drought
     "a1",         1E-5 ,         1,                 logarithmic_parameter_transform, # slope
+    "a3v2",      -1,             1,                 linear_parameter_transform,
     "a2",        -1,             1,                 linear_parameter_transform, # autocorrelation
     "a3",        -25,            50,                linear_parameter_transform, # CO2 coefficient 
     "a4",        -250,           600,               linear_parameter_transform, # seasonal parameter
@@ -174,6 +175,8 @@ make_default_bounds_and_transform_methods <- function(catchment_data_set) {
     "sd",         1E-8,          200,               logarithmic_parameter_transform, # constant sd objective function 
     "scale_CO2",  1E-8,          2,                 logarithmic_parameter_transform # CO2 scaler for objective function
   )
+  
+  # There probably should be a default or error if the parameter is not listed
 }
 
 
