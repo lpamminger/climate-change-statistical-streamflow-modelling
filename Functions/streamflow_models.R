@@ -20,7 +20,7 @@ catchment_data_directly_to_streamflow_model <- function(catchment_data, paramete
     result_tibble <- stop_start_catchment_data |> 
       list_rbind() |> 
       add_column(
-        modelled_boxcox_streamflow <- streamflow_results
+        modelled_boxcox_streamflow = streamflow_results
       )
     
     return(result_tibble)
