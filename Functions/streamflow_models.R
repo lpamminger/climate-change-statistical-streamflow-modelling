@@ -5,7 +5,7 @@ catchment_data_directly_to_streamflow_model <- function(catchment_data, paramete
     # If true extract either stop_start or full dataset - force stop_start
     stop_start_catchment_data <- catchment_data$stop_start_data_set
     
-    # 
+    # Make streamflow_model a model (no a char)
     streamflow_model_recursive <- noquote(streamflow_model)
     
     # use recursion to force stop-start data
