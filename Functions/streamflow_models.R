@@ -1,5 +1,6 @@
 # Allow catchment data to be immediately used with streamflow models
 catchment_data_directly_to_streamflow_model <- function(catchment_data, parameter_set, streamflow_model) {
+
   
     # If true extract either stop_start or full dataset - force stop_start
     stop_start_catchment_data <- catchment_data$stop_start_data_set
@@ -10,7 +11,7 @@ catchment_data_directly_to_streamflow_model <- function(catchment_data, paramete
     # use recursion to force stop-start data
     streamflow_results <- map(
       .x = stop_start_catchment_data,
-      .f = streamflow_model_recursive, # recursive?
+      .f = streamflow_model_recursive, 
       parameter_set = parameter_set
     ) |>
       unname() |> 
@@ -106,7 +107,7 @@ streamflow_model_precip_seasonal_ratio <- function(catchment_data, parameter_set
     streamflow_results <- catchment_data_directly_to_streamflow_model(
       catchment_data = catchment_data,
       parameter_set = parameter_set, 
-      streamflow_model = streamflow_model_precip_only
+      streamflow_model = streamflow_model_precip_seasonal_ratio
     )
     return(streamflow_results)
   }
@@ -158,7 +159,7 @@ streamflow_model_precip_auto <- function(catchment_data, parameter_set) {
     streamflow_results <- catchment_data_directly_to_streamflow_model(
       catchment_data = catchment_data,
       parameter_set = parameter_set, 
-      streamflow_model = streamflow_model_precip_only
+      streamflow_model = streamflow_model_precip_auto
     )
     return(streamflow_results)
   }
@@ -170,12 +171,6 @@ streamflow_model_precip_auto <- function(catchment_data, parameter_set) {
   
   # Get data
   precipitation <- catchment_data$precipitation
-  
-  ### TEMPORARY ####
-  if(is.null(precipitation)) {
-    precipitation <- catchment_data$full_data_set$precipitation
-  }
-  ####
   
   # Get into matrix form
   repeat_precipitation <- matrix(precipitation, ncol = ncol(parameter_set), nrow = length(precipitation), byrow = FALSE) #matrix(rep(precipitation, times = ncol(parameter_set)), ncol = ncol(parameter_set), byrow = FALSE)
@@ -228,7 +223,7 @@ streamflow_model_precip_seasonal_ratio_auto <- function(catchment_data, paramete
     streamflow_results <- catchment_data_directly_to_streamflow_model(
       catchment_data = catchment_data,
       parameter_set = parameter_set, 
-      streamflow_model = streamflow_model_precip_only
+      streamflow_model = streamflow_model_precip_seasonal_ratio_auto
     )
     return(streamflow_results)
   }
@@ -302,7 +297,7 @@ streamflow_model_drought_precip_only <- function(catchment_data, parameter_set) 
     streamflow_results <- catchment_data_directly_to_streamflow_model(
       catchment_data = catchment_data,
       parameter_set = parameter_set, 
-      streamflow_model = streamflow_model_precip_only
+      streamflow_model = streamflow_model_drought_precip_only
     )
     return(streamflow_results)
   }
@@ -355,7 +350,7 @@ streamflow_model_drought_precip_seasonal_ratio <- function(catchment_data, param
     streamflow_results <- catchment_data_directly_to_streamflow_model(
       catchment_data = catchment_data,
       parameter_set = parameter_set, 
-      streamflow_model = streamflow_model_precip_only
+      streamflow_model = streamflow_model_drought_precip_seasonal_ratio
     )
     return(streamflow_results)
   }
@@ -411,7 +406,7 @@ streamflow_model_drought_precip_auto <- function(catchment_data, parameter_set) 
     streamflow_results <- catchment_data_directly_to_streamflow_model(
       catchment_data = catchment_data,
       parameter_set = parameter_set, 
-      streamflow_model = streamflow_model_precip_only
+      streamflow_model = streamflow_model_drought_precip_auto
     )
     return(streamflow_results)
   }
@@ -482,7 +477,7 @@ streamflow_model_drought_precip_seasonal_ratio_auto <- function(catchment_data, 
     streamflow_results <- catchment_data_directly_to_streamflow_model(
       catchment_data = catchment_data,
       parameter_set = parameter_set, 
-      streamflow_model = streamflow_model_precip_only
+      streamflow_model = streamflow_model_drought_precip_seasonal_ratio_auto
     )
     return(streamflow_results)
   }
@@ -621,7 +616,7 @@ streamflow_model_separate_shifted_CO2_auto <- function(catchment_data, parameter
     streamflow_results <- catchment_data_directly_to_streamflow_model(
       catchment_data = catchment_data,
       parameter_set = parameter_set, 
-      streamflow_model = streamflow_model_precip_only
+      streamflow_model = streamflow_model_separate_shifted_CO2_auto
     )
     return(streamflow_results)
   }
@@ -696,7 +691,7 @@ streamflow_model_separate_shifted_CO2_seasonal_ratio <- function(catchment_data,
     streamflow_results <- catchment_data_directly_to_streamflow_model(
       catchment_data = catchment_data,
       parameter_set = parameter_set, 
-      streamflow_model = streamflow_model_precip_only
+      streamflow_model = streamflow_model_separate_shifted_CO2_seasonal_ratio
     )
     return(streamflow_results)
   }
@@ -758,7 +753,7 @@ streamflow_model_separate_shifted_CO2_seasonal_ratio_auto <- function(catchment_
     streamflow_results <- catchment_data_directly_to_streamflow_model(
       catchment_data = catchment_data,
       parameter_set = parameter_set, 
-      streamflow_model = streamflow_model_precip_only
+      streamflow_model = streamflow_model_separate_shifted_CO2_seasonal_ratio_auto
     )
     return(streamflow_results)
   }
@@ -841,7 +836,7 @@ streamflow_model_drought_separate_shifted_CO2 <- function(catchment_data, parame
     streamflow_results <- catchment_data_directly_to_streamflow_model(
       catchment_data = catchment_data,
       parameter_set = parameter_set, 
-      streamflow_model = streamflow_model_precip_only
+      streamflow_model = streamflow_model_drought_separate_shifted_CO2
     )
     return(streamflow_results)
   }
@@ -904,7 +899,7 @@ streamflow_model_drought_separate_shifted_CO2_auto <- function(catchment_data, p
     streamflow_results <- catchment_data_directly_to_streamflow_model(
       catchment_data = catchment_data,
       parameter_set = parameter_set, 
-      streamflow_model = streamflow_model_precip_only
+      streamflow_model = streamflow_model_drought_separate_shifted_CO2_auto
     )
     return(streamflow_results)
   }
@@ -985,7 +980,7 @@ streamflow_model_drought_separate_shifted_CO2_seasonal_ratio <- function(catchme
     streamflow_results <- catchment_data_directly_to_streamflow_model(
       catchment_data = catchment_data,
       parameter_set = parameter_set, 
-      streamflow_model = streamflow_model_precip_only
+      streamflow_model = streamflow_model_drought_separate_shifted_CO2_seasonal_ratio
     )
     return(streamflow_results)
   }
@@ -1052,7 +1047,7 @@ streamflow_model_drought_separate_shifted_CO2_seasonal_ratio_auto <- function(ca
     streamflow_results <- catchment_data_directly_to_streamflow_model(
       catchment_data = catchment_data,
       parameter_set = parameter_set, 
-      streamflow_model = streamflow_model_precip_only
+      streamflow_model = streamflow_model_drought_separate_shifted_CO2_seasonal_ratio_auto
     )
     return(streamflow_results)
   }
@@ -1140,7 +1135,7 @@ streamflow_model_slope_shifted_CO2 <- function(catchment_data, parameter_set) {
     streamflow_results <- catchment_data_directly_to_streamflow_model(
       catchment_data = catchment_data,
       parameter_set = parameter_set, 
-      streamflow_model = streamflow_model_precip_only
+      streamflow_model = streamflow_model_slope_shifted_CO2
     )
     return(streamflow_results)
   }
@@ -1177,7 +1172,7 @@ streamflow_model_slope_shifted_CO2 <- function(catchment_data, parameter_set) {
 
 streamflow_model_slope_shifted_CO2_v2 <- function(catchment_data, parameter_set) { 
   
-
+  
   # If no parameters are given return description of model
   if(is.null(names(as.list(match.call())[-1]))) {
     return(
@@ -1200,10 +1195,11 @@ streamflow_model_slope_shifted_CO2_v2 <- function(catchment_data, parameter_set)
     streamflow_results <- catchment_data_directly_to_streamflow_model(
       catchment_data = catchment_data,
       parameter_set = parameter_set, 
-      streamflow_model = streamflow_model_precip_only
+      streamflow_model = streamflow_model_slope_shifted_CO2_v2
     )
     return(streamflow_results)
   }
+
   
   # Parameters
   a0 <- parameter_set[1, ]
@@ -1267,7 +1263,7 @@ streamflow_model_slope_shifted_CO2_simple <- function(catchment_data, parameter_
     streamflow_results <- catchment_data_directly_to_streamflow_model(
       catchment_data = catchment_data,
       parameter_set = parameter_set, 
-      streamflow_model = streamflow_model_precip_only
+      streamflow_model = streamflow_model_slope_shifted_CO2_simple
     )
     return(streamflow_results)
   }
