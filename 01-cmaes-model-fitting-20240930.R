@@ -43,9 +43,7 @@ source("./Functions/objective_function_setup.R")
 source("./Functions/result_set.R")
 
 
-
-# Remove testing - I think changes are good. Ready to rock and roll.
-gauge <- "611111"
+gauge <- "704193" #"238208" #226023, 603004, 146014A
 
 example_catchment <- gauge |>
    catchment_data_blueprint(
@@ -55,18 +53,18 @@ example_catchment <- gauge |>
 
 results <- example_catchment |> 
   numerical_optimiser_setup_vary_inputs(
-    streamflow_model = streamflow_model_slope_shifted_CO2,
+    streamflow_model = streamflow_model_slope_shifted_CO2,#streamflow_model_slope_shifted_CO2,
     objective_function = constant_sd_objective_function,
     bounds_and_transform_method = make_default_bounds_and_transform_methods(example_catchment),
     minimise_likelihood = TRUE
   ) |>
-  my_cmaes(print_monitor = TRUE) |>
+  my_cmaes(print_monitor = TRUE) |> 
   result_set()
 
+results$optimised_boxcox_streamflow
 parameters_summary(results)
-plot(results) 
-
-
+plot(results, type = "streamflow-time")
+plot(results, type = "rainfall-runoff")
 
 
 # Number of times we want to repeat each catchment-optimiser-streamflow model combinations
@@ -105,8 +103,8 @@ drought_catchment_data <- map(
 
 
 # Build objective_functions using the optimiser_set object ---------------------
-all_streamflow_models <- get_non_drought_streamflow_models()
-drought_streamflow_models <- get_drought_streamflow_models()
+all_streamflow_models <- list(streamflow_model_slope_shifted_CO2)#get_non_drought_streamflow_models()
+#drought_streamflow_models <- get_drought_streamflow_models()
 all_objective_functions <- get_all_objective_functions()
 
 

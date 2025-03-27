@@ -258,56 +258,135 @@ get_best_parameters_real_space <- function(cmaes_or_dream_result) {
 
 
 
+
 get_boxcox_streamflow <- function(cmaes_or_dream_result) {
+  # This should only show the streamflow used in calibration
+
   best_parameters <- get_best_parameters_real_space(cmaes_or_dream_result)
   
-  cmaes_or_dream_result$numerical_optimiser_setup$streamflow_model(
-    catchment_data = cmaes_or_dream_result$numerical_optimiser_setup$catchment_data$full_data_set,
-    parameter_set = as.matrix(best_parameters, ncol = 1)
-  )
+  # Apply to start_stop_data_set (list of tibbles)
+  start_stop_data_set <- cmaes_or_dream_result$numerical_optimiser_setup$catchment_data$stop_start_data_set
+  
+  # Streamflow model
+  streamflow_model <- cmaes_or_dream_result$numerical_optimiser_setup$streamflow_model
+  
+  # Make streamflow using best parameters and start_stop_data_set
+  streamflow_results <- map(
+    .x = start_stop_data_set,
+    .f = streamflow_model,
+    parameter_set = best_parameters
+  ) |> 
+    unname() |> 
+    unlist()
+  
+  return(streamflow_results)
 }
 
 
 
-plot.catchment_data <- function(x) {
+
+
+plot.catchment_data <- function(x, type) {
+  # This should be the entire dataset
+
+  stopifnot(type %in% c("streamflow-time", "rainfall-runoff"))
   
-  plot(
-    x = x$full_data_set$year,
-    y = x$full_data_set$observed_boxcox_streamflow,
-    type = "b",
-    xlab = "Year",
-    ylab = "Box-Cox Streamflow"
-  )
-  
+  if(type == "streamflow-time") {
+    x$full_data_set |> 
+      ggplot(aes(x = year, y = observed_boxcox_streamflow)) +
+      geom_line() +
+      geom_point() +
+      labs(
+        x = "Year",
+        y = "Observed Box-Cox Streamflow"
+      ) +
+      theme_bw()
+    
+  } else if(type == "rainfall-runoff"){
+    x$full_data_set |> 
+      ggplot(aes(x = precipitation, y = observed_boxcox_streamflow)) +
+      geom_smooth(
+        formula = y ~ x,
+        method = lm,
+        se = FALSE,
+        colour = "black"
+      ) +
+      labs(
+        x = "Precipitation (mm)",
+        y = "Observed Box-Cox Streamflow"
+      ) +
+      geom_point() +
+      theme_bw()
+  }
 }
 
-plot.result_set <- function(x) {
+
+
+plot.result_set <- function(x, type) {
   
-  # should only plot what I have optimised for
-  # remove data not in calibration
-  # easiest way is to use the full observed streamflow and an index i.e., if
-  # there is a NA it was not calibrated on
-  keep_data <- !is.na(x$numerical_optimiser_setup$catchment_data$full_data_set$observed_boxcox_streamflow)
+  stopifnot(type %in% c("streamflow-time", "rainfall-runoff"))
+  # This should only show the streamflow used in calibration
+
+  # Get precipitation and observed streamfow from stop_start_index
+  observed_data <- x$numerical_optimiser_setup$catchment_data$stop_start_data_set |> 
+    list_rbind() 
   
-  plot(
-    x = x$numerical_optimiser_setup$catchment_data$full_data_set$year[keep_data],
-    y = x$optimised_boxcox_streamflow[keep_data], 
-    type = "b", 
-    xlab = "Year",
-    ylab = "Box-Cox Streamflow", 
-    ylim = range(c(x$optimised_boxcox_streamflow[keep_data], x$numerical_optimiser_setup$catchment_data$full_data_set$observed_boxcox_streamflow[keep_data]), na.rm = TRUE))
-  lines(
-    x = x$numerical_optimiser_setup$catchment_data$full_data_set$year[keep_data],
-    y = x$numerical_optimiser_setup$catchment_data$full_data_set$observed_boxcox_streamflow[keep_data],
-    type = "b",
-    col = "red"
-  )
-  legend(
-    x = "topleft", 
-    c("modelled", "observed"), 
-    lty = c(1, 1), 
-    col = c("black", "red"))
-  
+  # Create tibble for plotting
+  streamflow_results <- list(
+    year = observed_data |> pull(year),
+    precipitation = observed_data |> pull(precipitation),
+    observed_bc_streamflow = observed_data |> pull(observed_boxcox_streamflow),
+    modelled_bc_streamflow = x$optimised_boxcox_streamflow
+  ) |> 
+    as_tibble() |> 
+    pivot_longer(
+      cols = ends_with("streamflow"),
+      names_to = "observed_or_modelled",
+      values_to = "streamflow"
+    ) |> 
+    mutate(
+      observed_or_modelled = if_else(observed_or_modelled == "modelled_bc_streamflow", "Modelled Box-Cox Streamflow", "Observed Box-Cox Streamflow")
+    )
+
+  # Plotting
+  if(type == "streamflow-time"){
+    streamflow_results |> 
+      ggplot(aes(x = year, y = streamflow, colour = observed_or_modelled)) +
+      geom_line() +
+      geom_point() +
+      labs(
+        x = "Year",
+        y = "Streamflow",
+        colour = NULL
+      ) +
+      scale_colour_brewer(palette = "Set1") +
+      theme_bw() +
+      theme(
+        legend.position = "inside",
+        legend.position.inside = c(0.9, 0.9)
+      )
+  } else if(type == "rainfall-runoff") {
+    streamflow_results |> 
+      ggplot(aes(x = precipitation, y = streamflow, colour = observed_or_modelled)) +
+      geom_smooth(
+        formula = y ~ x,
+        method = lm,
+        se = FALSE
+      ) +
+      geom_point() +
+      labs(
+        x = "Year",
+        y = "Streamflow",
+        colour = NULL
+      ) +
+      scale_colour_brewer(palette = "Set1") +
+      theme_bw() +
+      theme(
+        legend.position = "inside",
+        legend.position.inside = c(0.9, 0.9)
+      )
+  }
+
 }
 
 
