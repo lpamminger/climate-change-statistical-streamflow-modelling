@@ -43,50 +43,7 @@ source("./Functions/objective_function_setup.R")
 source("./Functions/result_set.R")
 
 
-
-# Remove testing - I think changes are good. Ready to rock and roll.
-# I want to see if at least one catchment does not produce a a5 of > 136
-# Test if streamflow_model_slope_shifted_CO2 works as expected in excel?
-data_for_excel <- data |> 
-  filter(gauge == "410061")
-#write_csv(data_for_excel, file = "testing_slope_CO2_model.csv")
-
-# break down each component for the streamflow_model_slope_shifted_CO2 model
-simple_slope_shifted_CO2 <- function(parameters, precip, CO2) {
-  
-  a0 <- parameters[1]
-  a1 <- parameters[2]
-  a3 <- parameters[3]
-  a5 <- parameters[4]
-  
-  # break each component down
-  intercept <- a0
-  rainfall_slope <- a1 * precip
-  CO2_rainfall_slope <- a3 * precip * if_else(a5 > CO2, 0, CO2)
-  
-  together <- intercept + rainfall_slope + CO2_rainfall_slope
-  
-  list(
-    "intercept" = intercept,
-    "rainfall_slope" = rainfall_slope,
-    "CO2_rainfall_slope" = CO2_rainfall_slope,
-    "boxcox_flow" = together
-  ) |> 
-    as_tibble()
-}
-
-CO2 <- data_for_excel |> pull(CO2)
-precip <- data_for_excel |> pull(p_mm)
-
-multiply_CO2_precip <- CO2 * precip 
-
-x <- simple_slope_shifted_CO2(
-  parameters = c(2.81, 0.00865, -0.0000320, 100), 
-  CO2 = CO2, 
-  precip = precip
-  )
-
-gauge <- "003303A"
+gauge <- "704193" #"238208" #226023, 603004, 146014A
 
 example_catchment <- gauge |>
    catchment_data_blueprint(
@@ -96,41 +53,18 @@ example_catchment <- gauge |>
 
 results <- example_catchment |> 
   numerical_optimiser_setup_vary_inputs(
-    streamflow_model = streamflow_model_slope_shifted_CO2_v2,
+    streamflow_model = streamflow_model_slope_shifted_CO2,#streamflow_model_slope_shifted_CO2,
     objective_function = constant_sd_objective_function,
     bounds_and_transform_method = make_default_bounds_and_transform_methods(example_catchment),
     minimise_likelihood = TRUE
   ) |>
-  my_cmaes(print_monitor = TRUE) |>
+  my_cmaes(print_monitor = TRUE) |> 
   result_set()
 
-x <- parameters_summary(results)
-plot(results) 
-stop_here <- tactical_typo()
-
-# Fixing:
-# - Increase the scale -> does not change the outcome
-# - Reduce a3v2 bounds significantly -> want to make a3v2 zero
-# - Scale and reduce a3v2 bounds ->scale = 1E6 and bounds -1E-5 to 1E-5 -> sets a3v2 to zero and a5 to >136. Turns it off.
-# - Lower tolX (+ scale and bounds) myStopOnTolX(tol = 1E-8) -> very flat graph
-
-# I need to find a catchment where the Scale CO2 model does not set the 
-# CO2 components to zero
-
-# Try using a new model --> streamflow_model_slope_shifted_CO2_v2
-# directly linking CO2 and precip means precip can be turned off
-# default tolX = 1E-6, scale = 100 and bounds a1CO2 -1 to 1
-
-
-# The current model repeat_a0 + (repeat_a1 * repeat_precipitation) + (repeat_a3v2 * repeat_precipitation * repeat_shifted_CO2)
-# is doubling the effects of slope and CO2
-# Find a way to turn this off i.e., using the vector created by repeat_shifted_CO2
-# to make a dummy variable
-# option:
-# repeat_a0 + (repeat_a1 * repeat_precipitation * off_repeat_shifted_CO2) + 
-#  (repeat_a3v2 * repeat_precipitation * repeat_shifted_CO2 * on_repeat_shifted_CO2)
-# Does it work? -> 
-
+results$optimised_boxcox_streamflow
+parameters_summary(results)
+plot(results, type = "streamflow-time")
+plot(results, type = "rainfall-runoff")
 
 
 # Number of times we want to repeat each catchment-optimiser-streamflow model combinations
