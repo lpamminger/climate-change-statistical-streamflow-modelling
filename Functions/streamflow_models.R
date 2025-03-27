@@ -1724,7 +1724,7 @@ get_non_drought_streamflow_models <- function() {
     streamflow_model_slope_shifted_CO2,
     streamflow_model_slope_shifted_CO2_auto,
     streamflow_model_slope_shifted_CO2_seasonal_ratio,
-    streamflow_model_slope_shifted_CO2_seasonal_ratio_auto,
+    streamflow_model_slope_shifted_CO2_seasonal_ratio_auto
   )
 }
 

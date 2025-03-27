@@ -43,28 +43,30 @@ source("./Functions/objective_function_setup.R")
 source("./Functions/result_set.R")
 
 
-gauge <- "704193" #"238208" #226023, 603004, 146014A
+#gauge <- "607155" #"238208" #226023, 603004, 146014A
 
-example_catchment <- gauge |>
-   catchment_data_blueprint(
-    observed_data = data,
-    start_stop_indexes = start_stop_indexes
-  ) 
+#example_catchment <- gauge |>
+#   catchment_data_blueprint(
+#    observed_data = data,
+#    start_stop_indexes = start_stop_indexes
+#  ) 
 
-results <- example_catchment |> 
-  numerical_optimiser_setup_vary_inputs(
-    streamflow_model = streamflow_model_slope_shifted_CO2,#streamflow_model_slope_shifted_CO2,
-    objective_function = constant_sd_objective_function,
-    bounds_and_transform_method = make_default_bounds_and_transform_methods(example_catchment),
-    minimise_likelihood = TRUE
-  ) |>
-  my_cmaes(print_monitor = TRUE) |> 
-  result_set()
+#results <- example_catchment |> 
+#  numerical_optimiser_setup_vary_inputs(
+#    streamflow_model = streamflow_model_slope_shifted_CO2,#streamflow_model_slope_shifted_CO2,
+#    objective_function = constant_sd_objective_function,
+#    bounds_and_transform_method = make_default_bounds_and_transform_methods(example_catchment),
+#    minimise_likelihood = TRUE
+#  ) |>
+  #my_cmaes(print_monitor = TRUE) |> 
+  #result_set()
 
-results$optimised_boxcox_streamflow
-parameters_summary(results)
-plot(results, type = "streamflow-time")
-plot(results, type = "rainfall-runoff")
+#results$optimised_boxcox_streamflow
+#x <- parameters_summary(results)
+#plot(results, type = "streamflow-time")
+#plot(results, type = "rainfall-runoff")
+
+
 
 
 # Number of times we want to repeat each catchment-optimiser-streamflow model combinations
@@ -103,15 +105,15 @@ drought_catchment_data <- map(
 
 
 # Build objective_functions using the optimiser_set object ---------------------
-all_streamflow_models <- list(streamflow_model_slope_shifted_CO2)#get_non_drought_streamflow_models()
-#drought_streamflow_models <- get_drought_streamflow_models()
+non_drought_streamflow_models <- get_non_drought_streamflow_models()
+drought_streamflow_models <- get_drought_streamflow_models()
 all_objective_functions <- get_all_objective_functions()
 
 
 ## Produce a tibble of all combinations of catchment, optimiser, etc ===========
 ready_for_iteration <- tidyr::expand_grid(
   all_catchment_data,
-  all_streamflow_models,
+  non_drought_streamflow_models,
   all_objective_functions
 ) |> 
   dplyr::distinct() # make sure there are no double ups
@@ -147,7 +149,7 @@ drought_ready_for_iteration$bounds <- drought_bounds
 ## Make numerical_optimiser_setup using ready_for_iteration tibble =============
 all_numerical_optimisers_cmaes <- pmap(
   .l = list(
-    ready_for_iteration |> dplyr::pull(all_streamflow_models),
+    ready_for_iteration |> dplyr::pull(non_drought_streamflow_models),
     ready_for_iteration |> dplyr::pull(all_objective_functions),
     ready_for_iteration |> dplyr::pull(all_catchment_data),
     ready_for_iteration |> dplyr::pull(bounds)
@@ -264,14 +266,14 @@ get_parameter_number <- function(streamflow_model, objective_function) {
 
 # THIS WILL BREAK IF ANOTHER OBJECTIVE FUNCTION IS ADDED OR REMOVED
 parameter_combinations <- map(
-  .x = c(all_streamflow_models, drought_streamflow_models),
+  .x = c(non_drought_streamflow_models, drought_streamflow_models),
   .f = get_parameter_number,
   objective_function = all_objective_functions[[1]]
 ) |> 
   list_rbind()
 
 #parameter_combinations_2 <- map(
-#  .x = c(all_streamflow_models, drought_streamflow_models),
+#  .x = c(non_drought_streamflow_models, drought_streamflow_models),
 #  .f = get_parameter_number,
 #  objective_function = all_objective_functions[[2]]
 #) |> 
