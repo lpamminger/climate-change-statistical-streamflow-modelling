@@ -33,7 +33,7 @@ restarts_summary <- function(x) {
 
 
 
-sequences_summary <- function(x) {
+sequences_summary <- function(x) { # NOT IN USE
   
   # This only take a result_object 
   
@@ -59,11 +59,16 @@ sequences_summary <- function(x) {
 }
 
 modelled_streamflow_summary <- function(x) {
+  # The modelled_boxcox_streamflow is just the streamflow optimised
+  # We must use data being optimised instead of the full_data_set
+  calibrated_data <- x$numerical_optimiser_setup$catchment_data$stop_start_data_set |> 
+    list_rbind()
+  
   tibble::as_tibble(
     list(
-      "year" = x$numerical_optimiser_setup$catchment_data$full_data_set$year,
-      "precipitation" = x$numerical_optimiser_setup$catchment_data$full_data_set$precipitation,
-      "observed_boxcox_streamflow" = x$numerical_optimiser_setup$catchment_data$full_data_set$observed_boxcox_streamflow,
+      "year" = calibrated_data |> pull(year),
+      "precipitation" = calibrated_data |> pull(precipitation),
+      "observed_boxcox_streamflow" = calibrated_data |> pull(observed_boxcox_streamflow),
       "modelled_boxcox_streamflow" = c(x$optimised_boxcox_streamflow),
       "gauge" = x$numerical_optimiser_setup$catchment_data$gauge_ID,
       "streamflow_model" = x$numerical_optimiser_setup$streamflow_model()$name,
