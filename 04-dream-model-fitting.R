@@ -9,11 +9,12 @@ pacman::p_load(tidyverse, dream, coda, lattice, tictoc, furrr, parallel, truncno
 # TODO 
 # - run it with all catchments
 
-
-
 # get packages used in script (requires NCmisc package)
 #functions_used <- list.functions.in.file("04-dream-model-fitting.R")
 #names(functions_used)
+
+
+
 
 
 # Import and prepare data-------------------------------------------------------
@@ -59,6 +60,39 @@ source("./Functions/generic_functions.R")
 source("./Functions/DREAM.R")
 source("./Functions/objective_function_setup.R")
 source("./Functions/result_set.R")
+
+
+# Test DREAM using slope_CO2 model
+#gauge <- "146014A" #"238208" #226023, 603004, 146014A
+
+#example_catchment <- gauge |>
+#   catchment_data_blueprint(
+#    observed_data = data,
+#    start_stop_indexes = start_stop_indexes
+#  ) 
+
+#numerical_optimiser <- example_catchment |> 
+#  numerical_optimiser_setup_vary_inputs(
+#    streamflow_model = streamflow_model_slope_shifted_CO2,#streamflow_model_slope_shifted_CO2,
+#    objective_function = constant_sd_objective_function,
+#    bounds_and_transform_method = make_default_bounds_and_transform_methods(example_catchment),
+#    minimise_likelihood = FALSE
+#  ) 
+
+#result <- DREAM(
+#  input = numerical_optimiser,
+#  controls = list(
+    # chain_number = 25, this does not work. Not important atm
+    #check_convergence_steps = 0, 
+    #burn_in_per_chain = 500,
+    #iterations_after_burn_in_per_chain = 500
+#    )
+#)
+
+#result |> gg_trace_plot()
+#result |> gg_distribution_plot()
+# gg_rainfall_runoff_plot()
+# gg_streamflow_timeseries_plot()
 
 
 # Identify best model combination for DREAM gauges -----------------------------
