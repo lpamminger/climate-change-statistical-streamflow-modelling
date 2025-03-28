@@ -53,7 +53,8 @@ make_default_cmaes_parameters <- function(SCALE, PARAMETER_NUMBER) {
 }
 
 
-my_cmaes <- function(numerical_optimiser_setup, cmaes_control = NULL, print_monitor = FALSE) {
+
+my_cmaes <- function(numerical_optimiser_setup, cmaes_control = list(), print_monitor = FALSE) {
   
   ## Check if numerical_optimiser_setup and its minimising the likelihood ==================
   stopifnot(sloop::s3_class(numerical_optimiser_setup)[1] == "numerical_optimiser_setup")
@@ -82,10 +83,11 @@ my_cmaes <- function(numerical_optimiser_setup, cmaes_control = NULL, print_moni
   ### Default cmaes_control ####################################################
   PARAMETER_NUMBER <- length(numerical_optimiser_setup$parameter_names)
   
-  if (is.null(cmaes_control)) { 
-    cmaes_control <- make_default_cmaes_parameters(SCALE, PARAMETER_NUMBER)
-  }
-
+  ## Check controls ============================================================
+  cmaes_control <- modifyList( # replace defaults with user specified values
+    make_default_cmaes_parameters(SCALE, PARAMETER_NUMBER), 
+    val = cmaes_control
+  ) 
   
   ### Make monitor #############################################################
   if(print_monitor) {
