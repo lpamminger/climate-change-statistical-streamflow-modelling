@@ -82,7 +82,7 @@ source("./Functions/utility.R")
 # Import the calibrated .csv's -------------------------------------------------
 
 parameter_results <- read_csv(
-  "./Results/my_cmaes/CMAES_parameter_results_20250122.csv", 
+  "./Results/my_cmaes/CMAES_parameter_results_20250331.csv", 
   # limited bounds 20250122
   # turn-off bounds 20241130
   show_col_types = FALSE
@@ -90,7 +90,7 @@ parameter_results <- read_csv(
 
 
 streamflow_results <- read_csv(
-  "./Results/my_cmaes/CMAES_streamflow_results_20241130.csv", 
+  "./Results/my_cmaes/CMAES_streamflow_results_20250331.csv", 
   # limited bounds 20250122
   # turn-off bounds 20241130
   show_col_types = FALSE
@@ -223,12 +223,15 @@ utilisation_tolerence <- 1E-4
 
 near_zero_parameters <- best_CO2_and_non_CO2_per_catchment |> 
   filter(abs(parameter_value) <= utilisation_tolerence) |> 
-  filter(parameter != "a5") 
+  filter(!parameter %in% c("a5", "a3_slope")) 
 ## The a5 parameter can be near-zero. 
+## The a3_slope is also very small. Ignore it from near zero test.
 ## It indicates the CO2 term kicks in at the start of the timeseries.
 ## Other parameters vary. I think this is okay. The a3 is a bit iffy
 
 
+
+## THIS MAY BE OMITTED ###
 
 ## Check if a5 parameter is only being utilised in the last year ===============
 ### This represents another way of parameters being "turned-off"

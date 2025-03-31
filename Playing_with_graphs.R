@@ -30,12 +30,12 @@ gauge_information_with_climate <- readr::read_csv(
   show_col_types = FALSE
 )
 
-CMAES_results <- read_csv("./Results/my_cmaes/CMAES_parameter_results_20250122.csv",
+CMAES_results <- read_csv("./Results/my_cmaes/CMAES_parameter_results_20250331.csv",
                           show_col_types = FALSE
 ) 
 
 best_CO2_non_CO2_per_gauge <- read_csv(
-  "./Results/my_cmaes/unmodified_best_CO2_non_CO2_per_catchment_CMAES_20250128.csv",
+  "./Results/my_cmaes/unmodified_best_CO2_non_CO2_per_catchment_CMAES_20250331.csv",
   show_col_types = FALSE
 ) 
 
@@ -57,7 +57,7 @@ source("./Functions/result_set.R")
 source("./Functions/boxcox_transforms.R")
 
 streamflow_data <- read_csv(
-  "Results/my_cmaes/CMAES_streamflow_results_20250122.csv",
+  "Results/my_cmaes/CMAES_streamflow_results_20250331.csv",
   show_col_types = FALSE
 )
 
@@ -193,7 +193,7 @@ test_catchment_data <- catchment_data_blueprint(
 )
 
 parameters <- test_gauge_data |> 
-  filter(streamflow_model == "streamflow_model_separate_shifted_CO2") |> 
+  filter(streamflow_model == "streamflow_model_intercept_shifted_CO2") |> 
   pull(parameter_value)
 
 # streamflow model is not clever enough to pull the necessary bits
@@ -205,7 +205,7 @@ parameters <- test_gauge_data |>
 a3_off_parameters <- parameters
 a3_off_parameters[3] <- 0
 
-a3_off <- streamflow_model_separate_shifted_CO2(
+a3_off <- streamflow_model_intercept_shifted_CO2(
   catchment_data = test_catchment_data$stop_start_data_set$start_index,
   parameter_set = a3_off_parameters
 )
@@ -674,7 +674,7 @@ by_state_plots <- map(
 fr_top <- by_state_plots[["TAS"]] | by_state_plots[["QLD"]] | by_state_plots[["NT"]] | by_state_plots[["SA"]] 
 fr_bottom <- by_state_plots[["WA"]] | by_state_plots[["VIC"]] | by_state_plots[["NSW"]]
 ToE_record_length_nice_plot <- fr_top / fr_bottom / guide_area() + plot_layout(guides = "collect")
-
+ToE_record_length_nice_plot
 
 
 
@@ -687,6 +687,7 @@ ToE_vs_record_length <- binned_ToE_map_info |>
   ) +
   theme_bw()
 
+ToE_vs_record_length
 
 binned_ToE_map_info |> 
   ggplot(aes(x = as.factor(record_length_binned), y = as.factor(custom_bins))) +
@@ -868,13 +869,13 @@ single_aus_map <- ozmaps::ozmap("country") |>
 
 # Best model per gauge adjustment
 simplified_components_best_model_per_gauge <- best_model_per_gauge |> 
-  filter(parameter %in% c("a2", "a3", "a4", "a0_d")) |> 
+  filter(parameter %in% c("a2", "a3_intercept", "a3_slope", "a4", "a0_d")) |> 
   select(gauge, streamflow_model, parameter) |> 
   mutate(
     NAME = case_when(
       parameter == "a0_d" ~ "Drought",
       parameter == "a2" ~ "Autocorrelation",
-      parameter == "a3" ~ "CO2",
+      parameter %in% c("a3_intercept", "a3_slope") ~ "CO2",
       parameter == "a4" ~ "Rainfall Seasonality",
       .default = NA
     )
@@ -934,7 +935,7 @@ ggplot(aes(geometry = geometry)) +
     legend.position = "bottom"
   ) 
 
-
+model_components
 # transform axis to lat/long degrees and that?
 
 # Bin evidence ratios for qualitative plots---------------------------------------
@@ -1005,12 +1006,15 @@ binned_lat_lon_evidence_ratio <- lat_long_evidence_ratio |>
 
 # Add the a3 direction here
 direction_of_a3_change <- best_model_per_gauge |> 
-  filter(parameter == "a3") |> 
-  select(gauge, streamflow_model, parameter, parameter_value) |> 
+  filter(parameter %in% c("a3_intercept", "a3_slope")) |>
+  mutate(
+    intercept_or_slope = if_else(str_detect(streamflow_model, "intercept"), "Intercept", "Slope")
+  ) |> 
+  select(gauge, streamflow_model, parameter, parameter_value, intercept_or_slope) |> 
   mutate(
     CO2_direction = if_else(parameter_value < 0, "Negative", "Positive")
   ) |> 
-  select(gauge, CO2_direction)
+  select(gauge, CO2_direction, intercept_or_slope)
 
 
 a3_direction_binned_lat_lon_evidence_ratio <- binned_lat_lon_evidence_ratio |> 
@@ -1018,10 +1022,33 @@ a3_direction_binned_lat_lon_evidence_ratio <- binned_lat_lon_evidence_ratio |>
     direction_of_a3_change,
     by = join_by(gauge)
   ) |> 
-  replace_na(list(CO2_direction = "No CO2 Term")) |> 
+  replace_na(list(CO2_direction = "No CO2 Term", intercept_or_slope = "No CO2 Term")) |> 
   mutate(
     CO2_direction = factor(CO2_direction, levels = c("Negative", "Positive", "No CO2 Term"))
+  ) |> 
+  mutate(
+    intercept_or_slope = factor(intercept_or_slope, levels = c("Intercept", "Slope", "No CO2 Term"))
   )
+
+
+# Change shape and fill of dots
+test_tribble <- tribble(
+  ~x, ~y,  ~A,        ~B,        ~C,
+  0,   1,  "var_1A",   "1L",   "var_1C",
+  1,   1,  "var_2A",   "2L",   "var_2C",
+  2,   1,  "var_3A",   "3L",   "var_3C"
+) 
+
+# This is weird behaviour
+test_tribble |> 
+  ggplot(aes(x = x, y = y, shape = A, fill = B, colour = C)) +
+  geom_point(size = 4, stroke = 2) +
+  scale_shape_manual(values = c(21, 22, 24)) +
+  scale_fill_identity(
+    guide = guide_legend(override.aes = list(shape = 21))
+  ) +
+  theme_bw()
+
 
 
 ggplot() +
@@ -1031,11 +1058,32 @@ ggplot() +
     fill = "grey50"
   ) +
   geom_point(
-    mapping = aes(x = lon, y = lat, colour = binned_evidence_ratio, shape = CO2_direction),
+    mapping = aes(
+      x = lon, 
+      y = lat, 
+      #colour = intercept_or_slope, 
+      colour = binned_evidence_ratio, 
+      shape = CO2_direction,
+      stroke = 1
+      ),
     data = a3_direction_binned_lat_lon_evidence_ratio,
     inherit.aes = FALSE
-  )
+  ) +
+  scale_shape_manual(values = c(21, 22, 24)) +
+  scale_fill_identity(
+    guide = guide_legend(override.aes = list(shape = 21))
+  ) +
+  theme_bw()
+  #scale_shape_manual(
+  #  values = c("" = 21, "" = 22, "" = 24)
+  #)
+  # manually change shape
 
+
+# Custom colour palette
+custom_palette <- function(x) {
+  rev(c("#67001f", "#b2182b", "#d6604d", "#f4a582", "#fddbc7","#f7f7f7"))
+}
   
 # function here
 gg_evidence_ratio_map <- function(state = NULL, evidence_ratio_data, map_data) {
@@ -1064,8 +1112,8 @@ gg_evidence_ratio_map <- function(state = NULL, evidence_ratio_data, map_data) {
       size = 0.75,
       show.legend = TRUE
     ) +
-    scale_colour_brewer(
-      palette = "Reds",
+    scale_colour_manual(
+      values = custom_palette(),
       drop = FALSE
     ) +
     theme_bw() +
@@ -1073,7 +1121,7 @@ gg_evidence_ratio_map <- function(state = NULL, evidence_ratio_data, map_data) {
       x = NULL, # commented out due for final review plot
       y = NULL, # commented out due for final review plot
       colour = "Evidence Ratio",
-      shape = "Contribution of CO2 term to streamflow"
+      shape = "Sign of CO2 Term"
     ) +
     theme(
       legend.key = element_rect(fill = "grey50"),
@@ -1103,6 +1151,7 @@ state_evidence <- map(
 evi_top <- state_evidence[["TAS"]] | state_evidence[["QLD"]] | state_evidence[["NT"]] | state_evidence[["SA"]] 
 evi_bottom <- state_evidence[["WA"]] | state_evidence[["VIC"]] | state_evidence[["NSW"]]
 evi_nice_plot <- (evi_top / evi_bottom / guide_area()) + plot_layout(guides = "collect")
+evi_nice_plot
 
 new_graphs <- list(model_components, evi_nice_plot, ToE_vs_record_length, ToE_record_length_nice_plot)
 
@@ -1125,3 +1174,123 @@ walk2(
   .f = my_ggsave
 )
 
+
+# Other potential information - slope vs. intercept ----------------------------
+# some sort of slope and intercept analysis. Like proportion of pos/neg slope,
+# pos/neg intercept
+
+y <- a3_direction_binned_lat_lon_evidence_ratio |> 
+  count(intercept_or_slope, state) |> 
+  pivot_wider(
+    names_from = intercept_or_slope,
+    values_from = n
+  ) |> 
+  mutate(
+    total = sum(across(Intercept:`No CO2 Term`)),
+    .by = state
+  ) |> 
+  pivot_longer(
+    cols = Intercept:`No CO2 Term`,
+    names_to = "intercept_or_slope",
+    values_to = "n"
+  ) |> 
+  relocate(
+    total,
+    .after = 4
+  ) |> 
+  mutate(
+    fraction = n / total
+  ) |> 
+  mutate(
+    intercept_or_slope = factor(intercept_or_slope, levels = c("No CO2 Term", "Slope", "Intercept"))
+  )
+
+plot_label <- y |> 
+  select(state, total) |> 
+  distinct() |> 
+  mutate(plot_label = paste0("n = ", total)) |> 
+  add_column(y_pos = 1)
+
+y |> 
+  ggplot(aes(x = state, y = fraction, fill = intercept_or_slope)) +
+  geom_col() +
+  geom_text(
+    data = plot_label,
+    aes(x = state, y = y_pos, label = plot_label),
+    inherit.aes = FALSE,
+    nudge_y = 0.01
+  ) +
+  labs(
+    x = "State",
+    y = "Fraction",
+    fill = "CO2 model component"
+  ) +
+  theme_bw()
+
+## map of intercept vs. slope - shapes of colour?
+gg_temp_intercept_slope_map <- function(state = NULL, evidence_ratio_data, map_data) {
+  
+  # use state as key to extract correct polygon from map_data and evidence_ratio_data
+  if (!is.null(state)) {
+    
+    map_data <- map_data |> 
+      filter(state == {{ state }})
+    
+    evidence_ratio_data <- evidence_ratio_data |> 
+      filter(state == {{ state }})
+    
+  }
+  
+  
+  ggplot() +
+    geom_sf(
+      data = map_data,
+      colour = "black",
+      fill = "grey50"
+    ) +
+    geom_point(
+      data = evidence_ratio_data,
+      aes(x = lon, y = lat, colour = binned_evidence_ratio, shape = intercept_or_slope), #shape = flag),
+      size = 0.75,
+      show.legend = TRUE
+    ) +
+    scale_colour_manual(
+      values = custom_palette(),
+      drop = FALSE
+    ) +
+    theme_bw() +
+    labs(
+      x = NULL, # commented out due for final review plot
+      y = NULL, # commented out due for final review plot
+      colour = "Evidence Ratio",
+      shape = "Type of CO2 change"
+    ) +
+    theme(
+      legend.key = element_rect(fill = "grey50"),
+      legend.title = element_text(hjust = 0.5),
+      legend.background = element_rect(colour = "black"),
+      axis.text = element_text(size = 6)
+    ) +
+    guides(
+      colour = guide_legend(override.aes = list(size = 5), nrow = 3), # Wrap legend
+      shape = guide_legend(override.aes = list(size = 5))
+    ) 
+  
+  
+}
+
+
+state_intercept_and_slope <- map(
+  .x = aus_map |> pull(state),
+  .f = gg_temp_intercept_slope_map,
+  evidence_ratio_data = a3_direction_binned_lat_lon_evidence_ratio,
+  map_data = aus_map
+) |> 
+  `names<-`(aus_map |> pull(state))
+
+
+
+type_top <- state_intercept_and_slope[["TAS"]] | state_intercept_and_slope[["QLD"]] | state_intercept_and_slope[["NT"]] | state_intercept_and_slope[["SA"]] 
+type_bottom <- state_intercept_and_slope[["WA"]] | state_intercept_and_slope[["VIC"]] | state_intercept_and_slope[["NSW"]]
+type_nice_plot <- (type_top / type_bottom / guide_area()) + plot_layout(guides = "collect")
+type_nice_plot

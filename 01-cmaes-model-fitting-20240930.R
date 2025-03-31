@@ -43,7 +43,7 @@ source("./Functions/objective_function_setup.R")
 source("./Functions/result_set.R")
 
 
-#gauge <- "607155" #"238208" #226023, 603004, 146014A
+#gauge <- "609010" #"238208" #226023, 603004, 146014A
 
 #example_catchment <- gauge |>
 #   catchment_data_blueprint(
@@ -58,14 +58,15 @@ source("./Functions/result_set.R")
 #    bounds_and_transform_method = make_default_bounds_and_transform_methods(example_catchment),
 #    minimise_likelihood = TRUE
 #  ) |>
-  #my_cmaes(print_monitor = TRUE) |> 
-  #result_set()
+#  my_cmaes(
+#    print_monitor = TRUE
+#    ) |> 
+#  result_set()
 
 #results$optimised_boxcox_streamflow
 #x <- parameters_summary(results)
 #plot(results, type = "streamflow-time")
 #plot(results, type = "rainfall-runoff")
-
 
 
 
@@ -224,6 +225,7 @@ gc()
 
 # Join everything into a single file and save ----------------------------------
 ## Parameters ==================================================================
+## Empty results folder before joining just in case
 parameters_list_of_files <- list.files(
   path = "./Results/my_cmaes/",
   recursive = FALSE, # I don't want it looking in other folders

@@ -3,6 +3,21 @@
 # - streamflow timeseries comparing observed, best CO2 and best non-CO2
 
 
+
+# TODO - transfer code/graphs from playing_with_graphs
+# Key graphs to transfer are:
+# 1. Improved evidence ratio map
+# 2. Time of emergence histogram
+# 3. Map of time of emergence
+# 4. Component map
+
+# - account for the different types of CO2 models - slope vs. intercept
+# 1. graphically compare (colour gradient evidence ratio, shape pos/neg, outline
+#    or stroke colour can be slope or intercept)
+# 2. some sort of slope and intercept analysis. Like proportion of pos/neg slope,
+#    pos/neg intercept
+
+
 cat("\014") # clear console
 
 # Import libraries--------------------------------------------------------------
@@ -21,7 +36,7 @@ data <- read_csv(
 )
 
 CMAES_results <- read_csv(
-  "./Results/my_cmaes/CMAES_parameter_results_20250122.csv", 
+  "./Results/my_cmaes/CMAES_parameter_results_20250331.csv", 
   show_col_types = FALSE
 ) 
 
@@ -32,7 +47,7 @@ data <- readr::read_csv(
 )
 
 streamflow_results <- read_csv(
-  "Results/my_cmaes/CMAES_streamflow_results_20250122.csv",
+  "Results/my_cmaes/CMAES_streamflow_results_20250331.csv",
   show_col_types = FALSE,
   col_select = !optimiser
 )
@@ -44,7 +59,7 @@ gauge_information <- read_csv(
 ) # CAMELS is Australia wide.
 
 best_CO2_non_CO2_per_gauge <- read_csv(
-  "./Results/my_cmaes/unmodified_best_CO2_non_CO2_per_catchment_CMAES_20250128.csv",
+  "./Results/my_cmaes/unmodified_best_CO2_non_CO2_per_catchment_CMAES_20250331.csv",
   show_col_types = FALSE
 ) 
   
@@ -314,7 +329,7 @@ direction_of_a3_change <- best_CO2_non_CO2_per_gauge |>
     best_model_combination_per_catchment,
     by = join_by(gauge)
   ) |> 
-  filter(parameter == "a3") |> 
+  filter(parameter %in% c("a3_intercept", "a3_slope")) |> 
   select(gauge, streamflow_model, parameter, parameter_value) |> 
   mutate(
     CO2_term_impact = if_else(parameter_value < 0, "Negative", "Positive")
