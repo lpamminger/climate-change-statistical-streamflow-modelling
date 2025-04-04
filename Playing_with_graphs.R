@@ -2,7 +2,7 @@
 cat("\014") # clear console
 
 # Import libraries--------------------------------------------------------------
-pacman::p_load(tidyverse, truncnorm, sloop, ozmaps, sf, patchwork)
+pacman::p_load(tidyverse, truncnorm, sloop, ozmaps, sf, patchwork, ggmagnify, ggfx)
 
 
 
@@ -39,6 +39,11 @@ best_CO2_non_CO2_per_gauge <- read_csv(
   show_col_types = FALSE
 ) 
 
+streamflow_data <- read_csv(
+  "Results/my_cmaes/CMAES_streamflow_results_20250331.csv",
+  show_col_types = FALSE
+)
+
 ## Utility functions ===========================================================
 source("./Functions/utility.R")
 
@@ -56,10 +61,7 @@ source("./Functions/objective_function_setup.R")
 source("./Functions/result_set.R")
 source("./Functions/boxcox_transforms.R")
 
-streamflow_data <- read_csv(
-  "Results/my_cmaes/CMAES_streamflow_results_20250331.csv",
-  show_col_types = FALSE
-)
+
 
 # get gauge with a5 near middle of t-series
 select_gauge <- best_CO2_non_CO2_per_gauge |> 
@@ -1023,61 +1025,27 @@ a3_direction_binned_lat_lon_evidence_ratio <- binned_lat_lon_evidence_ratio |>
     by = join_by(gauge)
   ) |> 
   replace_na(list(CO2_direction = "No CO2 Term", intercept_or_slope = "No CO2 Term")) |> 
-  mutate(
-    CO2_direction = factor(CO2_direction, levels = c("Negative", "Positive", "No CO2 Term"))
+  unite(
+    col = "impact_of_CO2_term", 
+    CO2_direction,
+    intercept_or_slope,
+    sep = "-"
   ) |> 
   mutate(
-    intercept_or_slope = factor(intercept_or_slope, levels = c("Intercept", "Slope", "No CO2 Term"))
+    impact_of_CO2_term = if_else(impact_of_CO2_term == "No CO2 Term-No CO2 Term", "No CO2 Term", impact_of_CO2_term)
+  ) |> 
+  mutate(
+    impact_of_CO2_term = factor(
+      impact_of_CO2_term, 
+      levels = c("No CO2 Term", "Negative-Intercept", "Positive-Intercept", "Negative-Slope", "Positive-Slope")
+      )
   )
 
 
-# Change shape and fill of dots
-test_tribble <- tribble(
-  ~x, ~y,  ~A,        ~B,        ~C,
-  0,   1,  "var_1A",   "1L",   "var_1C",
-  1,   1,  "var_2A",   "2L",   "var_2C",
-  2,   1,  "var_3A",   "3L",   "var_3C"
-) 
-
-# This is weird behaviour
-test_tribble |> 
-  ggplot(aes(x = x, y = y, shape = A, fill = B, colour = C)) +
-  geom_point(size = 4, stroke = 2) +
-  scale_shape_manual(values = c(21, 22, 24)) +
-  scale_fill_identity(
-    guide = guide_legend(override.aes = list(shape = 21))
-  ) +
-  theme_bw()
 
 
 
-ggplot() +
-  geom_sf(
-    data = aus_map,
-    colour = "black",
-    fill = "grey50"
-  ) +
-  geom_point(
-    mapping = aes(
-      x = lon, 
-      y = lat, 
-      #colour = intercept_or_slope, 
-      colour = binned_evidence_ratio, 
-      shape = CO2_direction,
-      stroke = 1
-      ),
-    data = a3_direction_binned_lat_lon_evidence_ratio,
-    inherit.aes = FALSE
-  ) +
-  scale_shape_manual(values = c(21, 22, 24)) +
-  scale_fill_identity(
-    guide = guide_legend(override.aes = list(shape = 21))
-  ) +
-  theme_bw()
-  #scale_shape_manual(
-  #  values = c("" = 21, "" = 22, "" = 24)
-  #)
-  # manually change shape
+
 
 
 # Custom colour palette
@@ -1104,33 +1072,39 @@ gg_evidence_ratio_map <- function(state = NULL, evidence_ratio_data, map_data) {
     geom_sf(
       data = map_data,
       colour = "black",
-      fill = "grey50"
+      fill = "grey80"
     ) +
     geom_point(
       data = evidence_ratio_data,
-      aes(x = lon, y = lat, colour = binned_evidence_ratio, shape = CO2_direction), #shape = flag),
-      size = 0.75,
-      show.legend = TRUE
+      aes(x = lon, y = lat, fill = binned_evidence_ratio, shape = impact_of_CO2_term), 
+      size = 1,
+      show.legend = TRUE,
+      colour = "black",
+      stroke = 0.1
     ) +
-    scale_colour_manual(
+    scale_fill_manual(
       values = custom_palette(),
+      drop = FALSE
+    ) +
+    scale_shape_manual(
+      values = c(21, 22, 23, 24, 25),
       drop = FALSE
     ) +
     theme_bw() +
     labs(
-      x = NULL, # commented out due for final review plot
-      y = NULL, # commented out due for final review plot
-      colour = "Evidence Ratio",
-      shape = "Sign of CO2 Term"
+      x = NULL, 
+      y = NULL, 
+      fill = "Evidence Ratio",
+      shape = "Impact of CO2 Term"
     ) +
     theme(
-      legend.key = element_rect(fill = "grey50"),
+      legend.key = element_rect(fill = "grey80"),
       legend.title = element_text(hjust = 0.5),
       legend.background = element_rect(colour = "black"),
       axis.text = element_text(size = 6)
     ) +
     guides(
-      colour = guide_legend(override.aes = list(size = 5), nrow = 3), # Wrap legend
+      fill = guide_legend(override.aes = list(size = 5, shape = 21), nrow = 3), # Wrap legend with nrow
       shape = guide_legend(override.aes = list(size = 5))
       ) 
   
@@ -1152,6 +1126,15 @@ evi_top <- state_evidence[["TAS"]] | state_evidence[["QLD"]] | state_evidence[["
 evi_bottom <- state_evidence[["WA"]] | state_evidence[["VIC"]] | state_evidence[["NSW"]]
 evi_nice_plot <- (evi_top / evi_bottom / guide_area()) + plot_layout(guides = "collect")
 evi_nice_plot
+
+ggsave(
+  filename = "Updated_Evi_Plot.pdf",
+  plot = evi_nice_plot,
+  device = "pdf",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
 
 
 
@@ -1478,39 +1461,56 @@ ToE_hist_v2
 
 # Playing with geom_magnify ----------------------------------------------------
 # Linux does not like this. Try on windows machine.
-library(ggmagnify)
-library(ggfx)
+
+# Shape files in R are not nice:
+# https://github.com/hughjonesd/ggmagnify/issues/30
+# Shape files mean I cannot do two geom_magnify
+# Is there alternative to shapefiles
+# convert a shape file into something else? Convert shape file to polygon?
+# Map an x-y map
+# https://ggplot2-book.org/maps.html Polygon maps is an angle
+
+polygon_test <- tribble(
+  ~name, ~X, ~Y,
+   "A",   0,   0,
+   "A",   2,   0,
+   "A",   1,   2,
+   "B",   2,   0,
+   "B",   4,   0,
+   "B",   3,   2
+) |> 
+  ggplot(aes(x = X, y = Y, fill = name)) +
+  geom_polygon()
+polygon_test
+
 
 ## Map of Aus - magnify VIC
 single_map_aus <- aus_map |> 
   ggplot() +
-  geom_sf(
-    fill = "grey20"
-    ) +
-  ggmagnify::geom_magnify(
+  geom_sf() +
+  theme_bw() +
+  geom_magnify(
     aes(from = state == "VIC"),
-    to = c(130, 140, -50, -40), 
-    shadow = TRUE, 
-    shape = "outline", 
+    to = c(130, 140, -45, -40), 
+    shadow = FALSE, 
     aspect = "fixed", 
     expand = 0
     ) 
 
 single_map_aus
 
+magnify_vic_with_dots <- aus_map |> 
+  ggplot() +
+  geom_sf() +
   geom_point(
     data = a3_direction_binned_lat_lon_evidence_ratio,
     mapping = aes(x = lon, y = lat, colour = binned_evidence_ratio)
   ) +
   theme_bw() + 
   geom_magnify(
-    data = a3_direction_binned_lat_lon_evidence_ratio,
     aes(from = state == "VIC"),
-    to = c(120, 130, -45, -40), 
-    shadow = TRUE, linewidth = 1,
-    shape = "outline", 
-    aspect = "fixed", 
-    expand = 0
+    to = c(120, 140, -45, -35),
+    shadow = FALSE
     ) 
 
-single_map_aus
+
