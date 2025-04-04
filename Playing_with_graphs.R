@@ -1153,26 +1153,6 @@ evi_bottom <- state_evidence[["WA"]] | state_evidence[["VIC"]] | state_evidence[
 evi_nice_plot <- (evi_top / evi_bottom / guide_area()) + plot_layout(guides = "collect")
 evi_nice_plot
 
-new_graphs <- list(model_components, evi_nice_plot, ToE_vs_record_length, ToE_record_length_nice_plot)
-
-
-my_ggsave <- function(plot, name) {
-  ggsave(
-    filename = paste0(name,".pdf"),
-    plot = plot,
-    device = "pdf",
-    path = "./Graphs",
-    width = 297,
-    height = 210,
-    units = "mm"
-  )
-}
-
-walk2(
-  .x = new_graphs,
-  .y = c("model_components", "evi_nice_plot", "ToE_vs_record_length", "ToE_record_length_nice_plot"),
-  .f = my_ggsave
-)
 
 
 # Other potential information - slope vs. intercept ----------------------------
@@ -1294,3 +1274,243 @@ type_top <- state_intercept_and_slope[["TAS"]] | state_intercept_and_slope[["QLD
 type_bottom <- state_intercept_and_slope[["WA"]] | state_intercept_and_slope[["VIC"]] | state_intercept_and_slope[["NSW"]]
 type_nice_plot <- (type_top / type_bottom / guide_area()) + plot_layout(guides = "collect")
 type_nice_plot
+
+
+new_graphs <- list(model_components, evi_nice_plot, ToE_vs_record_length, ToE_record_length_nice_plot, type_nice_plot)
+
+
+my_ggsave <- function(plot, name) {
+  ggsave(
+    filename = paste0(name,".pdf"),
+    plot = plot,
+    device = "pdf",
+    path = "./Graphs",
+    width = 297,
+    height = 210,
+    units = "mm"
+  )
+}
+
+walk2(
+  .x = new_graphs,
+  .y = c("model_components", "evi_nice_plot", "ToE_vs_record_length", "ToE_record_length_nice_plot", "type_nice_plot"),
+  .f = my_ggsave
+)
+
+
+# Compare 3 methods to estimate the impact of CO2 on streamflow ----------------
+## Rank all the models by gauge (CMAES results)
+ranked_models_per_gauge <- CMAES_results |> 
+  group_by(gauge) |> 
+  arrange(AIC) |> 
+  ungroup()
+
+## Comparing the three methods 
+### Method 1: set a3 to zero
+### Method 2: compare best CO2 to best non-CO2
+### Method 3: compare best CO2 to equivalent non-CO2 model (could also be best non-CO2)
+
+### How to compare the methods:
+### 1. streamflow-time with observed
+### 2. rainfall-runoff with observed
+### 3. Difference between models vs. evidence ratio - not sure if this will work
+###    with method 1 - I could do difference between observed - modelled vs. evi ratio
+
+## Method 2 ====================================================================
+### Evidence ratio #############################################################
+evidence_ratio_calc <- best_CO2_non_CO2_per_gauge |>
+  select(gauge, contains_CO2, AIC) |> 
+  distinct() |> 
+  pivot_wider(
+    names_from = contains_CO2,
+    values_from = AIC
+  ) |> 
+  mutate(
+    CO2_model = `TRUE`,
+    non_CO2_model = `FALSE`,
+    .keep = "unused"
+  ) |> 
+  mutate(
+    AIC_difference = CO2_model - non_CO2_model # CO2 is smaller than non-CO2 then negative and CO2 is better
+  ) |>
+  mutate(
+    evidence_ratio = case_when(
+      AIC_difference < 0 ~ exp(0.5 * abs(AIC_difference)), # when CO2 model is better
+      AIC_difference > 0 ~ -exp(0.5 * abs(AIC_difference)) # when non-CO2 model is better
+    )
+  ) |> 
+  arrange(evidence_ratio) #|> 
+
+
+### Difference in streamflow models ############################################
+### Difference in streamflow models per year mean(mm/y) vs. evidence ratio or AIC
+### Use best_CO2_non_CO2_per_gauge to filter streamflow_data
+### Pivot wider, mutate model 1 - model 2 -> summarise mean .by gauge
+### y axis-options:
+# mean absolute difference in streamflow (mm/y)
+# total difference in streamflow over the entire period
+# mean percentage difference in streamflow per year
+
+only_gauge_model_best_CO2_non_CO2_per_gauge <- best_CO2_non_CO2_per_gauge |> 
+  select(gauge, streamflow_model) |> 
+  distinct()
+
+streamflow_data_best_CO2_non_CO2 <- streamflow_data |> 
+  semi_join(
+    only_gauge_model_best_CO2_non_CO2_per_gauge,
+    by = join_by(gauge, streamflow_model)
+  ) 
+
+
+#percentage_diff <- function(x, y) {
+#  (abs(x - y) / ((x + y) / 2)) * 100
+#}
+
+### Difference in streamflow for the models
+difference_streamflow_per_year_best_CO2_non_CO2 <- streamflow_data_best_CO2_non_CO2 |> 
+  # Rename streamflow models to non-CO2 and CO2
+  mutate(
+    CO2_or_non_CO2 = if_else(str_detect(streamflow_model, "CO2"), "CO2_streamflow", "non_CO2_streamflow")
+  ) |> 
+  # Remove streamflow model to make CO2 and non-CO2 on same row
+  select(!c(streamflow_model, objective_function, optimiser)) |> 
+  pivot_wider(
+    names_from = CO2_or_non_CO2,
+    values_from = modelled_boxcox_streamflow
+  ) |> 
+  mutate(
+    yearly_CO2_non_CO2_difference = CO2_streamflow - non_CO2_streamflow,
+    percentage_yearly_CO2_non_CO2_difference = ((CO2_streamflow - non_CO2_streamflow) / CO2_streamflow) * 100#,
+    #alternative_percentage = percentage_diff(CO2_streamflow, non_CO2_streamflow)
+  )
+  
+### Summarise yearly differences
+summary_streamflow_best_CO2_non_CO2 <- difference_streamflow_per_year_best_CO2_non_CO2 |> 
+  summarise(
+    mean_yearly_CO2_non_CO2_difference = mean(yearly_CO2_non_CO2_difference),
+    sum_yearly_CO2_non_CO2_difference = sum(yearly_CO2_non_CO2_difference),
+    mean_percent_yearly_CO2_non_CO2_difference = mean(percentage_yearly_CO2_non_CO2_difference),
+    sum_CO2_streamflow = sum(CO2_streamflow),
+    sum_non_CO2_streamflow = sum(non_CO2_streamflow),
+    .by = gauge
+  ) |> 
+  # add evidence ratio
+  left_join(
+    evidence_ratio_calc,
+    by = join_by(gauge)
+  ) |> 
+  # percentage diff
+  
+  arrange(sum_yearly_CO2_non_CO2_difference)
+  
+### Best CO2 vs. non-CO2 model comparison ######################################
+summary_streamflow_best_CO2_non_CO2 |> 
+  filter(evidence_ratio > 0) |> 
+  #filter(abs(mean_percent_yearly_CO2_non_CO2_difference) < 1) |> 
+  ggplot(aes(x = evidence_ratio, y = mean_percent_yearly_CO2_non_CO2_difference)) +
+  geom_point() +
+  scale_x_log10() +
+  theme_bw() +
+  labs(
+    y = "mean(CO2_t - non-CO2_t / CO2_t)"
+  )
+
+# This graph tells us 
+# x-axis is evidence ratio between CO2 and non-CO2 (log10 scaled)
+# x-axis values < 0 removed for log10 scale. This removes catchments
+# where the non-CO2 model is better
+# the CO2 model on average produces -0.17 % less streamflow per year
+# compared to the non-CO2 models
+# There is no relationship between evidence ratio and difference in models
+# We expected to see a larger difference in CO2 and non-CO2 models as 
+# the evidence ratio grew.
+
+# We really need to compare it to the observed...
+
+summary_streamflow_best_CO2_non_CO2 |> 
+  pull(mean_percent_yearly_CO2_non_CO2_difference) |> 
+  quantile()
+
+
+# Add slope and intercept to ToE histogram -------------------------------------
+specific_CO2_comp_custom_bins_tim_of_emergence <- custom_bins_tim_of_emergence |> 
+  mutate(
+    intercept_or_slope = if_else(
+      str_detect(streamflow_model, "intercept"), "Intercept", "Slope"
+      )
+    )
+
+ToE_hist_v2 <- specific_CO2_comp_custom_bins_tim_of_emergence |> 
+  summarise(
+    n = n(),
+    .by = c(custom_bins, intercept_or_slope)
+  ) |> 
+  mutate(
+    custom_bins = factor(
+      custom_bins, 
+      levels = c(
+        "Before 1959",
+        paste0(seq(from = 1950, to = 2020, by = 10), "'s")
+      )
+    )
+  ) |> 
+  ggplot(aes(x = custom_bins, y = n, fill = intercept_or_slope)) + 
+  geom_col(colour = "black") +
+  labs(
+    x = "Decade",
+    y = "Count",
+    title = bquote("What decade does"~CO[2]~"start impacting annual rainfall-partitioning?"),
+    fill = NULL
+  ) +
+  theme_bw() +
+  scale_fill_brewer(palette = "Set1") +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 24),
+    axis.title = element_text(size = 22),
+    axis.text = element_text(size = 20),
+    legend.position = "inside",
+    legend.position.inside = c(0.9, 0.9),
+    legend.background = element_rect(fill = "white", colour = "black"),
+    legend.text = element_text(size = 18)
+  )
+
+ToE_hist_v2
+
+# Playing with geom_magnify ----------------------------------------------------
+# Linux does not like this. Try on windows machine.
+library(ggmagnify)
+library(ggfx)
+
+## Map of Aus - magnify VIC
+single_map_aus <- aus_map |> 
+  ggplot() +
+  geom_sf(
+    fill = "grey20"
+    ) +
+  ggmagnify::geom_magnify(
+    aes(from = state == "VIC"),
+    to = c(130, 140, -50, -40), 
+    shadow = TRUE, 
+    shape = "outline", 
+    aspect = "fixed", 
+    expand = 0
+    ) 
+
+single_map_aus
+
+  geom_point(
+    data = a3_direction_binned_lat_lon_evidence_ratio,
+    mapping = aes(x = lon, y = lat, colour = binned_evidence_ratio)
+  ) +
+  theme_bw() + 
+  geom_magnify(
+    data = a3_direction_binned_lat_lon_evidence_ratio,
+    aes(from = state == "VIC"),
+    to = c(120, 130, -45, -40), 
+    shadow = TRUE, linewidth = 1,
+    shape = "outline", 
+    aspect = "fixed", 
+    expand = 0
+    ) 
+
+single_map_aus
