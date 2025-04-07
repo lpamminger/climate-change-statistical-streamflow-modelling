@@ -6,7 +6,6 @@
 
 # TODO - transfer code/graphs from playing_with_graphs
 # Key graphs to transfer are:
-# 1. Improved evidence ratio map
 # 2. Time of emergence histogram
 # 3. Map of time of emergence
 # 4. Component map
@@ -21,20 +20,28 @@
 cat("\014") # clear console
 
 # Import libraries--------------------------------------------------------------
-pacman::p_load(tidyverse, ozmaps, sf, patchwork) # need to update this linux
+pacman::p_load(tidyverse, ozmaps, sf, ggmagnify) # need to update this linux
 
 
-# Import functions -------------------------------------------------------------
+## Utility functions ===========================================================
 source("./Functions/utility.R")
+
+
+## Import streamflow functions =================================================
+source("./Functions/streamflow_models.R")
+source("./Functions/parameter_transformations.R")
+source("./Functions/catchment_data_blueprint.R")
+source("./Functions/cmaes_dream_summaries.R")
+source("./Functions/objective_functions.R")
+source("./Functions/numerical_optimiser_setup.R")
+source("./Functions/generic_functions.R")
+source("./Functions/DREAM.R")
+source("./Functions/objective_function_setup.R")
+source("./Functions/result_set.R")
 source("./Functions/boxcox_transforms.R")
 
 
 # Import data ------------------------------------------------------------------
-data <- read_csv(
-  "Data/Tidy/with_NA_yearly_data_CAMELS.csv",
-  show_col_types = FALSE
-)
-
 CMAES_results <- read_csv(
   "./Results/my_cmaes/CMAES_parameter_results_20250331.csv", 
   show_col_types = FALSE
@@ -67,32 +74,22 @@ best_CO2_non_CO2_per_gauge <- read_csv(
 
 
 
-# 1. A map of best CO2 vs best non-CO2 of Australia ----------------------------
-
-## Calculate evidence ratios ===================================================
-
-# The flag column is produces errors here
-# When pivot_wider is called flag modified and unmodified are on separate rows
-# I want them on the same row. The easiest way is a left join of best_CO2...
-
-#flag_per_gauge <- best_CO2_non_CO2_per_gauge |> 
-#  select(gauge, flag) |> 
-#  distinct() |> 
-#  filter(flag == "modified")
+# 1. A map of best CO2 vs best non-CO2 of Australia -----------------------------
 
 
+# Calculate evidence ratio -----------------------------------------------------
 evidence_ratio_calc <- best_CO2_non_CO2_per_gauge |>
-  select(gauge, contains_CO2, AIC) |> 
-  distinct() |> 
+  select(gauge, contains_CO2, AIC) |>
+  distinct() |>
   pivot_wider(
     names_from = contains_CO2,
     values_from = AIC
-  ) |> 
+  ) |>
   mutate(
     CO2_model = `TRUE`,
     non_CO2_model = `FALSE`,
     .keep = "unused"
-  ) |> 
+  ) |>
   mutate(
     AIC_difference = CO2_model - non_CO2_model # CO2 is smaller than non-CO2 then negative and CO2 is better
   ) |>
@@ -101,31 +98,102 @@ evidence_ratio_calc <- best_CO2_non_CO2_per_gauge |>
       AIC_difference < 0 ~ exp(0.5 * abs(AIC_difference)), # when CO2 model is better
       AIC_difference > 0 ~ -exp(0.5 * abs(AIC_difference)) # when non-CO2 model is better
     )
-  ) |> 
-  arrange(evidence_ratio) #|> 
-  # Add flag back in
-  #left_join(
-  #  flag_per_gauge,
-  #  by = join_by(gauge)
-  #) |> 
-  #mutate(
-  #  flag = if_else(is.na(flag), "unmodified", flag)
-  #)
+  ) |>
+  arrange(evidence_ratio)
 
 
-### Get into plot ready form ###################################################
-plot_ready_data <- evidence_ratio_calc |>
+## Tidy evidence ratio data for plotting =======================================
+### Add lat and lon ############################################################
+lat_lon_gauge <- gauge_information |> 
+  select(gauge, lat, lon)
+
+lat_long_evidence_ratio <- evidence_ratio_calc |>
   select(!c(AIC_difference)) |>
   left_join(
-    gauge_information,
+    lat_lon_gauge,
     by = join_by(gauge)
-  ) 
+  )
+
+### Add qualitative labels instead of using numerical evidence ratio ###########
+state_gauge <- gauge_information |> 
+  select(gauge, state)
+
+binned_lat_lon_evidence_ratio <- lat_long_evidence_ratio |>
+  mutate(
+    binned_evidence_ratio = case_when(
+      between(evidence_ratio, -1E1, 1E1) ~ "Weak",
+      between(evidence_ratio, 1E1, 1E2) ~ "Moderate",
+      between(evidence_ratio, 1E2, 1E3) ~ "Moderately Strong",
+      between(evidence_ratio, 1E3, 1E4) ~ "Strong",
+      between(evidence_ratio, 1E4, 1E6) ~ "Very Strong",
+      between(evidence_ratio, 1E6, Inf) ~ "Extremely Strong",
+      .default = NA
+    )
+  ) |>
+  left_join(
+    state_gauge,
+    by = join_by(gauge)
+  ) |>
+  mutate(
+    binned_evidence_ratio = factor(
+      binned_evidence_ratio,
+      levels = c("Weak", "Moderate", "Moderately Strong", "Strong", "Very Strong", "Extremely Strong")
+    )
+  )
 
 
-## Making map ==================================================================
-aus_map <- ozmaps::ozmap(x = "states") |> 
-  filter(!NAME %in% c("Other Territories")) |> 
-  rename(state = NAME) |> 
+
+### Add direction of change and whether the slope/intercept changed ############
+best_model_per_gauge <- best_CO2_non_CO2_per_gauge |>
+  slice_min(
+    AIC,
+    by = gauge
+  ) |> 
+  distinct()
+
+
+direction_of_a3_change <- best_model_per_gauge |> 
+  filter(parameter %in% c("a3_intercept", "a3_slope")) |>
+  mutate(
+    intercept_or_slope = if_else(str_detect(streamflow_model, "intercept"), "Intercept", "Slope")
+  ) |> 
+  select(gauge, streamflow_model, parameter, parameter_value, intercept_or_slope) |> 
+  mutate(
+    CO2_direction = if_else(parameter_value < 0, "Negative", "Positive")
+  ) |> 
+  select(gauge, CO2_direction, intercept_or_slope)
+
+
+a3_direction_binned_lat_lon_evidence_ratio <- binned_lat_lon_evidence_ratio |>
+  left_join(
+    direction_of_a3_change,
+    by = join_by(gauge)
+  ) |>
+  replace_na(list(CO2_direction = "No CO2 Term", intercept_or_slope = "No CO2 Term")) |>
+  unite(
+    col = "impact_of_CO2_term",
+    CO2_direction,
+    intercept_or_slope,
+    sep = "-"
+  ) |>
+  mutate(
+    impact_of_CO2_term = if_else(impact_of_CO2_term == "No CO2 Term-No CO2 Term", "No CO2 Term", impact_of_CO2_term)
+  ) |>
+  mutate(
+    impact_of_CO2_term = factor(
+      impact_of_CO2_term,
+      levels = c("No CO2 Term", "Negative-Intercept", "Positive-Intercept", "Negative-Slope", "Positive-Slope")
+    )
+  )
+
+
+
+
+
+# Get shapefiles for Australia ------------------------------------------------
+aus_map <- ozmaps::ozmap(x = "states") |>
+  filter(!NAME %in% c("Other Territories")) |>
+  rename(state = NAME) |>
   mutate(
     state = case_when(
       state == "New South Wales" ~ "NSW",
@@ -139,305 +207,229 @@ aus_map <- ozmaps::ozmap(x = "states") |>
     )
   )
 
-combine_NSW_ACT <- aus_map |> 
-  filter(state %in% c("NSW", "ACT")) |> 
+combine_NSW_ACT <- aus_map |>
+  filter(state %in% c("NSW", "ACT")) |>
   st_union()
 
-aus_map[1,2] <- list(combine_NSW_ACT)
+aus_map[1, 2] <- list(combine_NSW_ACT)
 
-aus_map <- aus_map |> 
+aus_map <- aus_map |>
   filter(state != "ACT")
 
-## By country ==================================================================
 
-### How evidence ratio is binned ###############################################
-# I want the scale in these steps:
-# From https://www.semanticscholar.org/paper/On-the-interpretation-of-likelihood-ratios-in-and-Martire-Kemp/3fc3690678409d8e8aa9352dce346565cf8fd0ea
-# Weak or limited -> 1-10
-# Moderate -> 10-100
-# Moderately strong -> 100-1,000
-# Strong -> 1,000-10,000
-# Very strong -> 10,000-1,000,000
-# Extremely strong ->  >1,000,000
 
+# Make final plot --------------------------------------------------------------
+
+### Custom colour palette 
 custom_palette <- function(x) {
-  rev(c(
-  "#67001f",
-  "#b2182b",
-  "#d6604d",
-  "#f4a582",
-  "#fddbc7",
-  "#f7f7f7"#,
-  #"#d1e5f0",
-  #"#4393c3",
-  #"#2166ac",
-  #"#053061"
-  ))
+  rev(c("#67001f", "#b2182b", "#d6604d", "#f4a582", "#fddbc7", "#f7f7f7"))
 }
 
 
-## Plotting function ===========================================================
+## Generate Insets =============================================================
+### Filter data by state #######################################################
 
-# This is very similar to the entire map
-# maybe adjust it for everything and reuse it
-gg_evidence_ratio_map <- function(state = NULL, evidence_ratio_data, map_data) {
-  
-  # use state as key to extract correct polygon from map_data and evidence_ratio_data
-  if (!is.null(state)) {
-    
-    map_data <- map_data |> 
-      filter(state == {{ state }})
-    
-    evidence_ratio_data <- evidence_ratio_data |> 
-      filter(state == {{ state }})
-    
-  }
-  
+QLD_data <- a3_direction_binned_lat_lon_evidence_ratio |>
+  filter(state == "QLD")
 
-  
+NSW_data <- a3_direction_binned_lat_lon_evidence_ratio |>
+  filter(state == "NSW")
+
+VIC_data <- a3_direction_binned_lat_lon_evidence_ratio |>
+  filter(state == "VIC")
+
+WA_data <- a3_direction_binned_lat_lon_evidence_ratio |>
+  filter(state == "WA")
+
+
+### Generate inset plots #######################################################
+
+inset_plot_QLD <- aus_map |>
+  filter(state == "QLD") |>
   ggplot() +
-    geom_sf(
-      data = map_data,
-      colour = "black",
-      fill = "grey50"
-    ) +
-    geom_point(
-      data = evidence_ratio_data,
-      aes(x = lon, y = lat, colour = evidence_ratio), #shape = flag),
-      size = 0.75
-    ) +
-    #coord_sf(xlim = c(110, 155)) +
-    binned_scale( # binned scale code taken from: https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
-      aesthetics = "colour",
-      palette = custom_palette, # length should be length(breaks + limits) - 1
-      breaks = c(1E1, 1E2, 1E3, 1E4, 1E6),
-      limits = c(-1E1, 1E20),
-      show.limits = TRUE,
-      guide = "coloursteps"
-    ) +
-    theme_bw() +
-    labs(
-      x = NULL, # commented out due for final review plot
-      y = NULL, # commented out due for final review plot
-      colour = "Evidence Ratio"#,
-      #shape = "Flag"
-    ) +
-    theme(
-      legend.key.height = unit(4, "mm"),
-      legend.key.width = unit(40, "mm"),
-      legend.frame = element_rect(colour = "black"),
-      legend.position = "bottom",
-      legend.text = element_text(size = 11),
-      axis.text = element_text(size = 6)  # added for final review
-    )
+  geom_sf() +
+  geom_point(
+    data = QLD_data,
+    aes(x = lon, y = lat, fill = binned_evidence_ratio, shape = impact_of_CO2_term),
+    show.legend = FALSE,
+    size = 3,
+    stroke = 0.1
+  ) +
+  scale_fill_manual(
+    values = custom_palette(),
+    drop = FALSE
+  ) +
+  scale_shape_manual(
+    values = c(21, 22, 23, 25, 24),
+    drop = FALSE
+  ) +
+  theme_void()
 
 
-}
-
-
-aus_evidence_ratio_map <- gg_evidence_ratio_map(
-  evidence_ratio_data = plot_ready_data,
-  map_data = aus_map
-)
-
-
-ggsave(
-  filename = paste0("aus_evidence_ratio_", get_date(), ".pdf"),
-  plot = aus_evidence_ratio_map,
-  device = "pdf",
-  path = "./Graphs/CMAES_graphs",
-  width = 420,
-  height = 297,
-  units = "mm"
-)
+inset_plot_NSW <- aus_map |>
+  filter(state == "NSW") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = NSW_data,
+    aes(x = lon, y = lat, fill = binned_evidence_ratio, shape = impact_of_CO2_term),
+    show.legend = FALSE,
+    size = 3,
+    stroke = 0.1
+  ) +
+  scale_fill_manual(
+    values = custom_palette(),
+    drop = FALSE
+  ) +
+  scale_shape_manual(
+    values = c(21, 22, 23, 25, 24),
+    drop = FALSE
+  ) +
+  theme_void()
 
 
 
-# 2. Patchwork plots by state --------------------------------------------------
+inset_plot_VIC <- aus_map |>
+  filter(state == "VIC") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = VIC_data,
+    aes(x = lon, y = lat, fill = binned_evidence_ratio, shape = impact_of_CO2_term),
+    show.legend = FALSE,
+    size = 2.7,
+    stroke = 0.1
+  ) +
+  scale_fill_manual(
+    values = custom_palette(),
+    drop = FALSE
+  ) +
+  scale_shape_manual(
+    values = c(21, 22, 23, 25, 24),
+    drop = FALSE
+  ) +
+  theme_void()
 
 
 
-by_state_plots <- map(
-  .x = aus_map |> pull(state) |> unique(),
-  .f = gg_evidence_ratio_map,
-  evidence_ratio_data = plot_ready_data,
-  map_data = aus_map
-)
-
-names(by_state_plots) <- aus_map |> pull(state) |> unique()
-
-## Combine to make a paper ready plot ==========================================
-# make it look nice - take some trial and error
-# reduce(.x = by_state_plots, .f = `+`) easy add
-
-
-top_nice_plot <- by_state_plots[["TAS"]] | by_state_plots[["QLD"]] | by_state_plots[["WA"]] | by_state_plots[["SA"]] | by_state_plots[["NT"]]
-bottom_nice_plot <- by_state_plots[["VIC"]] | aus_evidence_ratio_map | by_state_plots[["NSW"]]
-nice_plot <- top_nice_plot / bottom_nice_plot / guide_area() +
-  plot_layout(guides = "collect") +
-  plot_annotation(tag_levels = "a")
-
-nice_plot
-
-# nice plot for final review
-fr_top <- by_state_plots[["TAS"]] | by_state_plots[["QLD"]] | by_state_plots[["NT"]] | by_state_plots[["SA"]] 
-fr_bottom <- by_state_plots[["WA"]] | by_state_plots[["VIC"]] | by_state_plots[["NSW"]]
-fr_nice_plot <- fr_top / fr_bottom / guide_area() +
-  plot_layout(guides = "collect")
-
-fr_nice_plot
-
-ggsave(
-  filename = paste0("final_review_nice_plot", get_date(), ".pdf"),
-  plot = fr_nice_plot,
-  device = "pdf",
-  path = "./Graphs/CMAES_graphs",
-  height = 210,
-  width = 297,
-  units = "mm"
-)
+inset_plot_WA <- aus_map |>
+  filter(state == "WA") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = WA_data,
+    aes(x = lon, y = lat, fill = binned_evidence_ratio, shape = impact_of_CO2_term),
+    show.legend = FALSE,
+    size = 3,
+    stroke = 0.1
+  ) +
+  scale_fill_manual(
+    values = custom_palette(),
+    drop = FALSE
+  ) +
+  scale_shape_manual(
+    values = c(21, 22, 23, 25, 24),
+    drop = FALSE
+  ) +
+  theme_void()
 
 
 
-ggsave(
-  filename = paste0("nice_plot_", get_date(), ".pdf"),
-  plot = nice_plot,
-  device = "pdf",
-  path = "./Graphs/CMAES_graphs",
-  height = 210,
-  width = 297,
-  units = "mm"
-)
 
-## Change the shape of the dot depending on whether the a3 value is:
-### - positive 
-### - negative 
-### - Not applicable
-## Easiest way to do this is get best models, join a3 parameter
 
-# Move to the analysis bit afterwards
-best_model_combination_per_catchment <- best_CO2_non_CO2_per_gauge |>
-  select(gauge, streamflow_model, AIC) |> 
-  slice_min(
-    AIC,
-    by = gauge
-  ) |> 
-  distinct()
 
-direction_of_a3_change <- best_CO2_non_CO2_per_gauge |> 
-  semi_join(
-    best_model_combination_per_catchment,
-    by = join_by(gauge)
-  ) |> 
-  filter(parameter %in% c("a3_intercept", "a3_slope")) |> 
-  select(gauge, streamflow_model, parameter, parameter_value) |> 
-  mutate(
-    CO2_term_impact = if_else(parameter_value < 0, "Negative", "Positive")
-  ) 
 
-# join to plot ready data
-plot_ready_data_with_a3 <- plot_ready_data |> 
-  left_join(
-    direction_of_a3_change,
-    by = join_by(gauge)
-  ) |> 
-  select(!c(streamflow_model, parameter, parameter_value)) |> 
-  mutate(
-    CO2_term_impact = if_else(evidence_ratio < 0, "Not Applicable", CO2_term_impact)
-  ) |> 
-  mutate(
-    CO2_term_impact = factor(
-      CO2_term_impact, 
-      levels = c("Positive", "Negative", "Not Applicable")
-      )
+
+
+## Put it together =============================================================
+
+single_map_aus <- aus_map |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = a3_direction_binned_lat_lon_evidence_ratio,
+    mapping = aes(x = lon, y = lat, fill = binned_evidence_ratio, shape = impact_of_CO2_term),
+    size = 3,
+    colour = "black",
+    stroke = 0.1
+  ) +
+  theme_bw() +
+  scale_fill_manual(
+    values = custom_palette(),
+    drop = FALSE
+  ) +
+  scale_shape_manual(
+    values = c(21, 22, 23, 25, 24),
+    drop = FALSE
+  ) +
+  # expand map
+  coord_sf(xlim = c(105, 180), ylim = c(-60, 0)) +
+  # magnify WA
+  geom_magnify(
+    from = c(114, 118, -35.5, -30),
+    to = c(105, 120, -19, 0),
+    shadow = FALSE,
+    expand = 0,
+    plot = inset_plot_WA,
+    proj = "single"
+  ) +
+  # magnify VIC
+  geom_magnify(
+    aes(from = state == "VIC"), # use aes rather than manually selecting area
+    # from = c(140, 150, -40, -34),
+    to = c(106, 138, -41, -59),
+    shadow = FALSE,
+    plot = inset_plot_VIC,
+    proj = "single"
+  ) +
+  # magnify QLD
+  geom_magnify(
+    from = c(144, 155, -30, -10),
+    to = c(157, 177, -29, 0),
+    shadow = FALSE,
+    expand = 0,
+    plot = inset_plot_QLD,
+    proj = "single"
+  ) +
+  # magnify NSW
+  geom_magnify(
+    from = c(146, 154, -38, -28),
+    to = c(152, 165, -38.5, -60),
+    shadow = FALSE,
+    expand = 0,
+    plot = inset_plot_NSW,
+    proj = "single"
+  ) +
+  labs(
+    x = "Latitude",
+    y = "Longitude",
+    fill = "Evidence Ratio",
+    shape = "Impact of CO2 Term"
+  ) +
+  theme(
+    legend.key = element_rect(fill = "grey80"),
+    legend.title = element_text(hjust = 0.5),
+    legend.background = element_rect(colour = "black"),
+    axis.text = element_text(size = 6), 
+    legend.position = "inside",
+    legend.position.inside = c(0.89, 0.25)
+  ) +
+  guides(
+    fill = guide_legend(override.aes = list(size = 5, shape = 21)),#, nrow = 3), # Wrap legend with nrow
+    shape = guide_legend(override.aes = list(size = 5))
   )
 
-# temporary
-gg_evidence_ratio_map_with_a3_direction <- function(state = NULL, evidence_ratio_data, map_data) {
-  
-  # use state as key to extract correct polygon from map_data and evidence_ratio_data
-  if (!is.null(state)) {
-    
-    map_data <- map_data |> 
-      filter(state == {{ state }})
-    
-    evidence_ratio_data <- evidence_ratio_data |> 
-      filter(state == {{ state }})
-    
-  }
-  
-  
-  
-  ggplot() +
-    geom_sf(
-      data = map_data,
-      colour = "black",
-      fill = "grey50"
-    ) +
-    geom_point(
-      data = evidence_ratio_data,
-      aes(x = lon, y = lat, colour = evidence_ratio, shape = CO2_term_impact), 
-      size = 0.75
-    ) +
-    #coord_sf(xlim = c(110, 155)) +
-    binned_scale( # binned scale code taken from: https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
-      aesthetics = "colour",
-      palette = custom_palette, # length should be length(breaks + limits) - 1
-      breaks = c(1E1, 1E2, 1E3, 1E4, 1E6),
-      limits = c(-1E1, 1E20),
-      show.limits = TRUE,
-      guide = "coloursteps"
-    ) +
-    theme_bw() +
-    labs(
-      x = NULL, # commented out due for final review plot
-      y = NULL, # commented out due for final review plot
-      colour = "Evidence Ratio",
-      shape = bquote("Contribution of"~CO[2]~"term to annual streamflow")
-    ) +
-    theme(
-      legend.key.height = unit(4, "mm"),
-      legend.key.width = unit(40, "mm"),
-      legend.frame = element_rect(colour = "black"),
-      legend.position = "bottom",
-      legend.text = element_text(size = 11),
-      axis.text = element_text(size = 6)  # added for final review
-    ) + 
-    guides(shape = guide_legend(override.aes = list(size = 5)))
-  
-}
 
-
-#aus_evidence_ratio_map <- gg_evidence_ratio_map_with_a3_direction(
-#  evidence_ratio_data = plot_ready_data_with_a3,
-#  map_data = aus_map
-#)
-
-by_state_plots_a3 <- map(
-  .x = aus_map |> pull(state) |> unique(),
-  .f = gg_evidence_ratio_map_with_a3_direction,
-  evidence_ratio_data = plot_ready_data_with_a3,
-  map_data = aus_map
-)
-
-names(by_state_plots_a3) <- aus_map |> pull(state) |> unique()
-
-fr_top <- by_state_plots_a3[["TAS"]] | by_state_plots_a3[["QLD"]] | by_state_plots_a3[["NT"]] | by_state_plots_a3[["SA"]] 
-fr_bottom <- by_state_plots_a3[["WA"]] | by_state_plots_a3[["VIC"]] | by_state_plots_a3[["NSW"]]
-fr_nice_plot <- fr_top / fr_bottom / guide_area() +
-  plot_layout(guides = "collect")
-
-fr_nice_plot
 
 ggsave(
-  filename = paste0("post_final_review_nice_plot", get_date(), ".pdf"),
-  plot = fr_nice_plot,
+  filename = "./Graphs/CMAES_graphs/evidence_ratio_aus_with_zoom.pdf",
+  plot = single_map_aus,
   device = "pdf",
-  path = "./Graphs/CMAES_graphs",
+  width = 237,
   height = 210,
-  width = 297,
   units = "mm"
 )
+
 
 
 # 3. Streamflow plots of best-CO2, best-non-CO2 and observed -------------------
