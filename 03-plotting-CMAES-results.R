@@ -343,9 +343,6 @@ inset_plot_WA <- aus_map |>
 
 ## Put it together =============================================================
 
-# ggmagnify does not seem to work with ubuntu. Something to do with
-# the compiler?
-
 single_map_aus <- aus_map |>
   ggplot() +
   geom_sf() +
