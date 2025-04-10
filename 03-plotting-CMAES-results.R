@@ -164,6 +164,7 @@ direction_of_a3_change <- best_model_per_gauge |>
   select(gauge, CO2_direction, intercept_or_slope)
 
 
+
 a3_direction_binned_lat_lon_evidence_ratio <- binned_lat_lon_evidence_ratio |>
   left_join(
     direction_of_a3_change,
@@ -184,7 +185,7 @@ a3_direction_binned_lat_lon_evidence_ratio <- binned_lat_lon_evidence_ratio |>
       impact_of_CO2_term,
       levels = c("No CO2 Term", "Negative-Intercept", "Positive-Intercept", "Negative-Slope", "Positive-Slope")
     )
-  )
+  ) 
 
 
 
@@ -241,6 +242,9 @@ VIC_data <- a3_direction_binned_lat_lon_evidence_ratio |>
 WA_data <- a3_direction_binned_lat_lon_evidence_ratio |>
   filter(state == "WA")
 
+TAS_data <- a3_direction_binned_lat_lon_evidence_ratio |>
+  filter(state == "TAS")
+
 
 ### Generate inset plots #######################################################
 
@@ -252,7 +256,7 @@ inset_plot_QLD <- aus_map |>
     data = QLD_data,
     aes(x = lon, y = lat, fill = binned_evidence_ratio, shape = impact_of_CO2_term),
     show.legend = FALSE,
-    size = 3,
+    size = 2.5,
     stroke = 0.1
   ) +
   scale_fill_manual(
@@ -274,7 +278,7 @@ inset_plot_NSW <- aus_map |>
     data = NSW_data,
     aes(x = lon, y = lat, fill = binned_evidence_ratio, shape = impact_of_CO2_term),
     show.legend = FALSE,
-    size = 3,
+    size = 2.5,
     stroke = 0.1
   ) +
   scale_fill_manual(
@@ -297,7 +301,7 @@ inset_plot_VIC <- aus_map |>
     data = VIC_data,
     aes(x = lon, y = lat, fill = binned_evidence_ratio, shape = impact_of_CO2_term),
     show.legend = FALSE,
-    size = 2.7,
+    size = 2.5,
     stroke = 0.1
   ) +
   scale_fill_manual(
@@ -320,7 +324,7 @@ inset_plot_WA <- aus_map |>
     data = WA_data,
     aes(x = lon, y = lat, fill = binned_evidence_ratio, shape = impact_of_CO2_term),
     show.legend = FALSE,
-    size = 3,
+    size = 2.5,
     stroke = 0.1
   ) +
   scale_fill_manual(
@@ -335,9 +339,26 @@ inset_plot_WA <- aus_map |>
 
 
 
-
-
-
+inset_plot_TAS <- aus_map |>
+  filter(state == "TAS") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = TAS_data,
+    aes(x = lon, y = lat, fill = binned_evidence_ratio, shape = impact_of_CO2_term),
+    show.legend = FALSE,
+    size = 2.5,
+    stroke = 0.1
+  ) +
+  scale_fill_manual(
+    values = custom_palette(),
+    drop = FALSE
+  ) +
+  scale_shape_manual(
+    values = c(21, 22, 23, 25, 24),
+    drop = FALSE
+  ) +
+  theme_void()
 
 
 
@@ -363,11 +384,11 @@ single_map_aus <- aus_map |>
     drop = FALSE
   ) +
   # expand map
-  coord_sf(xlim = c(105, 180), ylim = c(-60, 0)) +
+  coord_sf(xlim = c(95, 180), ylim = c(-60, 0)) +
   # magnify WA
   geom_magnify(
     from = c(114, 118, -35.5, -30),
-    to = c(105, 120, -19, 0),
+    to = c(93, 112, -36, -10),
     shadow = FALSE,
     expand = 0,
     plot = inset_plot_WA,
@@ -375,17 +396,17 @@ single_map_aus <- aus_map |>
   ) +
   # magnify VIC
   geom_magnify(
-    aes(from = state == "VIC"), # use aes rather than manually selecting area
-    # from = c(140, 150, -40, -34),
-    to = c(106, 138, -41, -59),
+    #aes(from = state == "VIC"), # use aes rather than manually selecting area
+    from = c(141, 149.5, -39, -34),
+    to = c(95, 136, -38, -60),
     shadow = FALSE,
     plot = inset_plot_VIC,
     proj = "single"
   ) +
   # magnify QLD
   geom_magnify(
-    from = c(144, 155, -30, -10),
-    to = c(157, 177, -29, 0),
+    from = c(145, 155, -30, -16),
+    to = c(157, 178, -29.5, 1.5),
     shadow = FALSE,
     expand = 0,
     plot = inset_plot_QLD,
@@ -393,18 +414,27 @@ single_map_aus <- aus_map |>
   ) +
   # magnify NSW
   geom_magnify(
-    from = c(146, 154, -38, -28),
-    to = c(152, 165, -38.5, -60),
+    from = c(146.5, 154, -38, -28),
+    to = c(157, 178, -61, -30.5),
     shadow = FALSE,
     expand = 0,
     plot = inset_plot_NSW,
     proj = "single"
   ) +
+  # magnify TAS
+  geom_magnify(
+    from = c(144, 149, -40, -44),
+    to = c(140, 155, -45, -61),
+    shadow = FALSE,
+    expand = 0,
+    plot = inset_plot_TAS,
+    proj = "single"
+  ) +
   labs(
-    x = "Latitude",
-    y = "Longitude",
+    x = NULL,#"Latitude",
+    y = NULL,#"Longitude",
     fill = "Evidence Ratio",
-    shape = "Impact of CO2 Term"
+    shape = bquote("Impact of "~CO[2]~"Term")
   ) +
   theme(
     legend.key = element_rect(fill = "grey80"),
@@ -412,17 +442,19 @@ single_map_aus <- aus_map |>
     legend.background = element_rect(colour = "black"),
     axis.text = element_text(size = 6), 
     legend.position = "inside",
-    legend.position.inside = c(0.89, 0.25)
+    legend.position.inside = c(0.351, 0.9),
+    legend.box = "horizontal"#, # side-by-side legends
+    #plot.margin = margin(20, 1, 2, 2, unit = "mm") # white area around figure
   ) +
   guides(
-    fill = guide_legend(override.aes = list(size = 5, shape = 21)),#, nrow = 3), # Wrap legend with nrow
-    shape = guide_legend(override.aes = list(size = 5))
+    fill = guide_legend(override.aes = list(size = 5, shape = 21), nrow = 3), # Wrap legend with nrow
+    shape = guide_legend(override.aes = list(size = 5, fill = "grey50"), nrow = 3)
   )
 
-
+#single_map_aus
 
 ggsave(
-  filename = "./Graphs/CMAES_graphs/evidence_ratio_aus_with_zoom.pdf",
+  filename = "./Graphs/CMAES_graphs/evidence_ratio_aus_with_zoom_v2.pdf",
   plot = single_map_aus,
   device = "pdf",
   width = 237,
@@ -430,7 +462,7 @@ ggsave(
   units = "mm"
 )
 
-
+stop_here <- tactical_typo()
 
 # 3. Streamflow plots of best-CO2, best-non-CO2 and observed -------------------
 
