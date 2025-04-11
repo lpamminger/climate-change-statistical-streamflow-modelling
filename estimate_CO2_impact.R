@@ -2,7 +2,7 @@
 cat("\014") # clear console
 
 # Import libraries--------------------------------------------------------------
-pacman::p_load(tidyverse, truncnorm, sloop, patchwork)#, ozmaps, sf, patchwork)
+pacman::p_load(tidyverse, truncnorm, sloop, patchwork, ozmaps, sf, patchwork, metR)
 
 
 
@@ -24,6 +24,9 @@ gauge_information <- readr::read_csv(
   "./Data/Tidy/gauge_information_CAMELS.csv",
   show_col_types = FALSE
 )
+
+lat_lon_gauge_info <- gauge_information |> 
+  select(gauge, lat, lon)
 
 
 CMAES_results <- read_csv("./Results/my_cmaes/CMAES_parameter_results_20250331.csv",
@@ -221,15 +224,153 @@ rename(
   )
 
 
+
+# Compare percentage difference in a3 on vs. a3 off ----------------------------
+CO2_on_off_analysis <- streamflow_data_a3_off |> 
+  mutate(
+    # CO2 on in the model is the baseline. CO2 off is the change
+    percent_diff = ((a3_off_modelled_boxcox_streamflow - modelled_boxcox_streamflow) / a3_off_modelled_boxcox_streamflow) * 100
+  ) |> 
+  mutate(
+    decade = year - (year %% 10)
+  )
+
+
+average_percent_diff_by_decade <- CO2_on_off_analysis |> 
+  summarise(
+    average_percent_diff = mean(percent_diff),
+    median_percent_diff = median(percent_diff),
+    .by = c(decade, gauge)
+  ) |> 
+  # add lat and lon for plotting
+  left_join(
+    lat_lon_gauge_info,
+    by = join_by(gauge)
+  ) |>
+  filter(decade != 1950) |> # there is only a single year during this decade
+  arrange(average_percent_diff) 
+
+## Count gauges per decade
+average_percent_diff_by_decade |> 
+  summarise(
+    n = n(),
+    .by = decade
+  )
+
+
+average_percent_diff_by_decade |> 
+  filter(decade == 1980) |> 
+  ggplot(aes(x = lon, y = lat, colour = median_percent_diff)) +
+  geom_point()
+
+
+
+## Plot map percentage difference ==============================================
+### Map
+single_aus_map <- ozmaps::ozmap("country") |> 
+  uncount(average_percent_diff_by_decade |> pull(decade) |> unique() |> length()) |>   # repeat the geometry by number of decades in average_percent_diff_by_decade
+  mutate(
+    decade = average_percent_diff_by_decade |> pull(decade) |> unique()
+  )
+
+
+big_palette <- function(x) {
+  c("#67001f",
+  "#b2182b",
+  "#d6604d",
+  "#f4a582",
+  "#fddbc7",
+  "#d1e5f0",
+  "#92c5de",
+  "#4393c3",
+  "#2166ac",
+  "#053061")
+}
+
+
+plot_CO2_on_off_percent_diff <- single_aus_map |> 
+  ggplot(aes(geometry = geometry)) +
+  geom_sf(
+    colour = "black",
+    fill = "grey80"
+  ) +
+  geom_point(
+    mapping = aes(x = lon, y = lat, colour = average_percent_diff),
+    data = average_percent_diff_by_decade,
+    inherit.aes = FALSE,
+    size = 0.75
+  ) + 
+  metR::scale_x_longitude(ticks = 10) +
+  metR::scale_y_latitude(ticks = 10) +
+  labs(
+    x = "Longitude",
+    y = "Latitude",
+    colour = NULL
+  ) +
+  binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+    aesthetics = "colour",
+    palette = big_palette,
+    breaks = c(-50, -25, -5, -1, 0, 1, 5, 25, 50),
+    limits = c(-5000, 800),
+    show.limits = TRUE, 
+    guide = "colorsteps"
+    ) +
+  facet_wrap(~decade) +
+  labs(
+    colour = "Mean Percentage Difference 
+    (Modelled Streamflow CO2 Component Off - Modelled Streamflow CO2 Component On / 
+    Modelled Streamflow CO2 Component Off)"
+  ) +
+  theme_bw() +
+  theme(
+    legend.position = "inside",
+    legend.position.inside = c(0.7, 0.15),
+    legend.title = element_text(size = 10)
+  ) +
+  guides(
+    colour = guide_coloursteps(
+      barwidth = unit(10, "cm"), 
+      show.limits = TRUE, 
+      even.steps = TRUE,
+      title.position = "top",
+      direction = "horizontal"
+      )
+    ) 
+
+#plot_CO2_on_off_percent_diff
+
+ggsave(
+  filename = "./Graphs/CMAES_graphs/CO2_on_off.pdf",
+  plot = plot_CO2_on_off_percent_diff,
+  device = "pdf",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+stop_here <- tactical_typo()
+
+
+# Compare non-CO2 vs. CO2 and a3-on vs a3-off ----------------------------------
+
 # Would be a good idea to get streamflow_data_a3_off and streamflow_data_best_CO2_non_CO2
 # in the same format
 
 # suggested format?
 
-
-# Compare non-CO2 vs. CO2 and a3-on vs a3-off ----------------------------------
-
-gauge_key <- "403226" #"226410" #"403226"
+gauge_key <- "A2390531" #"226410" #"403226"
 
 ## Rainfall-runoff relationship
 ### CO2 vs. non CO2
