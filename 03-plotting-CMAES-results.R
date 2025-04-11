@@ -71,10 +71,181 @@ best_CO2_non_CO2_per_gauge <- read_csv(
 ) 
   
 
+# Objects used for all figures -------------------------------------------------
+### Add lat and lon ############################################################
+lat_lon_gauge <- gauge_information |> 
+  select(gauge, lat, lon)
+
+# Get shapefiles for Australia ------------------------------------------------
+aus_map <- ozmaps::ozmap(x = "states") |>
+  filter(!NAME %in% c("Other Territories")) |>
+  rename(state = NAME) |>
+  mutate(
+    state = case_when(
+      state == "New South Wales" ~ "NSW",
+      state == "Victoria" ~ "VIC",
+      state == "Queensland" ~ "QLD",
+      state == "South Australia" ~ "SA",
+      state == "Western Australia" ~ "WA",
+      state == "Tasmania" ~ "TAS",
+      state == "Northern Territory" ~ "NT",
+      state == "Australian Capital Territory" ~ "ACT",
+    )
+  )
+
+combine_NSW_ACT <- aus_map |>
+  filter(state %in% c("NSW", "ACT")) |>
+  st_union()
+
+aus_map[1, 2] <- list(combine_NSW_ACT)
+
+aus_map <- aus_map |>
+  filter(state != "ACT")
+
+
+
+
 
 # Figure 1. A of best components of streamflow models of Australia -------------
+single_aus_map <- ozmaps::ozmap("country") |> 
+  uncount(5) |>  # repeat the geometry 4 times
+  mutate(
+    simple_name = c("Drought", "Autocorrelation", "CO2 Intercept", "CO2 Slope", "Rainfall Seasonality")
+  )
+
+best_model_per_gauge <- best_CO2_non_CO2_per_gauge |>
+  slice_min(
+    AIC,
+    by = gauge
+  ) |> 
+  distinct()
+
+lat_long_gauge <- gauge_information |> 
+  select(gauge, lat, lon)
 
 
+# Organise data
+# - facet on component
+# - legend/colour/fill on included or not for gauge
+# structure |gauge|component_name|show|
+
+# 123456|Autocorrelation|FALSE
+# 123456|Drought|TRUE
+# etc.
+
+# make my own tibble
+parameters <- c("Autocorrelation", "CO2 Intercept", "CO2 Slope", "Drought", "Rainfall Seasonality") 
+gauges <- best_model_per_gauge |> pull(gauge) |> unique() 
+
+repeat_best_model_components <- tibble(
+  gauge = gauges |> rep(each = length(parameters)),
+  simple_name = parameters |> rep(times = length(gauges))
+)
+
+
+condensed_best_model_components <- best_model_per_gauge |> 
+  select(gauge, parameter) |> 
+  filter(parameter %in% c("a2", "a3_intercept", "a3_slope", "a0_d", "a4")) |> 
+  mutate(
+    simple_name = case_when(
+      parameter == "a2" ~ "Autocorrelation",
+      parameter == "a3_intercept" ~ "CO2 Intercept",
+      parameter == "a3_slope" ~ "CO2 Slope",
+      parameter == "a0_d" ~ "Drought",
+      parameter == "a4" ~ "Rainfall Seasonality",
+      .default = NA
+    )
+  ) |> 
+  add_column(show = TRUE) |> 
+  select(!parameter)
+
+
+plot_best_model_components <- repeat_best_model_components |>
+  left_join(
+    condensed_best_model_components, 
+    by = join_by(gauge, simple_name)
+  ) |> 
+  mutate(
+    show = coalesce(show, FALSE)
+  ) |> 
+  left_join(
+    lat_long_gauge,
+    by = join_by(gauge)
+  )
+
+
+# Count of components and plot labels
+total_gauges <- best_model_per_gauge |> pull(gauge) |> unique() |> length()
+count_components <- plot_best_model_components |> 
+  summarise(
+    n = n(),
+    .by = c(simple_name, show)
+  ) |> 
+  filter(show) |> 
+  mutate(
+    label = paste0(round((n / total_gauges) * 100, digits = 2), "%", " (n = ", n, ")")
+  ) |> 
+  add_column(
+    lon = 160
+  ) |> 
+  add_column(
+    lat = -15
+  ) 
+
+# Plot map
+model_components <- single_aus_map |> 
+  ggplot(aes(geometry = geometry)) +
+  geom_sf(
+    colour = "black",
+    fill = "grey80"
+  ) +
+  geom_point(
+    mapping = aes(x = lon, y = lat, fill = show),
+    data = plot_best_model_components,
+    inherit.aes = FALSE,
+    size = 1,
+    show.legend = TRUE,
+    shape = 21,
+    colour = "black",
+    stroke = 0.1
+  ) +
+  geom_text(
+    mapping = aes(x = lon, y = lat, label = label),
+    data = count_components,
+    inherit.aes = FALSE,
+    size = 6,
+    size.unit = "pt"
+  ) +
+  scale_fill_brewer(palette = "Set1") +
+  metR::scale_x_longitude(ticks = 7) +
+  metR::scale_y_latitude(ticks = 7) +
+  labs(
+    x = "Longitude",
+    y = "Latitude",
+    fill = "Best Streamflow Model Contains Component"
+  ) +
+  facet_wrap(~simple_name) +
+  theme_bw() +
+  theme(
+    legend.position = "inside",
+    legend.position.inside = c(0.825, 0.25),
+    legend.background = element_rect(colour = "black"),
+    axis.text = element_text(size = 7)
+  ) +
+  guides(
+    fill = guide_legend(override.aes = list(size = 5, shape = 21, colour = "black"))
+  )
+
+#model_components
+
+ggsave(
+  filename = "./Graphs/CMAES_graphs/model_components.pdf",
+  plot = model_components,
+  device = "pdf",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
 
 
 # Figure 2. A map of best CO2 vs best non-CO2 of Australia ---------------------
@@ -105,9 +276,6 @@ evidence_ratio_calc <- best_CO2_non_CO2_per_gauge |>
 
 
 ## Tidy evidence ratio data for plotting =======================================
-### Add lat and lon ############################################################
-lat_lon_gauge <- gauge_information |> 
-  select(gauge, lat, lon)
 
 lat_long_evidence_ratio <- evidence_ratio_calc |>
   select(!c(AIC_difference)) |>
@@ -189,35 +357,6 @@ a3_direction_binned_lat_lon_evidence_ratio <- binned_lat_lon_evidence_ratio |>
     )
   ) 
 
-
-
-
-
-# Get shapefiles for Australia ------------------------------------------------
-aus_map <- ozmaps::ozmap(x = "states") |>
-  filter(!NAME %in% c("Other Territories")) |>
-  rename(state = NAME) |>
-  mutate(
-    state = case_when(
-      state == "New South Wales" ~ "NSW",
-      state == "Victoria" ~ "VIC",
-      state == "Queensland" ~ "QLD",
-      state == "South Australia" ~ "SA",
-      state == "Western Australia" ~ "WA",
-      state == "Tasmania" ~ "TAS",
-      state == "Northern Territory" ~ "NT",
-      state == "Australian Capital Territory" ~ "ACT",
-    )
-  )
-
-combine_NSW_ACT <- aus_map |>
-  filter(state %in% c("NSW", "ACT")) |>
-  st_union()
-
-aus_map[1, 2] <- list(combine_NSW_ACT)
-
-aus_map <- aus_map |>
-  filter(state != "ACT")
 
 
 
@@ -478,7 +617,7 @@ best_model_per_gauge <- best_CO2_non_CO2_per_gauge |>
 
 ## Turn the a5 parameter (CO2 pmm) into a given year ===========================
 CO2_time_of_emergence <- best_model_per_gauge |>
-  filter(parameter == "a5")
+  filter(parameter == "a5") 
 
 
 ## If CO2 for a given year minus the a5 parameter is negative then, the a5
@@ -760,7 +899,7 @@ ggsave(
 
 
 # Figure 4. How has CO2 impacted streamflow map --------------------------------
-
+stop_here <- tactical_typo()
 
 
 
