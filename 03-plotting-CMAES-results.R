@@ -72,12 +72,14 @@ best_CO2_non_CO2_per_gauge <- read_csv(
   
 
 
+# Figure 1. A of best components of streamflow models of Australia -------------
 
 
-# 1. A map of best CO2 vs best non-CO2 of Australia -----------------------------
 
 
-# Calculate evidence ratio -----------------------------------------------------
+# Figure 2. A map of best CO2 vs best non-CO2 of Australia ---------------------
+
+## Calculate evidence ratio ====================================================
 evidence_ratio_calc <- best_CO2_non_CO2_per_gauge |>
   select(gauge, contains_CO2, AIC) |>
   distinct() |>
@@ -265,7 +267,7 @@ inset_plot_QLD <- aus_map |>
   ) +
   scale_shape_manual(
     values = c(21, 22, 23, 25, 24),
-    drop = FALSE
+    drop = FALSE # Very important - every plots has the same discrete values 
   ) +
   theme_void()
 
@@ -462,9 +464,307 @@ ggsave(
   units = "mm"
 )
 
-stop_here <- tactical_typo()
 
-# 3. Streamflow plots of best-CO2, best-non-CO2 and observed -------------------
+
+# Figure 3. Time of emergence map ----------------------------------------------
+# Time of emergence calculation ------------------------------------------------
+best_model_per_gauge <- best_CO2_non_CO2_per_gauge |>
+  slice_min(
+    AIC,
+    by = gauge
+  ) |>
+  distinct()
+
+
+## Turn the a5 parameter (CO2 pmm) into a given year ===========================
+CO2_time_of_emergence <- best_model_per_gauge |>
+  filter(parameter == "a5")
+
+
+## If CO2 for a given year minus the a5 parameter is negative then, the a5
+## parameter has not kicked in. Take the first positive value and get the
+## year using the CO2 index
+a5_to_time_of_emergence <- function(a5, CO2, year) {
+  adjusted_CO2 <- if_else(CO2 - a5 < 0, 0, CO2 - a5)
+  
+  year_where_CO2_impacts_flow <- year[adjusted_CO2 != 0][1]
+  
+  return(year_where_CO2_impacts_flow)
+}
+
+
+repeat_a5_to_time_of_emergence <- function(gauge, a5_per_gauge, data) {
+  # get a5 from a5_per_gauge
+  a5_parameter <- a5_per_gauge |>
+    filter(gauge == {{ gauge }}) |>
+    pull(parameter_value)
+  
+  
+  # get ToE
+  a5_to_time_of_emergence(
+    a5 = a5_parameter,
+    CO2 = data |> filter(gauge == {{ gauge }}) |> pull(CO2),
+    year = data |> filter(gauge == {{ gauge }}) |> pull(year)
+  )
+}
+
+
+year_time_of_emergence <- map_dbl(
+  .x = CO2_time_of_emergence |> pull(gauge),
+  .f = repeat_a5_to_time_of_emergence,
+  a5_per_gauge = CO2_time_of_emergence,
+  data = data
+)
+
+gauge_state <- gauge_information |>
+  select(gauge, state)
+
+time_of_emergence_data <- CO2_time_of_emergence |>
+  add_column(year_time_of_emergence) |>
+  left_join(
+    gauge_state,
+    by = join_by(gauge)
+  )
+
+
+## Create my own bins ==========================================================
+min_CO2 <- data |>
+  pull(CO2) |>
+  min()
+
+lat_lon_gauge <- gauge_information |>
+  select(gauge, lat, lon)
+
+custom_bins_time_of_emergence_data <- time_of_emergence_data |>
+  mutate(custom_bins = year_time_of_emergence - (year_time_of_emergence %% 10)) |>
+  mutate(custom_bins = as.character(custom_bins)) |>
+  mutate(
+    custom_bins = if_else(parameter_value < min_CO2, "Before 1959", custom_bins)
+  ) |>
+  # clean it up and add lat lon
+  select(gauge, year_time_of_emergence, state, custom_bins) |>
+  left_join(
+    lat_lon_gauge,
+    by = join_by(gauge)
+  ) |>
+  # factor custom_bins to force then into order
+  mutate(
+    custom_bins = factor(custom_bins, levels = c("Before 1959", "1960", "1970", "1980", "1990", "2000", "2010", "2020"))
+  )
+
+
+
+## Time of emergence plotting ==================================================
+
+## Generate Insets =============================================================
+### Filter data by state #######################################################
+
+QLD_data <- custom_bins_time_of_emergence_data |>
+  filter(state == "QLD")
+
+NSW_data <- custom_bins_time_of_emergence_data |>
+  filter(state == "NSW")
+
+VIC_data <- custom_bins_time_of_emergence_data |>
+  filter(state == "VIC")
+
+WA_data <- custom_bins_time_of_emergence_data |>
+  filter(state == "WA")
+
+TAS_data <- custom_bins_time_of_emergence_data |>
+  filter(state == "TAS")
+
+
+### Generate inset plots #######################################################
+
+inset_plot_QLD <- aus_map |>
+  filter(state == "QLD") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = QLD_data,
+    aes(x = lon, y = lat, fill = custom_bins),
+    show.legend = FALSE,
+    size = 2.5,
+    stroke = 0.1,
+    shape = 21,
+    colour = "black"
+  ) +
+  scale_fill_brewer(palette = "BrBG", drop = FALSE) +
+  theme_void()
+
+
+
+inset_plot_NSW <- aus_map |>
+  filter(state == "NSW") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = NSW_data,
+    aes(x = lon, y = lat, fill = custom_bins), ,
+    show.legend = FALSE,
+    size = 2.5,
+    stroke = 0.1,
+    shape = 21,
+    colour = "black"
+  ) +
+  scale_fill_brewer(palette = "BrBG", drop = FALSE) +
+  theme_void()
+
+
+
+inset_plot_VIC <- aus_map |>
+  filter(state == "VIC") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = VIC_data,
+    aes(x = lon, y = lat, fill = custom_bins),
+    show.legend = FALSE,
+    size = 2.5,
+    stroke = 0.1,
+    shape = 21,
+    colour = "black"
+  ) +
+  scale_fill_brewer(palette = "BrBG", drop = FALSE) +
+  theme_void()
+
+
+
+inset_plot_WA <- aus_map |>
+  filter(state == "WA") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = WA_data,
+    aes(x = lon, y = lat, fill = custom_bins),
+    show.legend = FALSE,
+    size = 2.5,
+    stroke = 0.1,
+    shape = 21,
+    colour = "black"
+  ) +
+  scale_fill_brewer(palette = "BrBG", drop = FALSE) +
+  theme_void()
+
+
+
+inset_plot_TAS <- aus_map |>
+  filter(state == "TAS") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = TAS_data,
+    aes(x = lon, y = lat, fill = custom_bins),
+    show.legend = FALSE,
+    size = 2.5,
+    stroke = 0.1,
+    shape = 21,
+    colour = "black",
+  ) +
+  scale_fill_brewer(palette = "BrBG", drop = FALSE) +
+  theme_void()
+
+
+
+## Put it together =============================================================
+## This probably could be functioned...
+ToE_map_aus <- aus_map |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = custom_bins_time_of_emergence_data,
+    mapping = aes(x = lon, y = lat, fill = custom_bins),
+    size = 3,
+    stroke = 0.1,
+    shape = 21,
+    colour = "black"
+  ) +
+  scale_fill_brewer(palette = "BrBG", drop = FALSE) +
+  theme_bw() +
+  # expand map
+  coord_sf(xlim = c(95, 180), ylim = c(-60, 0)) +
+  # magnify WA
+  geom_magnify(
+    from = c(114, 118, -35.5, -30),
+    to = c(93, 112, -36, -10),
+    shadow = FALSE,
+    expand = 0,
+    plot = inset_plot_WA,
+    proj = "single"
+  ) +
+  # magnify VIC
+  geom_magnify(
+    #aes(from = state == "VIC"), # use aes rather than manually selecting area
+    from = c(141, 149.5, -39, -34),
+    to = c(95, 136, -38, -60),
+    shadow = FALSE,
+    plot = inset_plot_VIC,
+    proj = "single"
+  ) +
+  # magnify QLD
+  geom_magnify(
+    from = c(145, 155, -30, -15),
+    to = c(157, 178, -29.5, 1.5),
+    shadow = FALSE,
+    expand = 0,
+    plot = inset_plot_QLD,
+    proj = "single"
+  ) +
+  # magnify NSW
+  geom_magnify(
+    from = c(146.5, 154, -38, -28),
+    to = c(157, 178, -61, -30.5),
+    shadow = FALSE,
+    expand = 0,
+    plot = inset_plot_NSW,
+    proj = "single"
+  ) +
+  # magnify TAS
+  geom_magnify(
+    from = c(144, 149, -40, -44),
+    to = c(140, 155, -45, -61),
+    shadow = FALSE,
+    expand = 0,
+    plot = inset_plot_TAS,
+    proj = "single"
+  ) +
+  labs(
+    x = NULL,#"Latitude",
+    y = NULL,#"Longitude",
+    fill = "Time of Emergence",
+    #shape = bquote("Impact of "~CO[2]~"Term")
+  ) +
+  theme(
+    legend.key = element_rect(fill = "grey80"),
+    legend.title = element_text(hjust = 0.5),
+    legend.background = element_rect(colour = "black"),
+    axis.text = element_text(size = 6), 
+    legend.position = "inside",
+    legend.position.inside = c(0.15, 0.9),
+    legend.box = "horizontal"#, # side-by-side legends
+    #plot.margin = margin(20, 1, 2, 2, unit = "mm") # white area around figure
+  ) +
+  guides(
+    fill = guide_legend(override.aes = list(size = 5, shape = 21), nrow = 3), # Wrap legend with nrow
+  )
+
+ggsave(
+  filename = "./Graphs/CMAES_graphs/ToE_map_aus.pdf",
+  plot = ToE_map_aus,
+  device = "pdf",
+  width = 237,
+  height = 210,
+  units = "mm"
+)
+
+
+# Figure 4. How has CO2 impacted streamflow map --------------------------------
+
+
+
+
+# Other figure - Streamflow plots of best-CO2, best-non-CO2 and observed -------
 
 
 ## Filter based on best non-CO2 and CO2 models =================================
