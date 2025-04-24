@@ -1,20 +1,4 @@
-# Script produces:
-# - a map of best CO2 vs best non-CO2 of Australia
-# - streamflow timeseries comparing observed, best CO2 and best non-CO2
-
-
-
-# TODO - transfer code/graphs from playing_with_graphs
-# Key graphs to transfer are:
-# 2. Time of emergence histogram
-# 3. Map of time of emergence
-# 4. Component map
-
-# - account for the different types of CO2 models - slope vs. intercept
-# 1. graphically compare (colour gradient evidence ratio, shape pos/neg, outline
-#    or stroke colour can be slope or intercept)
-# 2. some sort of slope and intercept analysis. Like proportion of pos/neg slope,
-#    pos/neg intercept
+# Script produces the four key figures of the second paper
 
 
 cat("\014") # clear console
@@ -106,7 +90,7 @@ aus_map <- aus_map |>
 
 
 
-# Figure 1. A of best components of streamflow models of Australia -------------
+# Now Supplementary - Figure S1. A of best components of streamflow models of Australia -------------
 single_aus_map <- ozmaps::ozmap("country") |> 
   uncount(5) |>  # repeat the geometry 4 times
   mutate(
@@ -186,10 +170,10 @@ count_components <- plot_best_model_components |>
     label = paste0(round((n / total_gauges) * 100, digits = 2), "%", " (n = ", n, ")")
   ) |> 
   add_column(
-    lon = 160
+    lon = 122
   ) |> 
   add_column(
-    lat = -15
+    lat = -40
   ) 
 
 # Plot map
@@ -199,6 +183,7 @@ model_components <- single_aus_map |>
     colour = "black",
     fill = "grey80"
   ) +
+  coord_sf(xlim = c(111, 155), ylim = c(-44.5, -9.5)) +
   geom_point(
     mapping = aes(x = lon, y = lat, fill = show),
     data = plot_best_model_components,
@@ -213,7 +198,7 @@ model_components <- single_aus_map |>
     mapping = aes(x = lon, y = lat, label = label),
     data = count_components,
     inherit.aes = FALSE,
-    size = 6,
+    size = 10,
     size.unit = "pt"
   ) +
   scale_fill_brewer(palette = "Set1") +
@@ -239,7 +224,7 @@ model_components <- single_aus_map |>
 #model_components
 
 ggsave(
-  filename = "./Graphs/CMAES_graphs/model_components.pdf",
+  filename = "./Graphs/CMAES_graphs/model_components_v2.pdf",
   plot = model_components,
   device = "pdf",
   width = 297,
@@ -525,7 +510,7 @@ single_map_aus <- aus_map |>
     drop = FALSE
   ) +
   # expand map
-  coord_sf(xlim = c(95, 180), ylim = c(-60, 0)) +
+  coord_sf(xlim = c(95, 176), ylim = c(-60, 0)) +
   # magnify WA
   geom_magnify(
     from = c(114, 118, -35.5, -30),
@@ -546,7 +531,7 @@ single_map_aus <- aus_map |>
   ) +
   # magnify QLD
   geom_magnify(
-    from = c(145, 155, -30, -16),
+    from = c(145, 155, -29.2, -16),
     to = c(157, 178, -29.5, 1.5),
     shadow = FALSE,
     expand = 0,
@@ -555,7 +540,7 @@ single_map_aus <- aus_map |>
   ) +
   # magnify NSW
   geom_magnify(
-    from = c(146.5, 154, -38, -28),
+    from = c(146.5, 154, -38, -28.1),
     to = c(157, 178, -61, -30.5),
     shadow = FALSE,
     expand = 0,
@@ -581,25 +566,26 @@ single_map_aus <- aus_map |>
     legend.key = element_rect(fill = "grey80"),
     legend.title = element_text(hjust = 0.5),
     legend.background = element_rect(colour = "black"),
-    axis.text = element_text(size = 6), 
+    axis.text = element_blank(), 
     legend.position = "inside",
     legend.position.inside = c(0.351, 0.9),
-    legend.box = "horizontal"#, # side-by-side legends
-    #plot.margin = margin(20, 1, 2, 2, unit = "mm") # white area around figure
+    legend.box = "horizontal", # side-by-side legends
+    panel.border = element_blank(),
+    panel.grid = element_blank(),
+    axis.ticks = element_blank()
   ) +
   guides(
     fill = guide_legend(override.aes = list(size = 5, shape = 21), nrow = 3), # Wrap legend with nrow
     shape = guide_legend(override.aes = list(size = 5, fill = "grey50"), nrow = 3)
   )
 
-#single_map_aus
 
 ggsave(
-  filename = "./Graphs/CMAES_graphs/evidence_ratio_aus_with_zoom_v2.pdf",
+  filename = "./Graphs/CMAES_graphs/evidence_ratio_aus_with_zoom_v4.pdf",
   plot = single_map_aus,
   device = "pdf",
-  width = 237,
-  height = 210,
+  width = 232,
+  height = 200,#210,
   units = "mm"
 )
 
@@ -896,6 +882,26 @@ ggsave(
   height = 210,
   units = "mm"
 )
+
+
+# TEMP. Compare evidence ratio with ToE
+# evidence ratio data is lat_long_evidence_ratio
+# ToE data is custom_bins_time_of_emergence_data
+compare_ToE_and_evi_ratio <- custom_bins_time_of_emergence_data |> 
+  left_join(
+    lat_long_evidence_ratio,
+    by = join_by(gauge, lat, lon)
+  )
+
+compare_ToE_and_evi_ratio |> 
+  ggplot(aes(x = year_time_of_emergence, y = evidence_ratio)) +
+  geom_point() +
+  scale_y_log10() +
+  labs(
+    x = "Time of Activation",
+    y = "Evidence Ratio (Log Scale)"
+  ) +
+  theme_bw()
 
 
 # Figure 4. How has CO2 impacted streamflow map --------------------------------
