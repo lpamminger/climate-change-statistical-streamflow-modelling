@@ -1,10 +1,21 @@
 # Script produces the four key figures of the second paper
 
 
+# TODO - transfer code/graphs from playing_with_graphs
+# Key graphs to transfer are:
+# 2. Time of emergence histogram
+# - account for the different types of CO2 models - slope vs. intercept
+# 1. graphically compare (colour gradient evidence ratio, shape pos/neg, outline
+#    or stroke colour can be slope or intercept)
+# 2. some sort of slope and intercept analysis. Like proportion of pos/neg slope,
+#    pos/neg intercept
+
+
+
 cat("\014") # clear console
 
 # Import libraries--------------------------------------------------------------
-pacman::p_load(tidyverse, ozmaps, sf, ggmagnify) # need to update this linux
+pacman::p_load(tidyverse, ozmaps, sf, ggmagnify, furrr, parallel) 
 
 
 ## Utility functions ===========================================================
@@ -54,6 +65,11 @@ best_CO2_non_CO2_per_gauge <- read_csv(
   show_col_types = FALSE
 ) 
   
+parameter_uncertainty <- read_csv(
+  "Results/my_dream/sequences_20250422.csv",
+  show_col_types = FALSE
+  )
+
 
 # Objects used for all figures -------------------------------------------------
 ### Add lat and lon ############################################################
@@ -605,11 +621,24 @@ best_model_per_gauge <- best_CO2_non_CO2_per_gauge |>
 CO2_time_of_emergence <- best_model_per_gauge |>
   filter(parameter == "a5") 
 
+CO2_data <- readr::read_csv(
+  "./Data/Raw/20241125_Mauna_Loa_CO2_data.csv",
+  skip = 43,
+  col_select = !unc,
+  show_col_types = FALSE
+) |> 
+  mutate(
+    CO2_280 = mean - 280
+  )
+
+CO2 <- CO2_data |> pull(CO2_280)
+year <- CO2_data |> pull(year)
+
 
 ## If CO2 for a given year minus the a5 parameter is negative then, the a5
 ## parameter has not kicked in. Take the first positive value and get the
 ## year using the CO2 index
-a5_to_time_of_emergence <- function(a5, CO2, year) {
+single_a5_to_time_of_emergence <- function(a5, CO2, year) {
   adjusted_CO2 <- if_else(CO2 - a5 < 0, 0, CO2 - a5)
   
   year_where_CO2_impacts_flow <- year[adjusted_CO2 != 0][1]
@@ -617,38 +646,69 @@ a5_to_time_of_emergence <- function(a5, CO2, year) {
   return(year_where_CO2_impacts_flow)
 }
 
-
-repeat_a5_to_time_of_emergence <- function(gauge, a5_per_gauge, data) {
-  # get a5 from a5_per_gauge
-  a5_parameter <- a5_per_gauge |>
-    filter(gauge == {{ gauge }}) |>
-    pull(parameter_value)
+a5_to_time_of_emergence <- function(CO2, year) {
+  # Save CO2 and year vectors to the function itself
+  # They do not change
   
+  force(CO2)
+  force(year)
+  stopifnot(is.numeric(CO2))
+  stopifnot(is.numeric(year))
   
-  # get ToE
-  a5_to_time_of_emergence(
-    a5 = a5_parameter,
-    CO2 = data |> filter(gauge == {{ gauge }}) |> pull(CO2),
-    year = data |> filter(gauge == {{ gauge }}) |> pull(year)
-  )
+  function(a5) {
+    
+    future_map_dbl(
+      .x = a5,
+      .f = single_a5_to_time_of_emergence,
+      CO2 = CO2,
+      year = year,
+      .progress = TRUE
+      )
+  }
+  
 }
 
+# Function factory
+adjusted_a5_to_ToE <- a5_to_time_of_emergence(CO2 = CO2, year = year)
 
-year_time_of_emergence <- map_dbl(
-  .x = CO2_time_of_emergence |> pull(gauge),
-  .f = repeat_a5_to_time_of_emergence,
-  a5_per_gauge = CO2_time_of_emergence,
-  data = data
-)
-
+# Add state
 gauge_state <- gauge_information |>
   select(gauge, state)
 
-time_of_emergence_data <- CO2_time_of_emergence |>
-  add_column(year_time_of_emergence) |>
+time_of_emergence_data <- CO2_time_of_emergence |> 
+  mutate(
+    year_time_of_emergence = adjusted_a5_to_ToE(parameter_value)
+  ) |> 
   left_join(
     gauge_state,
     by = join_by(gauge)
+  )
+
+
+
+## Interquartile range from DREAM ==============================================
+# - Find IQR of ToE
+# - I want this in years not CO2 pmm
+# - To do this I must convert the a5 values from p_mm to years
+# - CO2 and year is constant for all catchments - function factory
+#   to add the CO2 and year from data, then only input a5
+
+# This works but it is really slow and RAM intensive
+# There has to be a easier way
+
+plan(multisession, workers = length(availableWorkers()))
+filtered_parameter_uncertainty <- parameter_uncertainty |> 
+  filter(parameter == "a5") |> 
+  mutate(
+    year_ToE = adjusted_a5_to_ToE(parameter_value)
+  )
+
+
+ToE_range_uncertainty <- filtered_parameter_uncertainty |> 
+  summarise(
+    DREAM_ToE_IQR = IQR(year_ToE),
+    DREAM_ToE_median = median(year_ToE),
+    .by = gauge
   )
 
 
@@ -661,13 +721,18 @@ lat_lon_gauge <- gauge_information |>
   select(gauge, lat, lon)
 
 custom_bins_time_of_emergence_data <- time_of_emergence_data |>
+  # add uncertainty
+  left_join(
+    ToE_range_uncertainty,
+    by = join_by(gauge)
+  ) |> 
   mutate(custom_bins = year_time_of_emergence - (year_time_of_emergence %% 10)) |>
   mutate(custom_bins = as.character(custom_bins)) |>
   mutate(
     custom_bins = if_else(parameter_value < min_CO2, "Before 1959", custom_bins)
   ) |>
   # clean it up and add lat lon
-  select(gauge, year_time_of_emergence, state, custom_bins) |>
+  select(gauge, year_time_of_emergence, state, custom_bins, DREAM_ToE_IQR) |>
   left_join(
     lat_lon_gauge,
     by = join_by(gauge)
@@ -675,8 +740,26 @@ custom_bins_time_of_emergence_data <- time_of_emergence_data |>
   # factor custom_bins to force then into order
   mutate(
     custom_bins = factor(custom_bins, levels = c("Before 1959", "1960", "1970", "1980", "1990", "2000", "2010", "2020"))
+  ) |> 
+  # FOR TESTING PURPOSES FILTER GAUGES WITHOUT DREAM IQR  
+  filter(!is.na(DREAM_ToE_IQR)) |> 
+  # Binning is required to DREAM_ToE_IQR
+  mutate(
+    binned_DREAM_ToE_IQR = case_when(
+      DREAM_ToE_IQR <= 10 ~ "<=10",
+      between(DREAM_ToE_IQR, 11, 20) ~ "11-20",
+      between(DREAM_ToE_IQR, 21, 30) ~ "21-30",
+      between(DREAM_ToE_IQR, 31, 40) ~ "31-40",
+      between(DREAM_ToE_IQR, 41, 50) ~ "41-50",
+      between(DREAM_ToE_IQR, 51, 60) ~ "51-60",
+      DREAM_ToE_IQR > 60 ~ ">60",
+      .default = NA
+    )
+  ) |> 
+  # factor it so all plots ahve the same bins
+  mutate(
+    binned_DREAM_ToE_IQR = factor(binned_DREAM_ToE_IQR, levels = c("<=10", "11-20", "21-30", "31-40", "41-50", "51-60", ">60"))
   )
-
 
 
 ## Time of emergence plotting ==================================================
@@ -708,9 +791,9 @@ inset_plot_QLD <- aus_map |>
   geom_sf() +
   geom_point(
     data = QLD_data,
-    aes(x = lon, y = lat, fill = custom_bins),
+    aes(x = lon, y = lat, fill = custom_bins, size = binned_DREAM_ToE_IQR),
     show.legend = FALSE,
-    size = 2.5,
+    #size = 2.5,
     stroke = 0.1,
     shape = 21,
     colour = "black"
@@ -719,16 +802,15 @@ inset_plot_QLD <- aus_map |>
   theme_void()
 
 
-
 inset_plot_NSW <- aus_map |>
   filter(state == "NSW") |>
   ggplot() +
   geom_sf() +
   geom_point(
     data = NSW_data,
-    aes(x = lon, y = lat, fill = custom_bins), ,
+    aes(x = lon, y = lat, fill = custom_bins, size = binned_DREAM_ToE_IQR),
     show.legend = FALSE,
-    size = 2.5,
+    #size = 2.5,
     stroke = 0.1,
     shape = 21,
     colour = "black"
@@ -744,9 +826,9 @@ inset_plot_VIC <- aus_map |>
   geom_sf() +
   geom_point(
     data = VIC_data,
-    aes(x = lon, y = lat, fill = custom_bins),
+    aes(x = lon, y = lat, fill = custom_bins, size = binned_DREAM_ToE_IQR),
     show.legend = FALSE,
-    size = 2.5,
+    #size = 2.5,
     stroke = 0.1,
     shape = 21,
     colour = "black"
@@ -762,9 +844,9 @@ inset_plot_WA <- aus_map |>
   geom_sf() +
   geom_point(
     data = WA_data,
-    aes(x = lon, y = lat, fill = custom_bins),
+    aes(x = lon, y = lat, fill = custom_bins, size = binned_DREAM_ToE_IQR),
     show.legend = FALSE,
-    size = 2.5,
+    #size = 2.5,
     stroke = 0.1,
     shape = 21,
     colour = "black"
@@ -780,9 +862,9 @@ inset_plot_TAS <- aus_map |>
   geom_sf() +
   geom_point(
     data = TAS_data,
-    aes(x = lon, y = lat, fill = custom_bins),
+    aes(x = lon, y = lat, fill = custom_bins, size = binned_DREAM_ToE_IQR),
     show.legend = FALSE,
-    size = 2.5,
+    #size = 2.5,
     stroke = 0.1,
     shape = 21,
     colour = "black",
@@ -799,8 +881,8 @@ ToE_map_aus <- aus_map |>
   geom_sf() +
   geom_point(
     data = custom_bins_time_of_emergence_data,
-    mapping = aes(x = lon, y = lat, fill = custom_bins),
-    size = 3,
+    mapping = aes(x = lon, y = lat, fill = custom_bins, size = binned_DREAM_ToE_IQR),
+    #size = 3,
     stroke = 0.1,
     shape = 21,
     colour = "black"
@@ -858,6 +940,7 @@ ToE_map_aus <- aus_map |>
     x = NULL,#"Latitude",
     y = NULL,#"Longitude",
     fill = "Time of Emergence",
+    size = "Time of Emergence Uncertainty (IQR)"
     #shape = bquote("Impact of "~CO[2]~"Term")
   ) +
   theme(
@@ -866,16 +949,23 @@ ToE_map_aus <- aus_map |>
     legend.background = element_rect(colour = "black"),
     axis.text = element_text(size = 6), 
     legend.position = "inside",
-    legend.position.inside = c(0.15, 0.9),
+    legend.position.inside = c(0.325, 0.9),
     legend.box = "horizontal"#, # side-by-side legends
     #plot.margin = margin(20, 1, 2, 2, unit = "mm") # white area around figure
   ) +
   guides(
     fill = guide_legend(override.aes = list(size = 5, shape = 21), nrow = 3), # Wrap legend with nrow
+    size = guide_legend(nrow = 3)
   )
 
+ToE_map_aus
+# ggplot hates using size with a discrete variable
+# I don't want to do this. 
+# I did this because the ranges for the dot size must be the same for all plots
+# I don't know how to do this with size
+
 ggsave(
-  filename = "./Graphs/CMAES_graphs/ToE_map_aus.pdf",
+  filename = "./Graphs/CMAES_graphs/ToE_map_aus_uncertainty.pdf",
   plot = ToE_map_aus,
   device = "pdf",
   width = 237,
