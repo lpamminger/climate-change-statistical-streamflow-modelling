@@ -2,7 +2,7 @@
 cat("\014") # clear console
 
 # Import libraries--------------------------------------------------------------
-pacman::p_load(tidyverse, truncnorm, sloop, patchwork, ozmaps, sf, patchwork, metR)
+pacman::p_load(tidyverse, truncnorm, sloop, patchwork, ozmaps, sf, patchwork, metR, ggmagnify)
 
 
 
@@ -26,7 +26,7 @@ gauge_information <- readr::read_csv(
 )
 
 lat_lon_gauge_info <- gauge_information |> 
-  select(gauge, lat, lon)
+  select(gauge, lat, lon, state)
 
 
 CMAES_results <- read_csv("./Results/my_cmaes/CMAES_parameter_results_20250331.csv",
@@ -129,7 +129,7 @@ non_equivalent_models <- compare_equivalent_models |>
     by = join_by(non_CO2_model, CO2_model)
   ) 
 
-nrow(non_equivalent_models) / nrow(compare_equivalent_models)
+(nrow(non_equivalent_models) / nrow(compare_equivalent_models)) * 100
 
 
 # Compare best CO2 with CO2 component turned off -------------------------------
@@ -354,8 +354,328 @@ average_percent_diff_by_decade |>
 
 
 
+# Get shapefiles for Australia ------------------------------------------------
+aus_map <- ozmaps::ozmap(x = "states") |>
+  filter(!NAME %in% c("Other Territories")) |>
+  rename(state = NAME) |>
+  mutate(
+    state = case_when(
+      state == "New South Wales" ~ "NSW",
+      state == "Victoria" ~ "VIC",
+      state == "Queensland" ~ "QLD",
+      state == "South Australia" ~ "SA",
+      state == "Western Australia" ~ "WA",
+      state == "Tasmania" ~ "TAS",
+      state == "Northern Territory" ~ "NT",
+      state == "Australian Capital Territory" ~ "ACT",
+    )
+  )
+
+combine_NSW_ACT <- aus_map |>
+  filter(state %in% c("NSW", "ACT")) |>
+  st_union()
+
+aus_map[1, 2] <- list(combine_NSW_ACT)
+
+aus_map <- aus_map |>
+  filter(state != "ACT")
+
+
+
 
 ## Plot map percentage difference ==============================================
+
+### REPLACE WITH FULL FAT ###
+# 1990 vs. 2010
+
+# 1990
+# Make final plot --------------------------------------------------------------
+
+### Custom colour palette 
+big_palette <- function(x) {
+  c("#67001f",
+    "#b2182b",
+    "#d6604d",
+    "#f4a582",
+    "#fddbc7",
+    "white",
+    "white",
+    "#d1e5f0",
+    "#92c5de",
+    "#4393c3",
+    "#2166ac",
+    "#053061")
+}
+
+
+decade_comparison_CO2_impact <- function(decade) {
+  ## Generate Insets =============================================================
+  ### Filter data by state #######################################################
+  
+  QLD_data <- average_percent_diff_by_decade |>
+    filter(state == "QLD") |> 
+    filter(decade == {{ decade }})
+  
+  NSW_data <- average_percent_diff_by_decade |>
+    filter(state == "NSW") |> 
+    filter(decade == {{ decade }})
+  
+  VIC_data <- average_percent_diff_by_decade |>
+    filter(state == "VIC") |> 
+    filter(decade == {{ decade }})
+  
+  WA_data <- average_percent_diff_by_decade |>
+    filter(state == "WA") |> 
+    filter(decade == {{ decade }})
+  
+  TAS_data <- average_percent_diff_by_decade |>
+    filter(state == "TAS") |> 
+    filter(decade == {{ decade }})
+  
+  
+  ### Generate inset plots #######################################################
+  
+  inset_plot_QLD <- aus_map |>
+    filter(state == "QLD") |>
+    ggplot() +
+    geom_sf() +
+    geom_point(
+      data = QLD_data,
+      aes(x = lon, y = lat, fill = average_diff),
+      show.legend = FALSE,
+      size = 2.5,
+      colour = "black",
+      stroke = 0.1,
+      shape = 21
+    ) +
+    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+      aesthetics = "fill",
+      palette = big_palette,
+      breaks = c(-50, -25, -5, -1, -0.1, 0, 0.1, 1, 5, 25, 50), # range()
+      limits = c(-1100, 90),
+      show.limits = TRUE, 
+      guide = "colorsteps"
+    ) +
+    theme_void()
+  
+  
+  inset_plot_NSW <- aus_map |>
+    filter(state == "NSW") |>
+    ggplot() +
+    geom_sf() +
+    geom_point(
+      data = NSW_data,
+      aes(x = lon, y = lat, fill = average_diff),
+      show.legend = FALSE,
+      size = 2.5,
+      colour = "black",
+      stroke = 0.1,
+      shape = 21
+    ) +
+    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+      aesthetics = "fill",
+      palette = big_palette,
+      breaks = c(-50, -25, -5, -1, -0.1, 0, 0.1, 1, 5, 25, 50), # range()
+      limits = c(-1100, 90),
+      show.limits = TRUE, 
+      guide = "colorsteps"
+    ) +
+    theme_void()
+  
+  
+  
+  inset_plot_VIC <- aus_map |>
+    filter(state == "VIC") |>
+    ggplot() +
+    geom_sf() +
+    geom_point(
+      data = VIC_data,
+      aes(x = lon, y = lat, fill = average_diff),
+      show.legend = FALSE,
+      size = 2.5,
+      colour = "black",
+      stroke = 0.1,
+      shape = 21
+    ) +
+    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+      aesthetics = "fill",
+      palette = big_palette,
+      breaks = c(-50, -25, -5, -1, -0.1, 0, 0.1, 1, 5, 25, 50), # range()
+      limits = c(-1100, 90),
+      show.limits = TRUE, 
+      guide = "colorsteps"
+    ) +
+    theme_void()
+  
+  
+  
+  inset_plot_WA <- aus_map |>
+    filter(state == "WA") |>
+    ggplot() +
+    geom_sf() +
+    geom_point(
+      data = WA_data,
+      aes(x = lon, y = lat, fill = average_diff),
+      show.legend = FALSE,
+      size = 2.5,
+      colour = "black",
+      stroke = 0.1,
+      shape = 21
+    ) +
+    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+      aesthetics = "fill",
+      palette = big_palette,
+      breaks = c(-50, -25, -5, -1, -0.1, 0, 0.1, 1, 5, 25, 50), # range()
+      limits = c(-1100, 90),
+      show.limits = TRUE, 
+      guide = "colorsteps"
+    ) +
+    theme_void()
+  
+  
+  
+  inset_plot_TAS <- aus_map |>
+    filter(state == "TAS") |>
+    ggplot() +
+    geom_sf() +
+    geom_point(
+      data = TAS_data,
+      aes(x = lon, y = lat, fill = average_diff),
+      show.legend = FALSE,
+      size = 2.5,
+      colour = "black",
+      stroke = 0.1,
+      shape = 21
+    ) +
+    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+      aesthetics = "fill",
+      palette = big_palette,
+      breaks = c(-50, -25, -5, -1, -0.1, 0, 0.1, 1, 5, 25, 50), # range()
+      limits = c(-1100, 90),
+      show.limits = TRUE, 
+      guide = "colorsteps"
+    ) +
+    theme_void()
+  
+  
+  
+  ## Put it together =============================================================
+  
+  single_map_aus <- aus_map |>
+    ggplot() +
+    geom_sf() +
+    geom_point(
+      data = average_percent_diff_by_decade |> filter(decade == {{ decade }}),
+      mapping = aes(x = lon, y = lat, fill = average_diff),
+      size = 3,
+      colour = "black",
+      shape = 21,
+      inherit.aes = FALSE,
+      stroke = 0.1
+    ) +
+    theme_bw() +
+    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+      aesthetics = "fill",
+      palette = big_palette,
+      breaks = c(-50, -25, -5, -1, -0.1, 0, 0.1, 1, 5, 25, 50), # range()
+      limits = c(-1100, 90),
+      show.limits = TRUE, 
+      guide = "colorsteps"
+    ) +
+    # expand map
+    coord_sf(xlim = c(95, 176), ylim = c(-60, 0)) +
+    # magnify WA
+    geom_magnify(
+      from = c(114, 118, -35.5, -30),
+      to = c(93, 112, -36, -10),
+      shadow = FALSE,
+      expand = 0,
+      plot = inset_plot_WA,
+      proj = "single"
+    ) +
+    # magnify VIC
+    geom_magnify(
+      #aes(from = state == "VIC"), # use aes rather than manually selecting area
+      from = c(141, 149.5, -39, -34),
+      to = c(95, 136, -38, -60),
+      shadow = FALSE,
+      plot = inset_plot_VIC,
+      proj = "single"
+    ) +
+    # magnify QLD
+    geom_magnify(
+      from = c(145, 155, -29.2, -16),
+      to = c(157, 178, -29.5, 1.5),
+      shadow = FALSE,
+      expand = 0,
+      plot = inset_plot_QLD,
+      proj = "single"
+    ) +
+    # magnify NSW
+    geom_magnify(
+      from = c(146.5, 154, -38, -28.1),
+      to = c(157, 178, -61, -30.5),
+      shadow = FALSE,
+      expand = 0,
+      plot = inset_plot_NSW,
+      proj = "single"
+    ) +
+    # magnify TAS
+    geom_magnify(
+      from = c(144, 149, -40, -44),
+      to = c(140, 155, -45, -61),
+      shadow = FALSE,
+      expand = 0,
+      plot = inset_plot_TAS,
+      proj = "single"
+    ) +
+    labs(
+      x = NULL,#"Latitude",
+      y = NULL,#"Longitude",
+      fill = "Percentage Difference",
+      title = paste0(decade)
+    ) +
+    theme(
+      legend.key = element_rect(fill = "grey80"),
+      legend.title = element_text(hjust = 0.5),
+      #legend.background = element_rect(colour = "black"),
+      axis.text = element_blank(), 
+      legend.position = "inside",
+      legend.position.inside = c(0.351, 0.9),
+      legend.box = "horizontal", # side-by-side legends
+      panel.grid = element_blank(),
+      axis.ticks = element_blank(),
+      plot.title = element_text(margin = margin(l = 25, r = 0, t = 30, b = -30), size = 22) # push title into plot
+    ) +
+    guides(
+      fill = guide_coloursteps(
+        barwidth = unit(15, "cm"), 
+        show.limits = TRUE, 
+        even.steps = TRUE,
+        title.position = "top",
+        direction = "horizontal"
+      )
+    ) 
+  
+  return(single_map_aus)
+}
+
+
+# Patchwork together
+patchwork_CO2_impact_decade <- (decade_comparison_CO2_impact(1990) | decade_comparison_CO2_impact(2010)) + plot_layout(guides = "collect") & theme(legend.position='bottom')
+
+ggsave(
+  filename = "./Graphs/CMAES_graphs/CO2_on_off_v5.pdf",
+  plot = patchwork_CO2_impact_decade,
+  device = "pdf",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
+
+
+## OLD --> REMOVE ##
+
 ### Map
 single_aus_map <- ozmaps::ozmap("country") |> 
   uncount(average_percent_diff_by_decade |> pull(decade) |> unique() |> length()) |>   # repeat the geometry by number of decades in average_percent_diff_by_decade
@@ -442,7 +762,7 @@ ggsave(
   units = "mm"
 )
 
-
+### END OF OLD ###
 
 
 
