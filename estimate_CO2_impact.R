@@ -86,9 +86,50 @@ streamflow_data_best_CO2_non_CO2 <- streamflow_data |>
 
 
 
+## Are the best CO2 and non-CO2 models equivalent? ==============================
+compare_equivalent_models <- only_gauge_model_best_CO2_non_CO2_per_gauge |> 
+  mutate(
+    CO2_or_non_CO2_model = if_else(str_detect(streamflow_model, "CO2"), "CO2_model", "non_CO2_model")
+  ) |> 
+  pivot_wider(
+    names_from = CO2_or_non_CO2_model,
+    values_from = streamflow_model
+  )
+
+
+### Comparison table ###
+streamflow_model_equivalent_comparison_table <- tribble(
+  ~non_CO2_model,                                        ~CO2_model, 
+  "streamflow_model_precip_only",                        "streamflow_model_intercept_shifted_CO2",
+  "streamflow_model_precip_only",                        "streamflow_model_slope_shifted_CO2",
+  "streamflow_model_precip_auto",                        "streamflow_model_intercept_shifted_CO2_auto",
+  "streamflow_model_precip_auto",                        "streamflow_model_slope_shifted_CO2_auto",
+  "streamflow_model_precip_seasonal_ratio",              "streamflow_model_intercept_shifted_CO2_seasonal_ratio",
+  "streamflow_model_precip_seasonal_ratio",              "streamflow_model_slope_shifted_CO2_seasonal_ratio",
+  "streamflow_model_precip_seasonal_ratio_auto",         "streamflow_model_intercept_shifted_CO2_seasonal_ratio_auto",
+  "streamflow_model_precip_seasonal_ratio_auto",         "streamflow_model_slope_shifted_CO2_seasonal_ratio_auto",
+  "streamflow_model_drought_precip_only",                "streamflow_model_drought_intercept_shifted_CO2",
+  "streamflow_model_drought_precip_only",                "streamflow_model_drought_slope_shifted_CO2",
+  "streamflow_model_drought_precip_auto",                "streamflow_model_drought_intercept_shifted_CO2_auto",
+  "streamflow_model_drought_precip_auto",                "streamflow_model_drought_slope_shifted_CO2_auto",
+  "streamflow_model_drought_precip_seasonal_ratio",      "streamflow_model_drought_intercept_shifted_CO2_seasonal_ratio",
+  "streamflow_model_drought_precip_seasonal_ratio",      "streamflow_model_drought_slope_shifted_CO2_seasonal_ratio",
+  "streamflow_model_drought_precip_seasonal_ratio_auto", "streamflow_model_drought_intercept_shifted_CO2_seasonal_ratio_auto",
+  "streamflow_model_drought_precip_seasonal_ratio_auto", "streamflow_model_drought_slope_shifted_CO2_seasonal_ratio_auto"
+  
+)
 
 
 
+### For each row in compare_equivalent_models check if column CO2_model and non_CO2_model is in the comparison table
+### Do this by using anti_join and counting row numbers
+non_equivalent_models <- compare_equivalent_models |> 
+  anti_join(
+    streamflow_model_equivalent_comparison_table,
+    by = join_by(non_CO2_model, CO2_model)
+  ) 
+
+nrow(non_equivalent_models) / nrow(compare_equivalent_models)
 
 
 # Compare best CO2 with CO2 component turned off -------------------------------
@@ -226,29 +267,83 @@ rename(
 
 
 # Compare percentage difference in a3 on vs. a3 off ----------------------------
-CO2_on_off_analysis <- streamflow_data_a3_off |> 
+## Convert boxcox streamflow to actual streamflow ==============================
+## this must be done so summing each decade does not result in negative flow
+boxcox_lambda_gauge <- gauge_information |>
+  select(gauge, bc_lambda)
+
+realspace_streamflow_data_a3_off <- streamflow_data_a3_off |>
+  left_join(
+    boxcox_lambda_gauge,
+    by = join_by(gauge)
+  ) |>
   mutate(
-    # CO2 on in the model is the baseline. CO2 off is the change
-    percent_diff = ((a3_off_modelled_boxcox_streamflow - modelled_boxcox_streamflow) / a3_off_modelled_boxcox_streamflow) * 100
-  ) |> 
-  mutate(
-    decade = year - (year %% 10)
+    realspace_a3_on = boxcox_inverse_transform(yt = modelled_boxcox_streamflow, lambda = bc_lambda, lambda_2 = 1),
+    realspace_a3_off = boxcox_inverse_transform(yt = a3_off_modelled_boxcox_streamflow, lambda = bc_lambda, lambda_2 = 1),
+    .by = gauge
   )
 
 
-average_percent_diff_by_decade <- CO2_on_off_analysis |> 
+## Check for strange streamflow values
+## - There are some streamflow values that are negative or NA
+observed_streamflow <- data |> 
+  select(gauge, p_mm, q_mm) |> 
+  rename(
+    precipitation = p_mm
+  )
+
+problem_flows <- realspace_streamflow_data_a3_off |> 
+  filter(is.na(realspace_a3_on) | is.na(realspace_a3_off) | (realspace_a3_on < 0) | (realspace_a3_off < 0)) |> 
+  left_join(
+    observed_streamflow,
+    by = join_by(gauge, precipitation)
+  )
+
+
+## Solution to problem flows
+## - All occur when annual streamflow is near zero.
+## - For simplicity set to zero
+## - Should there a lower bound for years in decade?
+
+average_percent_diff_by_decade <- realspace_streamflow_data_a3_off |>
+  # TEMP - set weird values to zero
+  mutate(
+    realspace_a3_off = case_when(
+      realspace_a3_off < 0 ~ 0,
+      is.na(realspace_a3_off) ~ 0,
+      .default = realspace_a3_off
+    ),
+    realspace_a3_on = case_when(
+      realspace_a3_on < 0 ~ 0,
+      is.na(realspace_a3_on) ~ 0,
+      .default = realspace_a3_on
+    )
+  ) |>
+  mutate(
+    decade = year - (year %% 10)
+  ) |>
   summarise(
-    average_percent_diff = mean(percent_diff),
-    median_percent_diff = median(percent_diff),
-    .by = c(decade, gauge)
-  ) |> 
-  # add lat and lon for plotting
+    sum_streamflow_a3_off = sum(realspace_a3_off),
+    sum_streamflow_a3_on = sum(realspace_a3_on),
+    n = n(),
+    .by = c(gauge, decade)
+  ) |>
+  mutate(
+    average_diff = ((sum_streamflow_a3_on - sum_streamflow_a3_off) / sum_streamflow_a3_on) * 100
+  ) |>
+  arrange(average_diff) |>
   left_join(
     lat_lon_gauge_info,
     by = join_by(gauge)
-  ) |>
-  filter(decade != 1950) |> # there is only a single year during this decade
-  arrange(average_percent_diff) 
+  ) |> 
+  # only include decades with 10 years - removes some weird behaving catchment
+  filter(n == 10) |> 
+  # turning CO2 off makes streamflow go negative?
+  filter(sum_streamflow_a3_off > 0) 
+
+
+average_percent_diff_by_decade |> pull(average_diff) |> range()
+average_percent_diff_by_decade |> pull(average_diff) |> mean()
 
 ## Count gauges per decade
 average_percent_diff_by_decade |> 
@@ -257,11 +352,6 @@ average_percent_diff_by_decade |>
     .by = decade
   )
 
-
-average_percent_diff_by_decade |> 
-  filter(decade == 1980) |> 
-  ggplot(aes(x = lon, y = lat, colour = median_percent_diff)) +
-  geom_point()
 
 
 
@@ -280,6 +370,8 @@ big_palette <- function(x) {
   "#d6604d",
   "#f4a582",
   "#fddbc7",
+  "white",
+  "white",
   "#d1e5f0",
   "#92c5de",
   "#4393c3",
@@ -295,11 +387,15 @@ plot_CO2_on_off_percent_diff <- single_aus_map |>
     fill = "grey80"
   ) +
   geom_point(
-    mapping = aes(x = lon, y = lat, colour = average_percent_diff),
+    mapping = aes(x = lon, y = lat, fill = average_diff),
     data = average_percent_diff_by_decade,
     inherit.aes = FALSE,
-    size = 0.75
+    size = 1.5,
+    shape = 21,
+    colour = "black",
+    stroke = 0.1
   ) + 
+  coord_sf(xlim = c(111, 155), ylim = c(-44.5, -9.5)) +
   metR::scale_x_longitude(ticks = 10) +
   metR::scale_y_latitude(ticks = 10) +
   labs(
@@ -308,28 +404,26 @@ plot_CO2_on_off_percent_diff <- single_aus_map |>
     colour = NULL
   ) +
   binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
-    aesthetics = "colour",
+    aesthetics = "fill",
     palette = big_palette,
-    breaks = c(-50, -25, -5, -1, 0, 1, 5, 25, 50),
-    limits = c(-5000, 800),
+    breaks = c(-50, -25, -5, -1, -0.1, 0, 0.1, 1, 5, 25, 50), # range()
+    limits = c(-1100, 90),
     show.limits = TRUE, 
     guide = "colorsteps"
     ) +
   facet_wrap(~decade) +
   labs(
-    colour = "Mean Percentage Difference 
-    (Modelled Streamflow CO2 Component Off - Modelled Streamflow CO2 Component On / 
-    Modelled Streamflow CO2 Component Off)"
+    fill = "Mean Percentage Difference (CO2_on - CO2_off)"
   ) +
   theme_bw() +
   theme(
-    legend.position = "inside",
-    legend.position.inside = c(0.7, 0.15),
-    legend.title = element_text(size = 10)
+    legend.position = "bottom",
+    #legend.position.inside = c(0.7, 0.15),
+    legend.title = element_text(size = 10, hjust = 0.5)
   ) +
   guides(
-    colour = guide_coloursteps(
-      barwidth = unit(10, "cm"), 
+    fill = guide_coloursteps(
+      barwidth = unit(15, "cm"), 
       show.limits = TRUE, 
       even.steps = TRUE,
       title.position = "top",
@@ -340,7 +434,7 @@ plot_CO2_on_off_percent_diff <- single_aus_map |>
 #plot_CO2_on_off_percent_diff
 
 ggsave(
-  filename = "./Graphs/CMAES_graphs/CO2_on_off.pdf",
+  filename = "./Graphs/CMAES_graphs/CO2_on_off_v4.pdf",
   plot = plot_CO2_on_off_percent_diff,
   device = "pdf",
   width = 297,
@@ -363,6 +457,114 @@ ggsave(
 stop_here <- tactical_typo()
 
 
+
+
+# Compare evidence ratio for best non-CO2 vs. CO2 model ------------------------
+# Method:
+# 1. streamflow_data_best_CO2_non_CO2
+# 2. Find percentage difference for each gauge best_Co2_model - best_non_CO2_model / best_CO2_model
+# 3. summarise percentage difference
+# 4. Join with evidence ratio
+# 5. plot
+
+## Evidence ratio for joining ==================================================
+evidence_ratio_calc <- best_CO2_non_CO2_per_gauge |>
+  select(gauge, contains_CO2, AIC) |>
+  distinct() |>
+  pivot_wider(
+    names_from = contains_CO2,
+    values_from = AIC
+  ) |>
+  mutate(
+    CO2_model = `TRUE`,
+    non_CO2_model = `FALSE`,
+    .keep = "unused"
+  ) |>
+  mutate(
+    AIC_difference = CO2_model - non_CO2_model # CO2 is smaller than non-CO2 then negative and CO2 is better
+  ) |>
+  mutate(
+    evidence_ratio = case_when(
+      AIC_difference < 0 ~ exp(0.5 * abs(AIC_difference)), # when CO2 model is better
+      AIC_difference > 0 ~ -exp(0.5 * abs(AIC_difference)) # when non-CO2 model is better
+    )
+  ) |>
+  arrange(evidence_ratio)
+
+
+
+## percentage difference calculation ===========================================
+calculate_percent_diff_best_non_CO2_and_CO2 <- function(gauge, best_CO2_non_CO2_data) {
+  
+  # Pivot wider for mutate
+  wide_streamflow_data <- best_CO2_non_CO2_data |> 
+    select(!c(objective_function, optimiser)) |> 
+    filter(gauge == {{ gauge }}) |> 
+    pivot_wider(
+      names_from = streamflow_model,
+      values_from = modelled_boxcox_streamflow
+    ) 
+  
+  # Rename columns for generic percent diff
+  column_names <- names(wide_streamflow_data)
+  CO2_model_name_index <- str_detect(names(wide_streamflow_data), "streamflow_model") & str_detect(names(wide_streamflow_data), "CO2")
+  no_CO2_model_name_index <- str_detect(names(wide_streamflow_data), "streamflow_model") & !str_detect(names(wide_streamflow_data), "CO2")
+  column_names[CO2_model_name_index] <- "CO2_model"
+  column_names[no_CO2_model_name_index] <- "non_CO2_model"
+  
+  # Percent diff calculation - sum everything then percent diff
+  calculation_streamflow_data <- wide_streamflow_data |> 
+    `names<-`(column_names) |>  
+    summarise(
+      sum_CO2_model = sum(CO2_model),
+      sum_non_CO2_model = sum(non_CO2_model),
+      .by = gauge
+    ) |> 
+    mutate(
+      percent_diff = ((sum_CO2_model - sum_non_CO2_model) / sum_CO2_model) * 100
+    )
+  
+  return(calculation_streamflow_data)
+}
+
+
+percent_diff_streamflow_data_best_CO2_non_CO2 <- map(
+  .x = streamflow_data_best_CO2_non_CO2 |> pull(gauge) |> unique(),
+  .f = calculate_percent_diff_best_non_CO2_and_CO2,
+  best_CO2_non_CO2_data = streamflow_data_best_CO2_non_CO2
+) |> 
+  list_rbind()
+
+
+## Summarise percentage difference and join evidence ratio =====================
+summarise_percent_diff_streamflow_data_best_CO2_non_CO2 <- percent_diff_streamflow_data_best_CO2_non_CO2 |> 
+  left_join(
+    evidence_ratio_calc,
+    by = join_by(gauge)
+  )
+  
+  
+
+## Plot percentage_diff vs. evidence ratio =====================================
+### 
+
+summarise_percent_diff_streamflow_data_best_CO2_non_CO2 |> 
+  ggplot(aes(x = evidence_ratio, y = percent_diff)) +
+  geom_point(size = 2) +
+  scale_x_log10() +
+  labs(
+    x = "Evidence Ratio (log10)",
+    y = "Mean Percentage Difference in Modelled Streamflow"
+  ) +
+  theme_bw() +
+  theme(
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12)
+  )
+
+
+
+
 # Compare non-CO2 vs. CO2 and a3-on vs a3-off ----------------------------------
 
 # Would be a good idea to get streamflow_data_a3_off and streamflow_data_best_CO2_non_CO2
@@ -370,7 +572,7 @@ stop_here <- tactical_typo()
 
 # suggested format?
 
-gauge_key <- "A2390531" #"226410" #"403226"
+gauge_key <- "121003A"  #"A2390531" #"226410" #"403226"
 
 ## Rainfall-runoff relationship
 ### CO2 vs. non CO2
@@ -426,6 +628,22 @@ graph_CO2_vs_non_CO2 <- test_1 |>
   )
   
 
+timeseries_graph_CO2_vs_non_CO2 <- test_1 |> 
+  ggplot(aes(x = year, y = streamflow, colour = modelled_or_observed)) +
+  geom_point(size = 2) +
+  geom_line() +
+  labs(
+    x = "Year",
+    y = "Box-Cox Streamflow",
+    colour = NULL
+  ) +
+  theme_bw() +
+  theme(
+    legend.position = "inside",
+    legend.position.inside = c(0.9, 0.9)
+  )
+
+timeseries_graph_CO2_vs_non_CO2
 
 ### a3 off vs. a3 on
 test_2 <- streamflow_data_a3_off |> 
