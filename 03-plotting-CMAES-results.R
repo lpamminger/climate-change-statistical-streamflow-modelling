@@ -604,6 +604,7 @@ single_map_aus <- aus_map |>
   )
 
 
+
 ggsave(
   filename = "./Graphs/CMAES_graphs/evidence_ratio_aus_with_zoom_v4.pdf",
   plot = single_map_aus,
@@ -916,7 +917,7 @@ ToE_map_aus <- aus_map |>
   scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
   theme_bw() +
   # expand map
-  coord_sf(xlim = c(95, 180), ylim = c(-60, 0)) +
+  coord_sf(xlim = c(95, 176), ylim = c(-60, 0)) +
   # magnify WA
   geom_magnify(
     from = c(114, 118, -35.5, -30),
@@ -973,7 +974,10 @@ ToE_map_aus <- aus_map |>
     legend.title = element_text(hjust = 0.5),
     legend.title.position = "top",
     legend.background = element_rect(colour = "black"),
-    axis.text = element_text(size = 6), 
+    axis.text = element_blank(), 
+    panel.border = element_blank(),
+    panel.grid = element_blank(),
+    axis.ticks = element_blank(),
     legend.position = "inside",
     legend.position.inside = c(0.325, 0.9),
     legend.box = "horizontal"#, # side-by-side legends
@@ -983,14 +987,18 @@ ToE_map_aus <- aus_map |>
     size = guide_bins(show.limits = TRUE, direction = "horizontal")
   )
 
+
+
+
+
 ToE_map_aus
 
 ggsave(
   filename = "./Graphs/CMAES_graphs/ToE_map_aus_uncertainty_v2.pdf",
   plot = ToE_map_aus,
   device = "pdf",
-  width = 237,
-  height = 210,
+  width = 232,
+  height = 200,
   units = "mm"
 )
 
