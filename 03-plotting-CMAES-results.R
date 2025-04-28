@@ -65,10 +65,18 @@ best_CO2_non_CO2_per_gauge <- read_csv(
   show_col_types = FALSE
 ) 
   
-parameter_uncertainty <- read_csv(
-  "Results/my_dream/sequences_20250422.csv",
-  show_col_types = FALSE
-  )
+
+# Files are too big to combine - combine in R
+parameter_uncertainty <- list.files( # get 
+  path = "./Results/my_dream", 
+  recursive = FALSE, # I don't want it looking in other folders
+  pattern = "part",
+  full.names = TRUE
+) |> 
+  read_csv(show_col_types = FALSE) 
+  
+  
+
 
 
 # Objects used for all figures -------------------------------------------------
@@ -751,14 +759,13 @@ custom_bins_time_of_emergence_data <- time_of_emergence_data |>
       between(DREAM_ToE_IQR, 21, 30) ~ "21-30",
       between(DREAM_ToE_IQR, 31, 40) ~ "31-40",
       between(DREAM_ToE_IQR, 41, 50) ~ "41-50",
-      between(DREAM_ToE_IQR, 51, 60) ~ "51-60",
-      DREAM_ToE_IQR > 60 ~ ">60",
+      DREAM_ToE_IQR > 50 ~ ">50",
       .default = NA
     )
   ) |> 
   # factor it so all plots ahve the same bins
   mutate(
-    binned_DREAM_ToE_IQR = factor(binned_DREAM_ToE_IQR, levels = c("<=10", "11-20", "21-30", "31-40", "41-50", "51-60", ">60"))
+    binned_DREAM_ToE_IQR = factor(binned_DREAM_ToE_IQR, levels = rev(c("<=10", "11-20", "21-30", "31-40", "41-50", "51-60", ">60")))
   )
 
 
@@ -785,21 +792,33 @@ TAS_data <- custom_bins_time_of_emergence_data |>
 
 ### Generate inset plots #######################################################
 
+# scale_size_binned()
+# Using scale_size_binned() is technically between because it is a 
+# does the binning for me.
+
+#
+scale_size_limits <- custom_bins_time_of_emergence_data |> 
+  pull(DREAM_ToE_IQR) |> 
+  range() # can round up if I want to 
+
+
 inset_plot_QLD <- aus_map |>
   filter(state == "QLD") |>
   ggplot() +
   geom_sf() +
   geom_point(
     data = QLD_data,
-    aes(x = lon, y = lat, fill = custom_bins, size = binned_DREAM_ToE_IQR),
+    aes(x = lon, y = lat, fill = custom_bins, size = DREAM_ToE_IQR),
     show.legend = FALSE,
-    #size = 2.5,
     stroke = 0.1,
     shape = 21,
     colour = "black"
   ) +
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
+  scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
+  guides(size = guide_bins(show.limits = TRUE)) +
   theme_void()
+
 
 
 inset_plot_NSW <- aus_map |>
@@ -808,14 +827,15 @@ inset_plot_NSW <- aus_map |>
   geom_sf() +
   geom_point(
     data = NSW_data,
-    aes(x = lon, y = lat, fill = custom_bins, size = binned_DREAM_ToE_IQR),
+    aes(x = lon, y = lat, fill = custom_bins, size = DREAM_ToE_IQR),
     show.legend = FALSE,
-    #size = 2.5,
     stroke = 0.1,
     shape = 21,
     colour = "black"
   ) +
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
+  scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
+  guides(size = guide_bins(show.limits = TRUE)) +
   theme_void()
 
 
@@ -826,7 +846,7 @@ inset_plot_VIC <- aus_map |>
   geom_sf() +
   geom_point(
     data = VIC_data,
-    aes(x = lon, y = lat, fill = custom_bins, size = binned_DREAM_ToE_IQR),
+    aes(x = lon, y = lat, fill = custom_bins, size = DREAM_ToE_IQR),
     show.legend = FALSE,
     #size = 2.5,
     stroke = 0.1,
@@ -834,6 +854,8 @@ inset_plot_VIC <- aus_map |>
     colour = "black"
   ) +
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
+  scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
+  guides(size = guide_bins(show.limits = TRUE)) +
   theme_void()
 
 
@@ -844,7 +866,7 @@ inset_plot_WA <- aus_map |>
   geom_sf() +
   geom_point(
     data = WA_data,
-    aes(x = lon, y = lat, fill = custom_bins, size = binned_DREAM_ToE_IQR),
+    aes(x = lon, y = lat, fill = custom_bins, size = DREAM_ToE_IQR),
     show.legend = FALSE,
     #size = 2.5,
     stroke = 0.1,
@@ -852,6 +874,8 @@ inset_plot_WA <- aus_map |>
     colour = "black"
   ) +
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
+  scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
+  guides(size = guide_bins(show.limits = TRUE)) +
   theme_void()
 
 
@@ -862,7 +886,7 @@ inset_plot_TAS <- aus_map |>
   geom_sf() +
   geom_point(
     data = TAS_data,
-    aes(x = lon, y = lat, fill = custom_bins, size = binned_DREAM_ToE_IQR),
+    aes(x = lon, y = lat, fill = custom_bins, size = DREAM_ToE_IQR),
     show.legend = FALSE,
     #size = 2.5,
     stroke = 0.1,
@@ -870,6 +894,8 @@ inset_plot_TAS <- aus_map |>
     colour = "black",
   ) +
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
+  scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
+  guides(size = guide_bins(show.limits = TRUE)) +
   theme_void()
 
 
@@ -881,13 +907,13 @@ ToE_map_aus <- aus_map |>
   geom_sf() +
   geom_point(
     data = custom_bins_time_of_emergence_data,
-    mapping = aes(x = lon, y = lat, fill = custom_bins, size = binned_DREAM_ToE_IQR),
-    #size = 3,
+    mapping = aes(x = lon, y = lat, fill = custom_bins, size = DREAM_ToE_IQR),
     stroke = 0.1,
     shape = 21,
     colour = "black"
   ) +
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
+  scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
   theme_bw() +
   # expand map
   coord_sf(xlim = c(95, 180), ylim = c(-60, 0)) +
@@ -941,37 +967,43 @@ ToE_map_aus <- aus_map |>
     y = NULL,#"Longitude",
     fill = "Time of Emergence",
     size = "Time of Emergence Uncertainty (IQR)"
-    #shape = bquote("Impact of "~CO[2]~"Term")
   ) +
   theme(
     legend.key = element_rect(fill = "grey80"),
     legend.title = element_text(hjust = 0.5),
+    legend.title.position = "top",
     legend.background = element_rect(colour = "black"),
     axis.text = element_text(size = 6), 
     legend.position = "inside",
     legend.position.inside = c(0.325, 0.9),
     legend.box = "horizontal"#, # side-by-side legends
-    #plot.margin = margin(20, 1, 2, 2, unit = "mm") # white area around figure
   ) +
   guides(
     fill = guide_legend(override.aes = list(size = 5, shape = 21), nrow = 3), # Wrap legend with nrow
-    size = guide_legend(nrow = 3)
+    size = guide_bins(show.limits = TRUE, direction = "horizontal")
   )
 
 ToE_map_aus
-# ggplot hates using size with a discrete variable
-# I don't want to do this. 
-# I did this because the ranges for the dot size must be the same for all plots
-# I don't know how to do this with size
 
 ggsave(
-  filename = "./Graphs/CMAES_graphs/ToE_map_aus_uncertainty.pdf",
+  filename = "./Graphs/CMAES_graphs/ToE_map_aus_uncertainty_v2.pdf",
   plot = ToE_map_aus,
   device = "pdf",
   width = 237,
   height = 210,
   units = "mm"
 )
+
+## What does ToE vs. DREAM_IQR_ToE look like
+custom_bins_time_of_emergence_data |> 
+  ggplot(aes(x = year_time_of_emergence, y = DREAM_ToE_IQR)) +
+  geom_point() +
+  geom_smooth(method = lm, formula = y ~ x) +
+  labs(
+    x = "Time of Emergence",
+    y = "Years of uncertainty around time of emergence"
+  ) +
+  theme_bw()
 
 
 # TEMP. Compare evidence ratio with ToE
