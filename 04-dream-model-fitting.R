@@ -6,8 +6,8 @@ pacman::p_load(tidyverse, dream, coda, lattice, tictoc, furrr, parallel, truncno
 # install dream using: install.packages("dream", repos="http://R-Forge.R-project.org")
 # install.packages("coda")
 
-# TODO 
-# - run it with all catchments
+# TODO:
+# The code is a mess. Clean it up
 
 # get packages used in script (requires NCmisc package)
 #functions_used <- list.functions.in.file("04-dream-model-fitting.R")
@@ -36,12 +36,12 @@ gauge_information <- readr::read_csv(
   show_col_types = FALSE
 )
 
-CMAES_results <- read_csv("./Results/my_cmaes/CMAES_parameter_results_20250122.csv",
+CMAES_results <- read_csv("./Results/my_cmaes/CMAES_parameter_results_20250331.csv",
   show_col_types = FALSE
 ) 
 
 best_CO2_non_CO2_per_gauge <- read_csv(
-  "./Results/my_cmaes/unmodified_best_CO2_non_CO2_per_catchment_CMAES_20250128.csv",
+  "./Results/my_cmaes/unmodified_best_CO2_non_CO2_per_catchment_CMAES_20250331.csv",
   show_col_types = FALSE
 ) 
 
@@ -110,7 +110,13 @@ best_model_combination_per_catchment <- best_CO2_non_CO2_per_gauge |>
   add_column(
     objective_function_name = constant_sd_objective_function()$name,
     .after = 2
-    )
+    ) |> 
+  # Redo only the models with a3_slope component
+  mutate(
+    is_slope = str_detect(streamflow_model_name, "slope")
+  ) |> 
+  filter(is_slope) |> 
+  select(!is_slope)
 
 ## Need best_CMAES_parameters for making DREAM bounds ==========================
 filter_table <- best_model_combination_per_catchment |> 
@@ -174,8 +180,6 @@ gauge_streamflow_model_objective_function_combinations <- best_model_combination
 
 
 
-
-
 # Produce numerical_optimiser_objects ready for the optimiser ------------------
 numerical_optimiser_objects <- function(gauge, streamflow_model, objective_function, data, start_stop, best_CMAES_parameters) {
   
@@ -198,7 +202,6 @@ numerical_optimiser_objects <- function(gauge, streamflow_model, objective_funct
 }
 
 
-
 ready_for_optimisation <- pmap(
   .l = gauge_streamflow_model_objective_function_combinations,
   .f = numerical_optimiser_objects,
@@ -218,7 +221,7 @@ ready_for_optimisation <- pmap(
 # I think this is worst than running the chunks in series but catchments in
 # parallel
 
-CHUNK_SIZE <- 3 # Maybe go to 4. Risky
+CHUNK_SIZE <- 3 # Maybe go to 4. Risky. 3 exceeded memory
 
 chunked_ready_for_optimisation <- split( # required for chunking in parallel
   ready_for_optimisation,
@@ -226,7 +229,30 @@ chunked_ready_for_optimisation <- split( # required for chunking in parallel
 )
 
 
+# Code crashed due to memory being exceeded
+# remove completed chunks
+# It did 20 before crashing. Lets do 20 again
+# completed_chunks <- c(1, 2, 3, 12, 23, 35, 46, 57, 58, 59, 68, 69, 101, 102, 123, 134, 135, 145, 146, 168)
+#Complete --> [1:20]
+# [21:40] failed - exceeded RAM - missing chunks c(28, 36, 37, 38, 41) - REDO
+# Because 20 chunks failed reduce to 17 - redo missing chunks at end
+#[41:57] complete
+#[58:74] - missing chunk 70 
+#[75:91] - complete
+#[92:108] - failed exceeded RAM - missing 112
+#[109:125] - complete
+#[126:142] - complete
+#[143:158] - complete
+# failed chunks c(28, 36, 37, 38, 41, 70, 112) - up to here
+# Chunk 70 takes forever
+#reduced_chunked_ready_for_optimisation <- chunked_ready_for_optimisation[-completed_chunks]
 
+# REDOING the slope models
+# [1:16] done
+# [17:32] done
+# [33:48] done
+# [49:63]
+sample_reduced_chunked_ready_for_optimisation <- chunked_ready_for_optimisation[49:63]#reduced_chunked_ready_for_optimisation[c(28, 36, 37, 38, 41, 70, 112)]
 
 # Findings (text-only) ---------------------------------------------------------
 # Everything is working as expected for gauge 003303A and 105101Aa
@@ -514,14 +540,14 @@ chunk_controls <- list(
 # Minimum is 16 at a time.
 # Test 16 at at time with 2 catchment in chunk
 # RAM for a single is ~ 14 gb. Use 3 catchments per chunk for safety
-#RAM_usage_chunks_ready_for_optimisation <- chunked_ready_for_optimisation[1:3]
+#RAM_usage_chunks_ready_for_optimisation <- chunked_ready_for_optimisation[7:9]
 
 
 
 start_time <- Sys.time()
 plan(multisession, workers = length(availableWorkers())) # set once for furrr
 future_iwalk(
-  .x = chunked_ready_for_optimisation,
+  .x = sample_reduced_chunked_ready_for_optimisation,
   .f = optimise_chunks,
   chunk_controls = chunk_controls,
   .options = furrr_options(
@@ -534,11 +560,12 @@ stop_time - start_time
 ## Combine chunks into single file (plots and stats) and removes chunks ========
 
 ### .csv's #####################################################################
+stop_here <- tactical_typo()
 
 converge_stats_list_of_files <- list.files( # get
   path = "./Results/my_dream/",
   recursive = FALSE, # I don't want it looking in other folders
-  pattern = "converged_stats_chunk",
+  pattern = "converged_stats",
   full.names = TRUE
 )
 
@@ -548,22 +575,31 @@ converge_stats_list_of_files |> # merge and save
     paste0("./Results/my_dream/converged_stats_", get_date(), ".csv")
   )
 
-converge_stats_list_of_files |> file.remove() # remove chunks
+#converge_stats_list_of_files |> file.remove() # remove chunks
 
 sequences_list_of_files <- list.files( # get
   path = "./Results/my_dream/",
   recursive = FALSE, # I don't want it looking in other folders
-  pattern = "sequences",
+  pattern = "part",
   full.names = TRUE
 )
 
-sequences_list_of_files |> # merge and save
+sequences_list_of_files[1:5] |> # merge and save 
+  # [1:25] done join-1
+  # [26:75] done join-2
+  # [76:110] done join-3
+  # [111:145] done join-4
+  # [146:188] join-5
   read_csv(show_col_types = FALSE) |> 
   write_csv(
     paste0("./Results/my_dream/sequences_", get_date(), ".csv")
   )
 
-sequences_list_of_files |> file.remove() # remove chunks
+# I do not have enough RAM on my PC to join everything into a single file
+
+# I must join bit by bit to avoid RAM limiations - 
+# if this does not work just import them individually then join
+#sequences_list_of_files |> file.remove() # remove chunks
 
 
 ### .pdfs ######################################################################
@@ -593,8 +629,50 @@ qpdf::pdf_combine( # combine
   output = paste0("./Graphs/DREAM_graphs/distribution_plots_", get_date(), ".pdf")
 )
 
-c(trace_plots_list_of_files, distribution_plots_list_of_files) |> file.remove() # remove
+x <- trace_plots_list_of_files |> 
+  str_split(pattern = "_") 
+
+get_chunk_number <- function(index, str_split_table) {
+  str_split_table[[index]][5]
+}
+
+y <- map_chr(
+  .x = seq_along(x),
+  .f = get_chunk_number,
+  str_split_table = x
+)
+
+y[duplicated(y)]
+
+#c(trace_plots_list_of_files, distribution_plots_list_of_files) |> file.remove() # remove
+
+# Remove slope models from convergence_data and sequence_data
+# sequence data does not have model names use the gauges to filter
+only_slope_gauges <- best_model_combination_per_catchment |> 
+  pull(gauge) |> 
+  unique()
+
+x <- read_csv(
+  "Results/my_dream/part_5_sequences_20250428.csv",
+  show_col_types = FALSE
+  ) |> 
+  filter(!gauge %in% only_slope_gauges) |> 
+  write_csv("Results/my_dream/part_5_sequences_20250428.csv")
+
+
+no_slope_list_of_files <- list.files( # get 
+  path = "./Results/my_dream", 
+  recursive = FALSE, # I don't want it looking in other folders
+  pattern = "part",
+  full.names = TRUE
+)
+
+zzz <- no_slope_list_of_files |> 
+  read_csv(show_col_types = FALSE)
 
 
 
-
+y <- zzz |> 
+  pull(gauge) |> 
+  unique()
+all(y %in% only_slope_gauges)
