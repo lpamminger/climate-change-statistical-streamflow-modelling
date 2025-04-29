@@ -313,7 +313,11 @@ make_DREAM_bounds_and_transform_methods <- function(catchment_data_set, best_CMA
   gauge <- catchment_data_set$gauge_ID
   
   filter_a3_values <- best_CMAES_parameters |> 
-    filter(parameter == "a3") 
+    #filter(parameter == "a3_intercept") 
+    filter(parameter %in% c("a3_intercept", "a3_slope"))
+  # I need to include the slope here as well :(
+
+  
   
   if (gauge %in% filter_a3_values$gauge) {
     specific_catchment_a3 <- filter_a3_values |> 
@@ -340,7 +344,7 @@ make_DREAM_bounds_and_transform_methods <- function(catchment_data_set, best_CMA
     "a1",            1E-5 ,         1,                 logarithmic_parameter_transform, # slope
     "a2",           -1,             1,                 linear_parameter_transform, # autocorrelation
     "a3_intercept",  a3_bounds[1],  a3_bounds[2],      linear_parameter_transform, # CO2 coefficient 
-    "a3_slope",     -1E-2,          5E-3,              linear_parameter_transform, # CO2 coefficent for slope
+    "a3_slope",      a3_bounds[1],  a3_bounds[2],      linear_parameter_transform, # CO2 coefficent for slope
     "a4",           -250,           600,               linear_parameter_transform, # seasonal parameter
     "a5",            0,             upper_a5_bound,    linear_parameter_transform, # Changes depending on last CO2 value in calibration
     "sd",            1E-8,          200,               logarithmic_parameter_transform, # constant sd objective function 
