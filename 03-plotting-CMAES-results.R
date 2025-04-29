@@ -604,6 +604,7 @@ single_map_aus <- aus_map |>
   )
 
 
+
 ggsave(
   filename = "./Graphs/CMAES_graphs/evidence_ratio_aus_with_zoom_v4.pdf",
   plot = single_map_aus,
@@ -916,7 +917,7 @@ ToE_map_aus <- aus_map |>
   scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
   theme_bw() +
   # expand map
-  coord_sf(xlim = c(95, 180), ylim = c(-60, 0)) +
+  coord_sf(xlim = c(95, 176), ylim = c(-60, 0)) +
   # magnify WA
   geom_magnify(
     from = c(114, 118, -35.5, -30),
@@ -973,7 +974,10 @@ ToE_map_aus <- aus_map |>
     legend.title = element_text(hjust = 0.5),
     legend.title.position = "top",
     legend.background = element_rect(colour = "black"),
-    axis.text = element_text(size = 6), 
+    axis.text = element_blank(), 
+    panel.border = element_blank(),
+    panel.grid = element_blank(),
+    axis.ticks = element_blank(),
     legend.position = "inside",
     legend.position.inside = c(0.325, 0.9),
     legend.box = "horizontal"#, # side-by-side legends
@@ -983,14 +987,18 @@ ToE_map_aus <- aus_map |>
     size = guide_bins(show.limits = TRUE, direction = "horizontal")
   )
 
+
+
+
+
 ToE_map_aus
 
 ggsave(
   filename = "./Graphs/CMAES_graphs/ToE_map_aus_uncertainty_v2.pdf",
   plot = ToE_map_aus,
   device = "pdf",
-  width = 237,
-  height = 210,
+  width = 232,
+  height = 200,
   units = "mm"
 )
 
@@ -1209,3 +1217,29 @@ ggsave(
   units = "mm"
 )
 
+
+# TEMPORARY ---
+# I am redoing the a3_slope
+# I need to remove any a3_slope from the distribution pdf and trace pdfs
+# In the pdfs search for `a3_slope`
+# Get the page number
+# Delete the pages
+library(pdfsearch)
+library(pdftools)
+file <- list.files(path = "./Graphs/DREAM_graphs", full.names = TRUE)[1]
+
+result <- keyword_search(
+  file,
+  keyword = c("a3_slope"),
+  path = TRUE
+) 
+
+remove_pages <- result |> 
+  pull(line_num)
+
+keep_pages <- seq(from = 1, to = 534, by = 1)
+keep_pages <- keep_pages[-remove_pages]
+
+
+pdf_subset(input = file, pages = keep_pages, output = "./Graphs/DREAM_graphs/removed_a3_slope_distribution_plots.pdf")
+# Output can now be joined to a3_slope graphs
