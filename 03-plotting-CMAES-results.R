@@ -3,11 +3,11 @@
 
 # TODO - transfer code/graphs from playing_with_graphs
 # Key graphs to transfer are:
-# 2. Time of emergence histogram
+# 1. Time of emergence histogram
 # - account for the different types of CO2 models - slope vs. intercept
-# 1. graphically compare (colour gradient evidence ratio, shape pos/neg, outline
+# 2. graphically compare (colour gradient evidence ratio, shape pos/neg, outline
 #    or stroke colour can be slope or intercept)
-# 2. some sort of slope and intercept analysis. Like proportion of pos/neg slope,
+# 3. some sort of slope and intercept analysis. Like proportion of pos/neg slope,
 #    pos/neg intercept
 
 
@@ -66,18 +66,8 @@ best_CO2_non_CO2_per_gauge <- read_csv(
 ) 
   
 
-# Files are too big to combine - combine in R
-parameter_uncertainty <- list.files( # get 
-  path = "./Results/my_dream", 
-  recursive = FALSE, # I don't want it looking in other folders
-  pattern = "part",
-  full.names = TRUE
-) |> 
-  read_csv(show_col_types = FALSE) 
+# Uncertainty important and calcuations done on line xxx
   
-  
-
-
 
 # Objects used for all figures -------------------------------------------------
 ### Add lat and lon ############################################################
@@ -617,6 +607,7 @@ ggsave(
 
 
 # Figure 3. Time of emergence map ----------------------------------------------
+
 # Time of emergence calculation ------------------------------------------------
 best_model_per_gauge <- best_CO2_non_CO2_per_gauge |>
   slice_min(
@@ -696,6 +687,43 @@ time_of_emergence_data <- CO2_time_of_emergence |>
 
 
 ## Interquartile range from DREAM ==============================================
+
+### Summarising parameter uncertainty ##########################################
+# I must do this in two steps because my PC does not have enough RAM
+# Files are too big to combine - combine in R
+
+
+
+# Comment out when complete and use the summarised tibble
+
+# Method:
+# 1. read the sequence .csv
+# 2. remove the duplicate gauges (maybe use chain and n to identify duplicates?)
+# 3. put load and filter by a5
+# 4. run plan() --> adjusted_a5_to_ToE code to turn CO2 ppm into year
+# 5. summarise to find IQR
+# 6. Save results
+# 7. Repeat 1-6 for the number of parts. Cannot do them all at once due to 
+#    RAM limiations
+# 8. Combine repeated files into one --> summarised_sequences_ToE_20250429.csv
+
+
+# parameter_uncertainty <- read_csv(
+#  "Results/my_dream/part_5_sequences_20250428.csv", 
+#  show_col_types = FALSE
+#) |> 
+#  filter(parameter == "a5") 
+
+# Number of rows in part_1_sequences = 28,592,384
+# Let's try half
+# For some reason the code breaks when combining part_1 to part_5 sequences
+# but works fine when I individually do them
+# SOLUTION: there are gauge duplicates. If I want to combine parts 1 to 5
+# I must remove the duplicates.
+
+
+
+
 # - Find IQR of ToE
 # - I want this in years not CO2 pmm
 # - To do this I must convert the a5 values from p_mm to years
@@ -703,22 +731,61 @@ time_of_emergence_data <- CO2_time_of_emergence |>
 #   to add the CO2 and year from data, then only input a5
 
 # This works but it is really slow and RAM intensive
-# There has to be a easier way
 
-plan(multisession, workers = length(availableWorkers()))
-filtered_parameter_uncertainty <- parameter_uncertainty |> 
-  filter(parameter == "a5") |> 
-  mutate(
-    year_ToE = adjusted_a5_to_ToE(parameter_value)
-  )
+#plan(multisession, workers = length(availableWorkers()))
+#filtered_parameter_uncertainty <- parameter_uncertainty |> 
+#  mutate(
+#    year_ToE = adjusted_a5_to_ToE(parameter_value)
+#  )
 
 
-ToE_range_uncertainty <- filtered_parameter_uncertainty |> 
-  summarise(
-    DREAM_ToE_IQR = IQR(year_ToE),
-    DREAM_ToE_median = median(year_ToE),
-    .by = gauge
-  )
+#ToE_range_uncertainty <- filtered_parameter_uncertainty |> 
+#  summarise(
+#    DREAM_ToE_IQR = IQR(year_ToE),
+#    DREAM_ToE_median = median(year_ToE),
+#    .by = gauge
+#  )
+
+
+### Save ToE_range_uncertainty ###
+### Repeat with part_1 and part_2 
+### Join and save the summarised information for plotting
+#write_csv(
+#  ToE_range_uncertainty,
+#  file = "Results/my_dream/part_5_summarised_sequences_20250429.csv"
+#)
+
+#combined_summarised_ToE_data <- list.files( # get
+#  path = "./Results/my_dream/",
+#  recursive = FALSE, # I don't want it looking in other folders
+#  pattern = "summarised_sequence",
+#  full.names = TRUE
+#)
+
+#combined_summarised_ToE_data |> # merge and save
+#  read_csv(show_col_types = FALSE) |> 
+#  write_csv(
+#    paste0("./Results/my_dream/summarised_sequences_ToE_", get_date(), ".csv")
+#  )
+
+#duplicated_gauges <- test |> pull(gauge) 
+# duplicated_gauges[duplicated(duplicated_gauges)]
+
+
+# There are duplicates - that is probably why the code broke
+# The gauges are "612034" "406235" "406250" "407213"
+# They all produce the same uncertainty. For now
+# use distinct. This temporarily solves the problem
+
+summarised_sequences_ToE <- read_csv(
+  "Results/my_dream/summarised_sequences_ToE_20250429.csv",
+  show_col_types = FALSE
+  ) |> 
+  distinct()
+
+
+
+
 
 
 ## Create my own bins ==========================================================
@@ -732,7 +799,7 @@ lat_lon_gauge <- gauge_information |>
 custom_bins_time_of_emergence_data <- time_of_emergence_data |>
   # add uncertainty
   left_join(
-    ToE_range_uncertainty,
+    summarised_sequences_ToE,
     by = join_by(gauge)
   ) |> 
   mutate(custom_bins = year_time_of_emergence - (year_time_of_emergence %% 10)) |>
@@ -750,8 +817,6 @@ custom_bins_time_of_emergence_data <- time_of_emergence_data |>
   mutate(
     custom_bins = factor(custom_bins, levels = c("Before 1959", "1960", "1970", "1980", "1990", "2000", "2010", "2020"))
   ) |> 
-  # FOR TESTING PURPOSES FILTER GAUGES WITHOUT DREAM IQR  
-  filter(!is.na(DREAM_ToE_IQR)) |> 
   # Binning is required to DREAM_ToE_IQR
   mutate(
     binned_DREAM_ToE_IQR = case_when(
@@ -988,13 +1053,10 @@ ToE_map_aus <- aus_map |>
   )
 
 
-
-
-
-ToE_map_aus
+#ToE_map_aus
 
 ggsave(
-  filename = "./Graphs/CMAES_graphs/ToE_map_aus_uncertainty_v2.pdf",
+  filename = "./Graphs/CMAES_graphs/ToE_map_aus_uncertainty_v3.pdf",
   plot = ToE_map_aus,
   device = "pdf",
   width = 232,
@@ -1002,11 +1064,11 @@ ggsave(
   units = "mm"
 )
 
-## What does ToE vs. DREAM_IQR_ToE look like
+## TEMP What does ToE vs. DREAM_IQR_ToE look like
 custom_bins_time_of_emergence_data |> 
   ggplot(aes(x = year_time_of_emergence, y = DREAM_ToE_IQR)) +
   geom_point() +
-  geom_smooth(method = lm, formula = y ~ x) +
+  #geom_smooth(method = lm, formula = y ~ x) +
   labs(
     x = "Time of Emergence",
     y = "Years of uncertainty around time of emergence"
@@ -1224,9 +1286,14 @@ ggsave(
 # In the pdfs search for `a3_slope`
 # Get the page number
 # Delete the pages
+
+# Loading the trace plots takes a long time.
+# The distribution plots have the same order. Use the order to sort the
+# trace plots.
+
 library(pdfsearch)
 library(pdftools)
-file <- list.files(path = "./Graphs/DREAM_graphs", full.names = TRUE)[1]
+file <- list.files(path = "./Graphs/DREAM_graphs", full.names = TRUE)[3]
 
 result <- keyword_search(
   file,
@@ -1241,5 +1308,5 @@ keep_pages <- seq(from = 1, to = 534, by = 1)
 keep_pages <- keep_pages[-remove_pages]
 
 
-pdf_subset(input = file, pages = keep_pages, output = "./Graphs/DREAM_graphs/removed_a3_slope_distribution_plots.pdf")
+pdf_subset(input = file, pages = keep_pages, output = "./Graphs/DREAM_graphs/removed_a3_slope_trace_plots.pdf")
 # Output can now be joined to a3_slope graphs
