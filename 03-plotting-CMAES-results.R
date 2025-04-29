@@ -1217,3 +1217,29 @@ ggsave(
   units = "mm"
 )
 
+
+# TEMPORARY ---
+# I am redoing the a3_slope
+# I need to remove any a3_slope from the distribution pdf and trace pdfs
+# In the pdfs search for `a3_slope`
+# Get the page number
+# Delete the pages
+library(pdfsearch)
+library(pdftools)
+file <- list.files(path = "./Graphs/DREAM_graphs", full.names = TRUE)[1]
+
+result <- keyword_search(
+  file,
+  keyword = c("a3_slope"),
+  path = TRUE
+) 
+
+remove_pages <- result |> 
+  pull(line_num)
+
+keep_pages <- seq(from = 1, to = 534, by = 1)
+keep_pages <- keep_pages[-remove_pages]
+
+
+pdf_subset(input = file, pages = keep_pages, output = "./Graphs/DREAM_graphs/removed_a3_slope_distribution_plots.pdf")
+# Output can now be joined to a3_slope graphs
