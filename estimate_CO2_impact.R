@@ -2,7 +2,7 @@
 cat("\014") # clear console
 
 # Import libraries--------------------------------------------------------------
-pacman::p_load(tidyverse, truncnorm, sloop, patchwork, ozmaps, sf, patchwork, metR, ggmagnify)
+pacman::p_load(tidyverse, truncnorm, sloop, patchwork, ozmaps, sf, patchwork, metR, ggmagnify, trend)
 
 
 
@@ -768,13 +768,320 @@ ggsave(
 
 
 
+# Rate of change CO2-on vs CO2-off using sens slope ----------------------------
+rate_of_change <- realspace_streamflow_data_a3_off |> 
+  select(gauge, year, realspace_a3_on, realspace_a3_off) |> 
+  mutate(
+    relative_difference = realspace_a3_on - realspace_a3_off
+  ) |> 
+  drop_na() 
+
+sens_slope_estimator <- function(x) {
+  sens.slope(x)$estimates |> unname()
+}
+
+sens_slope_p_value <- function(x) {
+  sens.slope(x)$p.value |> unname()
+}
+
+gauge_rate_of_change <- rate_of_change |> 
+  summarise(
+    sens_slope = sens_slope_estimator(relative_difference),
+    p_value = sens_slope_p_value(relative_difference),
+    .by = gauge
+  ) |> 
+  arrange(sens_slope) |> 
+  left_join(
+    lat_lon_gauge_info,
+    by = join_by(gauge)
+  ) 
+
+# Put the sens_slope on a map mm/year ------------------------------------------
+sens_slope_palette <- function(x) {
+  c("#67001f",
+    "#b2182b",
+    "#d6604d",
+    "#f4a582",
+    "#fddbc7",
+    "white",
+    "#d1e5f0",
+    "#92c5de",
+    "#4393c3",
+    "#2166ac",
+    "#053061")
+}
+
+gauge_rate_of_change |> pull(sens_slope) |> quantile()
+
+## Generate Insets =============================================================
+### Filter data by state #######################################################
+
+QLD_data <- gauge_rate_of_change |>
+  filter(state == "QLD") 
+
+NSW_data <- gauge_rate_of_change |>
+  filter(state == "NSW") 
+
+VIC_data <- gauge_rate_of_change |>
+  filter(state == "VIC") 
+
+WA_data <- gauge_rate_of_change |>
+  filter(state == "WA") 
+
+TAS_data <- gauge_rate_of_change |>
+  filter(state == "TAS") 
+
+
+### Generate inset plots #######################################################
+
+inset_plot_QLD <- aus_map |>
+  filter(state == "QLD") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = QLD_data,
+    aes(x = lon, y = lat, fill = sens_slope),
+    show.legend = FALSE,
+    size = 2.5,
+    colour = "black",
+    stroke = 0.1,
+    shape = 21
+  ) +
+  binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+    aesthetics = "fill",
+    palette = sens_slope_palette,
+    breaks = c(-5, -2.5, -1, -0.5, -0.001, 0.001, 0.5, 1, 2.5, 5), # range()
+    limits = c(-15, 10),
+    show.limits = TRUE, 
+    guide = "colorsteps"
+  ) +
+  theme_void()
+
+
+inset_plot_NSW <- aus_map |>
+  filter(state == "NSW") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = NSW_data,
+    aes(x = lon, y = lat, fill = sens_slope),
+    show.legend = FALSE,
+    size = 2.5,
+    colour = "black",
+    stroke = 0.1,
+    shape = 21
+  ) +
+  binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+    aesthetics = "fill",
+    palette = sens_slope_palette,
+    breaks = c(-5, -2.5, -1, -0.5, -0.001, 0.001, 0.5, 1, 2.5, 5),# range()
+    limits = c(-15, 10),
+    show.limits = TRUE, 
+    guide = "colorsteps"
+  ) +
+  theme_void()
+
+
+
+
+inset_plot_VIC <- aus_map |>
+  filter(state == "VIC") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = VIC_data,
+    aes(x = lon, y = lat, fill = sens_slope),
+    show.legend = FALSE,
+    size = 2.5,
+    colour = "black",
+    stroke = 0.1,
+    shape = 21
+  ) +
+  binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+    aesthetics = "fill",
+    palette = sens_slope_palette,
+    breaks = c(-5, -2.5, -1, -0.5, -0.001, 0.001, 0.5, 1, 2.5, 5), # range()
+    limits = c(-15, 10),
+    show.limits = TRUE, 
+    guide = "colorsteps"
+  ) +
+  theme_void()
+
+
+
+
+inset_plot_WA <- aus_map |>
+  filter(state == "WA") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = WA_data,
+    aes(x = lon, y = lat, fill = sens_slope),
+    show.legend = FALSE,
+    size = 2.5,
+    colour = "black",
+    stroke = 0.1,
+    shape = 21
+  ) +
+  binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+    aesthetics = "fill",
+    palette = sens_slope_palette,
+    breaks = c(-5, -2.5, -1, -0.5, -0.001, 0.001, 0.5, 1, 2.5, 5), # range()
+    limits = c(-15, 10),
+    show.limits = TRUE, 
+    guide = "colorsteps"
+  ) +
+  theme_void()
+
+
+
+
+inset_plot_TAS <- aus_map |>
+  filter(state == "TAS") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = TAS_data,
+    aes(x = lon, y = lat, fill = sens_slope),
+    show.legend = FALSE,
+    size = 2.5,
+    colour = "black",
+    stroke = 0.1,
+    shape = 21
+  ) +
+  binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+    aesthetics = "fill",
+    palette = sens_slope_palette,
+    breaks = c(-5, -2.5, -1, -0.5, -0.001, 0.001, 0.5, 1, 2.5, 5), # range()
+    limits = c(-15, 10),
+    show.limits = TRUE, 
+    guide = "colorsteps"
+  ) +
+  theme_void()
+
+
+
+
+## Put it together =============================================================
+
+sens_slope_map_aus <- aus_map |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = gauge_rate_of_change,
+    mapping = aes(x = lon, y = lat, fill = sens_slope),
+    size = 3,
+    colour = "black",
+    shape = 21,
+    inherit.aes = FALSE,
+    stroke = 0.1
+  ) +
+  theme_bw() +
+  binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+    aesthetics = "fill",
+    palette = sens_slope_palette,
+    breaks = c(-5, -2.5, -1, -0.5, -0.001, 0.001, 0.5, 1, 2.5, 5), # range()
+    limits = c(-15, 10),
+    show.limits = TRUE, 
+    guide = "colorsteps"
+  ) +
+  # expand map
+  coord_sf(xlim = c(95, 176), ylim = c(-60, 0)) +
+  # magnify WA
+  geom_magnify(
+    from = c(114, 118, -35.5, -30),
+    to = c(93, 112, -36, -10),
+    shadow = FALSE,
+    expand = 0,
+    plot = inset_plot_WA,
+    proj = "single"
+  ) +
+  # magnify VIC
+  geom_magnify(
+    #aes(from = state == "VIC"), # use aes rather than manually selecting area
+    from = c(141, 149.5, -39, -34),
+    to = c(95, 136, -38, -60),
+    shadow = FALSE,
+    plot = inset_plot_VIC,
+    proj = "single"
+  ) +
+  # magnify QLD
+  geom_magnify(
+    from = c(145, 155, -29.2, -16),
+    to = c(157, 178, -29.5, 1.5),
+    shadow = FALSE,
+    expand = 0,
+    plot = inset_plot_QLD,
+    proj = "single"
+  ) +
+  # magnify NSW
+  geom_magnify(
+    from = c(146.5, 154, -38, -28.1),
+    to = c(157, 178, -61, -30.5),
+    shadow = FALSE,
+    expand = 0,
+    plot = inset_plot_NSW,
+    proj = "single"
+  ) +
+  # magnify TAS
+  geom_magnify(
+    from = c(144, 149, -40, -44),
+    to = c(140, 155, -45, -61),
+    shadow = FALSE,
+    expand = 0,
+    plot = inset_plot_TAS,
+    proj = "single"
+  ) +
+  labs(
+    x = NULL,#"Latitude",
+    y = NULL,#"Longitude",
+    fill = "Sen's Slope (mm/year)",
+  ) +
+  theme(
+    legend.key = element_rect(fill = "grey80"),
+    legend.title = element_text(hjust = 0.5),
+    legend.background = element_rect(colour = "black"),
+    legend.margin = margin(l = 10, r = 10, t = 5, b = 5), # add a bit more room to the left and right of the legend box
+    axis.text = element_blank(), 
+    legend.position = "inside",
+    legend.position.inside = c(0.36, 0.91),
+    legend.box = "horizontal", # side-by-side legends
+    panel.grid = element_blank(),
+    axis.ticks = element_blank(),
+    plot.title = element_text(margin = margin(l = 25, r = 0, t = 30, b = -30), size = 22), # push title into plot
+    panel.border = element_blank()
+  ) +
+  guides(
+    fill = guide_coloursteps(
+      barwidth = unit(15, "cm"), 
+      show.limits = TRUE, 
+      even.steps = TRUE,
+      title.position = "top",
+      direction = "horizontal"
+    )
+  ) 
+
+
+sens_slope_map_aus
+
+ggsave(
+  filename = "./Graphs/CMAES_graphs/sens_slope_map.pdf",
+  plot = sens_slope_map_aus,
+  device = "pdf",
+  width = 232,
+  height = 200,
+  units = "mm"
+)
 
 
 
 
 
 
-stop_here <- tactical_typo()
+
+
+
+
 
 
 
