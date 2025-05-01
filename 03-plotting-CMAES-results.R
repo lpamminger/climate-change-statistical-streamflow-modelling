@@ -832,7 +832,10 @@ custom_bins_time_of_emergence_data <- time_of_emergence_data |>
   # factor it so all plots ahve the same bins
   mutate(
     binned_DREAM_ToE_IQR = factor(binned_DREAM_ToE_IQR, levels = rev(c("<=10", "11-20", "21-30", "31-40", "41-50", "51-60", ">60")))
-  )
+  ) |> 
+  # Points are plotted based on the order they appear in the tibble
+  # Order the tibble from largest IQR to smalleest before plotting.
+  arrange(desc(DREAM_ToE_IQR))
 
 
 ## Time of emergence plotting ==================================================
@@ -868,6 +871,8 @@ scale_size_limits <- custom_bins_time_of_emergence_data |>
   range() # can round up if I want to 
 
 
+transparent_dots_constant <- 0.75
+
 inset_plot_QLD <- aus_map |>
   filter(state == "QLD") |>
   ggplot() +
@@ -877,6 +882,7 @@ inset_plot_QLD <- aus_map |>
     aes(x = lon, y = lat, fill = custom_bins, size = DREAM_ToE_IQR),
     show.legend = FALSE,
     stroke = 0.1,
+    alpha = transparent_dots_constant,
     shape = 21,
     colour = "black"
   ) +
@@ -896,6 +902,7 @@ inset_plot_NSW <- aus_map |>
     aes(x = lon, y = lat, fill = custom_bins, size = DREAM_ToE_IQR),
     show.legend = FALSE,
     stroke = 0.1,
+    alpha = transparent_dots_constant,
     shape = 21,
     colour = "black"
   ) +
@@ -914,7 +921,7 @@ inset_plot_VIC <- aus_map |>
     data = VIC_data,
     aes(x = lon, y = lat, fill = custom_bins, size = DREAM_ToE_IQR),
     show.legend = FALSE,
-    #size = 2.5,
+    alpha = transparent_dots_constant,
     stroke = 0.1,
     shape = 21,
     colour = "black"
@@ -934,8 +941,8 @@ inset_plot_WA <- aus_map |>
     data = WA_data,
     aes(x = lon, y = lat, fill = custom_bins, size = DREAM_ToE_IQR),
     show.legend = FALSE,
-    #size = 2.5,
     stroke = 0.1,
+    alpha = transparent_dots_constant,
     shape = 21,
     colour = "black"
   ) +
@@ -954,8 +961,8 @@ inset_plot_TAS <- aus_map |>
     data = TAS_data,
     aes(x = lon, y = lat, fill = custom_bins, size = DREAM_ToE_IQR),
     show.legend = FALSE,
-    #size = 2.5,
     stroke = 0.1,
+    alpha = transparent_dots_constant,
     shape = 21,
     colour = "black",
   ) +
@@ -1056,7 +1063,7 @@ ToE_map_aus <- aus_map |>
 #ToE_map_aus
 
 ggsave(
-  filename = "./Graphs/CMAES_graphs/ToE_map_aus_uncertainty_v3.pdf",
+  filename = "./Graphs/CMAES_graphs/ToE_map_aus_uncertainty_v4.pdf",
   plot = ToE_map_aus,
   device = "pdf",
   width = 232,
