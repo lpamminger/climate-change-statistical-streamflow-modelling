@@ -304,9 +304,7 @@ problem_flows <- realspace_streamflow_data_a3_off |>
 ## - All occur when annual streamflow is near zero.
 ## - For simplicity set to zero
 ## - Should there a lower bound for years in decade?
-
-average_percent_diff_by_decade <- realspace_streamflow_data_a3_off |>
-  # TEMP - set weird values to zero
+altered_realspace_streamflow_data_a3_off <- realspace_streamflow_data_a3_off |>
   mutate(
     realspace_a3_off = case_when(
       realspace_a3_off < 0 ~ 0,
@@ -318,7 +316,19 @@ average_percent_diff_by_decade <- realspace_streamflow_data_a3_off |>
       is.na(realspace_a3_on) ~ 0,
       .default = realspace_a3_on
     )
-  ) |>
+  )
+
+
+sum_decade_rainfall <- data |> 
+  mutate(
+    decade = year - (year %% 10)
+  ) |> 
+  summarise(
+    decade_rainfall = sum(p_mm),
+    .by = c(gauge, decade)
+  )
+
+average_percent_diff_by_decade <- altered_realspace_streamflow_data_a3_off |>
   mutate(
     decade = year - (year %% 10)
   ) |>
@@ -329,21 +339,53 @@ average_percent_diff_by_decade <- realspace_streamflow_data_a3_off |>
     .by = c(gauge, decade)
   ) |>
   mutate(
-    average_diff = ((sum_streamflow_a3_on - sum_streamflow_a3_off) / sum_streamflow_a3_on) * 100
+    average_percent_diff = ((sum_streamflow_a3_on - sum_streamflow_a3_off) / sum_streamflow_a3_on) * 100,
+    average_diff_mm = sum_streamflow_a3_on - sum_streamflow_a3_off
   ) |>
-  arrange(average_diff) |>
+  arrange(average_diff_mm) |>
   left_join(
     lat_lon_gauge_info,
     by = join_by(gauge)
+  ) |>
+  # Add decade rainfall to sense check some values
+  left_join(
+    sum_decade_rainfall,
+    by = join_by(gauge, decade)
   ) |> 
+  relocate(
+    c("gauge", "decade", "decade_rainfall", "sum_streamflow_a3_off", "sum_streamflow_a3_on", "n", "average_percent_diff", "average_diff_mm", "lat", "lon", "state") 
+  ) 
   # only include decades with 10 years - removes some weird behaving catchment
-  filter(n == 10) |> 
+  #filter(n == 10) |> 
   # turning CO2 off makes streamflow go negative?
-  filter(sum_streamflow_a3_off > 0) 
+  #filter(sum_streamflow_a3_off > 0) 
+
+apples_to_apples_gauges <- average_percent_diff_by_decade |> 
+  filter(decade %in% c(1990, 2020)) |> 
+  summarise(
+    n = n(),
+    .by = gauge
+  ) |> 
+  filter(n == 2) |> 
+  pull(gauge)
+
+apples_to_apples_average_percent_diff_by_decade <- average_percent_diff_by_decade |> 
+  filter(gauge %in% apples_to_apples_gauges)
+
+average_percent_diff_by_decade <- apples_to_apples_average_percent_diff_by_decade # hard code remove later
+
+# Sense check the average_percent_diff_by_decade
+sense_check <- average_percent_diff_by_decade |> 
+  mutate(
+    problem_1_a3_off = sum_streamflow_a3_off > decade_rainfall,
+    problem_1_a3_on = sum_streamflow_a3_on > decade_rainfall
+  ) |> 
+  filter(problem_1_a3_off | problem_1_a3_on)
+# This is good
 
 
-average_percent_diff_by_decade |> pull(average_diff) |> range()
-average_percent_diff_by_decade |> pull(average_diff) |> mean()
+average_percent_diff_by_decade |> pull(average_diff_mm) |> range()
+average_percent_diff_by_decade |> pull(average_diff_mm) |> mean()
 
 ## Count gauges per decade
 average_percent_diff_by_decade |> 
@@ -433,6 +475,11 @@ decade_comparison_CO2_impact <- function(decade) {
     filter(decade == {{ decade }})
   
   
+  
+  custom_limits <- c(-6500, 4500)
+  custom_breaks <- c(-1000, -500, -100, -50, -10, 0, 10, 50, 100, 500, 1000)
+  
+  
   ### Generate inset plots #######################################################
   
   inset_plot_QLD <- aus_map |>
@@ -441,7 +488,7 @@ decade_comparison_CO2_impact <- function(decade) {
     geom_sf() +
     geom_point(
       data = QLD_data,
-      aes(x = lon, y = lat, fill = average_diff),
+      aes(x = lon, y = lat, fill = average_diff_mm),
       show.legend = FALSE,
       size = 2.5,
       colour = "black",
@@ -451,8 +498,8 @@ decade_comparison_CO2_impact <- function(decade) {
     binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
       aesthetics = "fill",
       palette = big_palette,
-      breaks = c(-50, -25, -5, -1, -0.1, 0, 0.1, 1, 5, 25, 50), # range()
-      limits = c(-1100, 90),
+      breaks = custom_breaks, # range()
+      limits = custom_limits,
       show.limits = TRUE, 
       guide = "colorsteps"
     ) +
@@ -465,7 +512,7 @@ decade_comparison_CO2_impact <- function(decade) {
     geom_sf() +
     geom_point(
       data = NSW_data,
-      aes(x = lon, y = lat, fill = average_diff),
+      aes(x = lon, y = lat, fill = average_diff_mm),
       show.legend = FALSE,
       size = 2.5,
       colour = "black",
@@ -475,8 +522,8 @@ decade_comparison_CO2_impact <- function(decade) {
     binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
       aesthetics = "fill",
       palette = big_palette,
-      breaks = c(-50, -25, -5, -1, -0.1, 0, 0.1, 1, 5, 25, 50), # range()
-      limits = c(-1100, 90),
+      breaks = custom_breaks,
+      limits = custom_limits,
       show.limits = TRUE, 
       guide = "colorsteps"
     ) +
@@ -490,7 +537,7 @@ decade_comparison_CO2_impact <- function(decade) {
     geom_sf() +
     geom_point(
       data = VIC_data,
-      aes(x = lon, y = lat, fill = average_diff),
+      aes(x = lon, y = lat, fill = average_diff_mm),
       show.legend = FALSE,
       size = 2.5,
       colour = "black",
@@ -500,8 +547,8 @@ decade_comparison_CO2_impact <- function(decade) {
     binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
       aesthetics = "fill",
       palette = big_palette,
-      breaks = c(-50, -25, -5, -1, -0.1, 0, 0.1, 1, 5, 25, 50), # range()
-      limits = c(-1100, 90),
+      breaks = custom_breaks, # range()
+      limits = custom_limits,
       show.limits = TRUE, 
       guide = "colorsteps"
     ) +
@@ -515,7 +562,7 @@ decade_comparison_CO2_impact <- function(decade) {
     geom_sf() +
     geom_point(
       data = WA_data,
-      aes(x = lon, y = lat, fill = average_diff),
+      aes(x = lon, y = lat, fill = average_diff_mm),
       show.legend = FALSE,
       size = 2.5,
       colour = "black",
@@ -525,8 +572,8 @@ decade_comparison_CO2_impact <- function(decade) {
     binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
       aesthetics = "fill",
       palette = big_palette,
-      breaks = c(-50, -25, -5, -1, -0.1, 0, 0.1, 1, 5, 25, 50), # range()
-      limits = c(-1100, 90),
+      breaks = custom_breaks,
+      limits = custom_limits,
       show.limits = TRUE, 
       guide = "colorsteps"
     ) +
@@ -540,7 +587,7 @@ decade_comparison_CO2_impact <- function(decade) {
     geom_sf() +
     geom_point(
       data = TAS_data,
-      aes(x = lon, y = lat, fill = average_diff),
+      aes(x = lon, y = lat, fill = average_diff_mm),
       show.legend = FALSE,
       size = 2.5,
       colour = "black",
@@ -550,8 +597,8 @@ decade_comparison_CO2_impact <- function(decade) {
     binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
       aesthetics = "fill",
       palette = big_palette,
-      breaks = c(-50, -25, -5, -1, -0.1, 0, 0.1, 1, 5, 25, 50), # range()
-      limits = c(-1100, 90),
+      breaks = custom_breaks, # range()
+      limits = custom_limits,
       show.limits = TRUE, 
       guide = "colorsteps"
     ) +
@@ -566,7 +613,7 @@ decade_comparison_CO2_impact <- function(decade) {
     geom_sf() +
     geom_point(
       data = average_percent_diff_by_decade |> filter(decade == {{ decade }}),
-      mapping = aes(x = lon, y = lat, fill = average_diff),
+      mapping = aes(x = lon, y = lat, fill = average_diff_mm),
       size = 3,
       colour = "black",
       shape = 21,
@@ -577,8 +624,8 @@ decade_comparison_CO2_impact <- function(decade) {
     binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
       aesthetics = "fill",
       palette = big_palette,
-      breaks = c(-50, -25, -5, -1, -0.1, 0, 0.1, 1, 5, 25, 50), # range()
-      limits = c(-1100, 90),
+      breaks = custom_breaks,
+      limits = custom_limits,
       show.limits = TRUE, 
       guide = "colorsteps"
     ) +
@@ -632,7 +679,7 @@ decade_comparison_CO2_impact <- function(decade) {
     labs(
       x = NULL,#"Latitude",
       y = NULL,#"Longitude",
-      fill = "Percentage Difference",
+      fill = "CO2_on - CO2_off (mm)",
       title = paste0(decade)
     ) +
     theme(
@@ -662,10 +709,11 @@ decade_comparison_CO2_impact <- function(decade) {
 
 
 # Patchwork together
-patchwork_CO2_impact_decade <- (decade_comparison_CO2_impact(1990) | decade_comparison_CO2_impact(2010)) + plot_layout(guides = "collect") & theme(legend.position='bottom')
+patchwork_CO2_impact_decade <- (decade_comparison_CO2_impact(1990) | decade_comparison_CO2_impact(2020)) + plot_layout(guides = "collect") & theme(legend.position='bottom')
+#patchwork_CO2_impact_decade
 
 ggsave(
-  filename = "./Graphs/CMAES_graphs/CO2_on_off_v5.pdf",
+  filename = "./Graphs/Figures/CO2_on_off_mm_1990_vs_2020.pdf",
   plot = patchwork_CO2_impact_decade,
   device = "pdf",
   width = 297,
@@ -769,12 +817,30 @@ ggsave(
 
 
 # Rate of change CO2-on vs CO2-off using sens slope ----------------------------
-rate_of_change <- realspace_streamflow_data_a3_off |> 
+rate_of_change <- altered_realspace_streamflow_data_a3_off |> 
   select(gauge, year, realspace_a3_on, realspace_a3_off) |> 
   mutate(
-    relative_difference = realspace_a3_on - realspace_a3_off
-  ) |> 
+    relative_difference = realspace_a3_on - realspace_a3_off # I think I am subtracting two negative numbers here
+  ) |>
+  filter(year >= 2010) |> 
   drop_na() 
+
+# If there is only a single occurence then the following code errors
+remove_single_entires <- rate_of_change |> 
+  summarise(
+    n = n(),
+    .by = gauge
+  ) |> 
+  filter(n == 1) 
+
+rate_of_change <- rate_of_change |> 
+  anti_join(
+    remove_single_entires,
+    by = join_by(gauge)
+  )
+
+
+
 
 sens_slope_estimator <- function(x) {
   sens.slope(x)$estimates |> unname()
@@ -1065,7 +1131,7 @@ sens_slope_map_aus <- aus_map |>
 sens_slope_map_aus
 
 ggsave(
-  filename = "./Graphs/CMAES_graphs/sens_slope_map.pdf",
+  filename = "./Graphs/Figures/sens_slope_map_2010_to_2021.pdf",
   plot = sens_slope_map_aus,
   device = "pdf",
   width = 232,
