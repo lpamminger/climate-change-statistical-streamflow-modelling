@@ -1072,7 +1072,7 @@ ggsave(
 )
 
 ## TEMP What does ToE vs. DREAM_IQR_ToE look like
-custom_bins_time_of_emergence_data |> 
+ToE_against_uncertainty <- custom_bins_time_of_emergence_data |> 
   ggplot(aes(x = year_time_of_emergence, y = DREAM_ToE_IQR)) +
   geom_point() +
   #geom_smooth(method = lm, formula = y ~ x) +
@@ -1092,7 +1092,7 @@ compare_ToE_and_evi_ratio <- custom_bins_time_of_emergence_data |>
     by = join_by(gauge, lat, lon)
   )
 
-compare_ToE_and_evi_ratio |> 
+ToE_against_evi_ratio <- compare_ToE_and_evi_ratio |> 
   ggplot(aes(x = year_time_of_emergence, y = evidence_ratio)) +
   geom_point() +
   scale_y_log10() +
@@ -1101,6 +1101,24 @@ compare_ToE_and_evi_ratio |>
     y = "Evidence Ratio (Log Scale)"
   ) +
   theme_bw()
+
+
+ggsave(
+  filename = "ToE_vs_uncertainty_and_ToE_vs_evi_ratio.pdf",
+  plot = gridExtra::marrangeGrob(
+    list(ToE_against_uncertainty, ToE_against_evi_ratio), 
+    nrow = 1, 
+    ncol = 1,
+    top = NULL # no page numbers
+  ),
+  device = "pdf",
+  path = "./Graphs/Supplementary_Figures",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
+
+
 
 
 # Figure 4. How has CO2 impacted streamflow map --------------------------------
