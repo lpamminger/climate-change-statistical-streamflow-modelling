@@ -676,3 +676,119 @@ y <- zzz |>
   pull(gauge) |> 
   unique()
 all(y %in% only_slope_gauges)
+
+
+# Condensing chunks further ----------------------------------------------------
+# The are duplicates in part_1 big sequences.
+# This is because it errors when finding the uncertainty of ToE in file 03
+
+# Remove the duplicated gauges+models
+# Re-save the tibble
+
+# Import all the smaller datasets
+# look at gauges
+# remove if gauges between datasets?
+sequences_DREAM_1 <- read_csv( # maybe join together in R? Need to remove duplicate gauges
+  "Results/my_dream/part_1_sequences_20250428.csv", 
+  show_col_types = FALSE
+) |> 
+  pull(gauge) |> 
+  unique()
+#|> 
+#filter(gauge %in% c("612034", "612230")) |> 
+#summarise(
+#  n = n(),
+#  mean = mean(parameter_value),
+#  .by = gauge
+#)
+
+sequences_DREAM_2 <- read_csv( # maybe join together in R? Need to remove duplicate gauges
+  "Results/my_dream/part_2_sequences_20250509.csv", 
+  show_col_types = FALSE
+) |> 
+  pull(gauge) |> 
+  unique()
+#|> 
+#filter(gauge %in% c("612034", "612230")) |> 
+#summarise(
+#  n = n(),
+#  mean = mean(parameter_value),
+# .by = gauge
+#)
+
+
+
+sequences_DREAM_1[sequences_DREAM_1 %in% sequences_DREAM_2] 
+# CHECKS:
+# 1. part 1 and part 2 - DUPICATE "612034", "612230" - remove dups from part 2
+# 2. part 1 and part 3 - good
+# 3. part 1 and part 4 - good
+# 4. part 1 and part 5 - good
+
+# 5. part 2 and 3 - good
+# 6. part 2 and 4 - good
+# 7. part 2 and 5 - good
+
+# 8. part 3 and 4 - DUPLICATE "225020A" "225209" - remove dups from part 4
+# 9. part 3 and 5 - good
+
+# 10. part 4 and 5 - DUPLICATE "406235" "406250" "407213" - remove from part 5
+
+
+# Remove duplicates and re-save parts
+# Remove duplicates in part 2
+sequences_DREAM_2 <- read_csv( # maybe join together in R? Need to remove duplicate gauges
+  "Results/my_dream/sequences_with_duplicates/part_2_sequences_20250428.csv", 
+  show_col_types = FALSE
+) |> 
+  filter(!gauge %in% c("612034", "612230"))
+
+write_csv(
+  sequences_DREAM_2,
+  file = "Results/my_dream/part_2_sequences_20250509.csv",
+)
+
+# Remove duplicates in part 4
+sequences_DREAM_4 <- read_csv( # maybe join together in R? Need to remove duplicate gauges
+  "Results/my_dream/sequences_with_duplicates/part_4_sequences_20250428.csv", 
+  show_col_types = FALSE
+) |> 
+  filter(!gauge %in% c("225020A", "225209"))
+
+write_csv(
+  sequences_DREAM_4,
+  file = "Results/my_dream/part_4_sequences_20250509.csv",
+)
+
+
+# Remove duplicates in part 5
+sequences_DREAM_5 <- read_csv( # maybe join together in R? Need to remove duplicate gauges
+  "Results/my_dream/sequences_with_duplicates/part_5_sequences_20250428.csv", 
+  show_col_types = FALSE
+) |> 
+  filter(!gauge %in% c("406235", "406250", "407213"))
+
+write_csv(
+  sequences_DREAM_5,
+  file = "Results/my_dream/part_5_sequences_20250509.csv",
+)
+
+# Join parts 1 to 5 into a single file
+joining_files <- list.files(
+  path = "Results/my_dream/",
+  pattern = "sequences",
+  full.names = TRUE,
+  recursive = FALSE
+)[2:6]
+
+x <- read_csv(
+  joining_files,
+  show_col_types = FALSE
+)
+
+write_csv(
+  x,
+  file = "Results/my_dream/big_chunk_1_sequences_20250509.csv"
+)
+
+# The main files are big chunk 1 and big chunk 2
