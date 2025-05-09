@@ -66,7 +66,7 @@ best_CO2_non_CO2_per_gauge <- read_csv(
 ) 
   
 
-# Uncertainty important and calcuations done on line xxx
+# Uncertainty important and calculations done in section "Figure 3. ToE map" 
   
 
 # Objects used for all figures -------------------------------------------------
@@ -693,12 +693,11 @@ time_of_emergence_data <- CO2_time_of_emergence |>
 # Files are too big to combine - combine in R
 
 
-
 # Comment out when complete and use the summarised tibble
 
 # Method:
 # 1. read the sequence .csv
-# 2. remove the duplicate gauges (maybe use chain and n to identify duplicates?)
+# 2. REMOVE --> remove the duplicate gauges (maybe use chain and n to identify duplicates?)
 # 3. put load and filter by a5
 # 4. run plan() --> adjusted_a5_to_ToE code to turn CO2 ppm into year
 # 5. summarise to find IQR
@@ -707,21 +706,19 @@ time_of_emergence_data <- CO2_time_of_emergence |>
 #    RAM limiations
 # 8. Combine repeated files into one --> summarised_sequences_ToE_20250429.csv
 
+# Get all sequences
+#all_sequence_files <- list.files(
+#  path = "Results/my_dream/",
+#  pattern = "big_chunk",
+#  full.names = TRUE,
+#  recursive = FALSE
+#) 
 
-# parameter_uncertainty <- read_csv(
-#  "Results/my_dream/part_5_sequences_20250428.csv", 
-#  show_col_types = FALSE
-#) |> 
-#  filter(parameter == "a5") 
-
-# Number of rows in part_1_sequences = 28,592,384
-# Let's try half
-# For some reason the code breaks when combining part_1 to part_5 sequences
-# but works fine when I individually do them
-# SOLUTION: there are gauge duplicates. If I want to combine parts 1 to 5
-# I must remove the duplicates.
-
-
+#parameter_uncertainty <- all_sequence_files[1] |> # we cannot do everything in one go > 32 gb of RAM
+#  read_csv(
+#    show_col_types = FALSE
+#  ) |> 
+#  filter(parameter == "a5")
 
 
 # - Find IQR of ToE
