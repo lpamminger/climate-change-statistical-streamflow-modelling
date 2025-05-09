@@ -1,30 +1,42 @@
 # Allow catchment data to be immediately used with streamflow models
 catchment_data_directly_to_streamflow_model <- function(catchment_data, parameter_set, streamflow_model) {
 
-  
     # If true extract either stop_start or full dataset - force stop_start
     stop_start_catchment_data <- catchment_data$stop_start_data_set
     
     # Make streamflow_model a model (no a char)
-    streamflow_model_recursive <- noquote(streamflow_model)
+    streamflow_model <- noquote(streamflow_model)
+    
+    # Repeat parameter_set and stop_start_data
+    parameter_set <- list(parameter_set)
+    repeat_unique_combinations <- expand_grid(
+      parameter_set, stop_start_catchment_data
+      ) 
+    
+    # Make the variables the same names as the streamflow functions
+    catchment_data <- repeat_unique_combinations |> 
+      pull(stop_start_catchment_data) |> 
+      unname()
+    
+    parameter_set <- repeat_unique_combinations |> 
+      pull(parameter_set) |> 
+      unname()
     
     # use recursion to force stop-start data
-    streamflow_results <- map(
-      .x = stop_start_catchment_data,
-      .f = streamflow_model_recursive, 
-      parameter_set = parameter_set
-    ) |>
-      unname() |> 
-      unlist()
+    streamflow_results <- pmap( # This works. map2 does not. Something to
+      # do with variable names https://stackoverflow.com/questions/45541160/purrrpmap-with-user-defined-functions-and-named-list
+      .l = list(catchment_data, parameter_set),
+      .f = streamflow_model
+    ) |> 
+      list_c()
+    
     
     # Create summary tibble
     result_tibble <- stop_start_catchment_data |> 
       list_rbind() |> 
-      add_column(
-        modelled_boxcox_streamflow = streamflow_results
-      )
+      cbind(streamflow_results)
     
-    return(result_tibble)
+    return(result_tibble) 
 }
 
 
@@ -731,6 +743,7 @@ streamflow_model_intercept_shifted_CO2_seasonal_ratio <- function(catchment_data
 
 streamflow_model_intercept_shifted_CO2_seasonal_ratio_auto <- function(catchment_data, parameter_set) {
   
+  
   # If no parameters are given return description of model
   if(is.null(names(as.list(match.call())[-1]))) {
     return(
@@ -741,6 +754,7 @@ streamflow_model_intercept_shifted_CO2_seasonal_ratio_auto <- function(catchment
     )
   }
   
+
   # Check if parameter is a matrix - if not coerce
   if(!is.matrix(parameter_set)) {
     parameter_set <- as.matrix(parameter_set, ncol = 1)
