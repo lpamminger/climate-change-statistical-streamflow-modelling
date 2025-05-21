@@ -171,7 +171,6 @@ saft_drought_algorithm <- function(rainfall_data){
   drought <- inverse.rle(dry_years) # Return TRUE/FALSE vector with indicating drought
   
   # Saft has specific criteria for ending droughts -----------------------------
-  #adjusted_drought <- end_drought_year_adjustment(drought, anomaly_rainfall, WINDOW)
   adjusted_drought <- drought
   drought_rle <- rle(drought)
   drought_end_year_index <- cumsum(drought_rle$lengths)[drought_rle$values == TRUE]
@@ -181,7 +180,7 @@ saft_drought_algorithm <- function(rainfall_data){
     # Case 1 and 2 are mutually exclusive for a three year window. 
     # For windows larger than 3 they could both occur
     
-    # Case 1: all(double < 0.15 & double > 0)
+    # Case 1: last two years are positive and less than 0.15 --> all(double < 0.15 & double > 0)
     last_two_years <- anomaly_rainfall[(drought_end_year_index[drought_end_year]-1):drought_end_year_index[drought_end_year]]
     if (all(last_two_years < 0.15 & last_two_years > 0)) { # Only have to check last two elements
       adjusted_drought[(drought_end_year_index[drought_end_year]-1):drought_end_year_index[drought_end_year]] = c(TRUE, FALSE) 
