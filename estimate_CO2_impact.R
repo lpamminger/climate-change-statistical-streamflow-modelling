@@ -234,6 +234,9 @@ gauge_join <- data |>
     precipitation = p_mm
   )
 
+
+
+
 ###  Summary table #############################################################
 no_CO2_data_joining <- set_a3_zero_CO2_best_models |> 
   select(gauge, streamflow_model) |> 
@@ -257,7 +260,7 @@ streamflow_data_a3_off <- altered_streamflow |>
   ) |> 
 # add the original streamflow on
 rename(
-  a3_off_modelled_boxcox_streamflow = modelled_boxcox_streamflow
+  a3_off_modelled_boxcox_streamflow = streamflow_results
 ) |> 
   left_join(
     only_CO2_streamflow_data,
@@ -340,7 +343,7 @@ average_percent_diff_by_decade <- altered_realspace_streamflow_data_a3_off |>
   ) |>
   mutate(
     average_percent_diff = ((sum_streamflow_a3_on - sum_streamflow_a3_off) / sum_streamflow_a3_on) * 100,
-    average_diff_mm = sum_streamflow_a3_on - sum_streamflow_a3_off
+    average_diff_mm = (sum_streamflow_a3_on - sum_streamflow_a3_off) / n
   ) |>
   arrange(average_diff_mm) |>
   left_join(
@@ -476,8 +479,8 @@ decade_comparison_CO2_impact <- function(decade) {
   
   
   
-  custom_limits <- c(-6500, 4500)
-  custom_breaks <- c(-1000, -500, -100, -50, -10, 0, 10, 50, 100, 500, 1000)
+  custom_limits <- c(-2000, 600)
+  custom_breaks <- c(-500, -100, -50, -10, -1, 0, 1, 10, 50, 100, 500)
   
   
   ### Generate inset plots #######################################################
@@ -679,7 +682,7 @@ decade_comparison_CO2_impact <- function(decade) {
     labs(
       x = NULL,#"Latitude",
       y = NULL,#"Longitude",
-      fill = "CO2_on - CO2_off (mm)",
+      fill = "[CO2_on - CO2_off] / n",
       title = paste0(decade)
     ) +
     theme(
@@ -722,95 +725,225 @@ ggsave(
 )
 
 
-## OLD --> REMOVE ##
 
-### Map
-single_aus_map <- ozmaps::ozmap("country") |> 
-  uncount(average_percent_diff_by_decade |> pull(decade) |> unique() |> length()) |>   # repeat the geometry by number of decades in average_percent_diff_by_decade
+
+
+# Sanity check the rainfall-runoff and streamflow-time of large differences
+# from decade comparison
+# Input: gauge
+# Output: rainfall-runoff and streamflow time
+# test_gauge 207015
+# get gauges from --> average_percent_diff_by_decade
+
+tims_curves_data <- altered_realspace_streamflow_data_a3_off |> 
+  left_join(
+    observed_streamflow,
+    by = join_by(gauge, precipitation)
+  ) |> 
+  select(gauge, year, precipitation, observed_boxcox_streamflow, a3_off_modelled_boxcox_streamflow, modelled_boxcox_streamflow, realspace_a3_on, realspace_a3_off, q_mm) |> 
+  rename(
+    boxcox_a3_on = modelled_boxcox_streamflow,
+    boxcox_a3_off = a3_off_modelled_boxcox_streamflow,
+    observed_realspace_streamflow = q_mm
+  ) |> 
   mutate(
-    decade = average_percent_diff_by_decade |> pull(decade) |> unique()
+    a3_on_off_diff = realspace_a3_on - realspace_a3_off,
+    standardised_a3_on_off_diff = a3_on_off_diff / observed_realspace_streamflow,
+    standardised_precipitation = precipitation / mean(precipitation),
+    .by = gauge
+  )
+  
+
+# Do for all catchments with CO2 as best model
+# Would be good to colour the dots based on type of change (neg-slope, pos-slope etc)
+type_of_CO2_change <- best_model_per_gauge |> 
+  filter(contains_CO2) |> 
+  filter(str_detect(parameter, "a3")) |> 
+  mutate(
+    a3_sign = if_else(sign(parameter_value) == -1, "negative", "positive"),
+    change_type_no_sign = str_remove(parameter, "a3_")
+  ) |> 
+  # make new column joining sign of parameter and type of parameter
+  unite(
+    col = change_type,
+    a3_sign, change_type_no_sign
+  ) |> 
+  select(gauge, change_type)
+
+# Check if a3 off is larger than precipitation - mark this on the graphs
+check_precip_and_a3_values <- tims_curves_data |>
+  mutate(
+    a3_off_bigger_than_precip = realspace_a3_off > precipitation
+  ) |> 
+  summarise(
+    streamflow_bigger_than_precip = any(a3_off_bigger_than_precip),
+    .by = gauge
+  )
+
+# Join back together for plotting
+tims_curves_data <- tims_curves_data |> 
+  left_join(
+    type_of_CO2_change,
+    by = join_by(gauge)
+  ) |> 
+  left_join(
+    check_precip_and_a3_values,
+    by = join_by(gauge)
+  ) |> 
+  mutate(
+    change_type = factor(change_type, levels = c("negative_intercept", "positive_intercept", "negative_slope", "positive_slope"))
   )
 
 
-big_palette <- function(x) {
-  c("#67001f",
-  "#b2182b",
-  "#d6604d",
-  "#f4a582",
-  "#fddbc7",
-  "white",
-  "white",
-  "#d1e5f0",
-  "#92c5de",
-  "#4393c3",
-  "#2166ac",
-  "#053061")
-}
 
 
-plot_CO2_on_off_percent_diff <- single_aus_map |> 
-  ggplot(aes(geometry = geometry)) +
-  geom_sf(
-    colour = "black",
-    fill = "grey80"
-  ) +
-  geom_point(
-    mapping = aes(x = lon, y = lat, fill = average_diff),
-    data = average_percent_diff_by_decade,
-    inherit.aes = FALSE,
-    size = 1.5,
-    shape = 21,
-    colour = "black",
-    stroke = 0.1
-  ) + 
-  coord_sf(xlim = c(111, 155), ylim = c(-44.5, -9.5)) +
-  metR::scale_x_longitude(ticks = 10) +
-  metR::scale_y_latitude(ticks = 10) +
+
+absolute_curves <- tims_curves_data |> 
+  ggplot(aes(x = precipitation, y = a3_on_off_diff, colour = change_type, shape = streamflow_bigger_than_precip)) +
+  geom_point() +
+  labs(x = "Precipitation", y = "Q_CO2_on - Q_CO2_off") +
+  theme_bw() +
+  facet_wrap(~gauge, scales = "free") +
+  theme(
+    legend.position = "top"
+  )
+
+standardised_curves <- tims_curves_data |> 
+  ggplot(aes(x = standardised_precipitation, y = standardised_a3_on_off_diff, colour = change_type, shape = streamflow_bigger_than_precip)) +
+  geom_point() +
+  labs(x = "Precipitation", y = "Q_CO2_on - Q_CO2_off") +
+  theme_bw() +
+  facet_wrap(~gauge, scales = "free") +
+  theme(
+    legend.position = "top"
+  )
+
+
+
+ggsave(
+  filename = "tim_curves_absolute.pdf",
+  plot = absolute_curves,
+  device = "pdf",
+  path = "Graphs/Supplementary_Figures",
+  width = 1189,
+  height = 841,
+  units = "mm"
+)
+
+ggsave(
+  filename = "tim_curves_standardised.pdf",
+  plot = standardised_curves,
+  device = "pdf",
+  path = "Graphs/Supplementary_Figures",
+  width = 1189,
+  height = 841,
+  units = "mm"
+)
+
+
+
+x |> 
+  select(year:boxcox_a3_on) |> 
+  pivot_longer(
+    contains("boxcox"),
+    names_to = "type_boxcox_streamflow",
+    values_to = "boxcox_streamflow"
+  ) |> 
+  mutate(
+    type_boxcox_streamflow = factor(type_boxcox_streamflow, levels = c("observed_boxcox_streamflow", "boxcox_a3_on", "boxcox_a3_off")) 
+  ) |> 
+  ggplot(aes(x = precipitation, y = boxcox_streamflow, colour = type_boxcox_streamflow)) +
+  geom_point() +
+  geom_smooth(method = lm, formula = y ~ x, se = FALSE) +
   labs(
-    x = "Longitude",
-    y = "Latitude",
+    x = "Precipitation (mm)",
+    y = "Box-Cox Streamflow",
     colour = NULL
-  ) +
-  binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
-    aesthetics = "fill",
-    palette = big_palette,
-    breaks = c(-50, -25, -5, -1, -0.1, 0, 0.1, 1, 5, 25, 50), # range()
-    limits = c(-1100, 90),
-    show.limits = TRUE, 
-    guide = "colorsteps"
-    ) +
-  facet_wrap(~decade) +
-  labs(
-    fill = "Mean Percentage Difference (CO2_on - CO2_off)"
   ) +
   theme_bw() +
   theme(
-    legend.position = "bottom",
-    #legend.position.inside = c(0.7, 0.15),
-    legend.title = element_text(size = 10, hjust = 0.5)
-  ) +
-  guides(
-    fill = guide_coloursteps(
-      barwidth = unit(15, "cm"), 
-      show.limits = TRUE, 
-      even.steps = TRUE,
-      title.position = "top",
-      direction = "horizontal"
-      )
-    ) 
+    legend.position = "inside",
+    legend.position.inside = c(0.8, 0.1)
+  )
 
-#plot_CO2_on_off_percent_diff
+boxcox_t_series <- x |> 
+  select(year:boxcox_a3_on) |> 
+  pivot_longer(
+    contains("boxcox"),
+    names_to = "type_boxcox_streamflow",
+    values_to = "boxcox_streamflow"
+  ) |> 
+  mutate(
+    type_boxcox_streamflow = factor(type_boxcox_streamflow, levels = c("observed_boxcox_streamflow", "boxcox_a3_on", "boxcox_a3_off")) 
+  ) |> 
+  ggplot(aes(x = year, y = boxcox_streamflow, colour = type_boxcox_streamflow)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 3) +
+  labs(
+    x = "Year",
+    y = "Box-Cox Streamflow",
+    colour = NULL
+  ) +
+  theme_bw() +
+  theme(
+    legend.position = "inside",
+    legend.position.inside = c(0.15, 0.85),
+    legend.background = element_blank(),
+    axis.title = element_text(size = 14),
+    legend.text = element_text(size = 14)
+  )
+
+realspace_t_series <- x |> 
+  select(!observed_boxcox_streamflow:boxcox_a3_on) |> 
+  pivot_longer(
+    contains("realspace"),
+    names_to = "type_realspace_streamflow",
+    values_to = "realspace_streamflow"
+  ) |> 
+  mutate(
+    type_realspace_streamflow = factor(type_realspace_streamflow, levels = c("observed_realspace_streamflow", "realspace_a3_on", "realspace_a3_off"))  
+  ) |> 
+  ggplot(aes(x = year, y = realspace_streamflow, colour = type_realspace_streamflow)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 3) +
+  geom_col(aes(x = year, y = precipitation), inherit.aes = FALSE, colour = "black", alpha = 0, fill = "white", data = x) +
+  labs(
+    x = "Year",
+    y = "Streamflow (mm)",
+    colour = NULL
+  ) +
+  scale_y_continuous(
+    name = "Streamflow (mm)",
+    sec.axis = sec_axis(~.*1, name = "Precipitation (mm)")
+  ) +
+  theme_bw() +
+  theme(
+    legend.position = "inside",
+    legend.position.inside = c(0.15, 0.85),
+    legend.background = element_blank(),
+    axis.title = element_text(size = 14),
+    legend.text = element_text(size = 14)
+  )
+
+test_plot <- boxcox_t_series / realspace_t_series
 
 ggsave(
-  filename = "./Graphs/CMAES_graphs/CO2_on_off_v4.pdf",
-  plot = plot_CO2_on_off_percent_diff,
+  filename = "test_plot.pdf",
+  plot = test_plot,
   device = "pdf",
   width = 297,
   height = 210,
   units = "mm"
 )
 
-### END OF OLD ###
+
+
+
+
+
+
+
+
 
 
 
@@ -818,14 +951,31 @@ ggsave(
 
 # Rate of change CO2-on vs CO2-off using sens slope ----------------------------
 rate_of_change <- altered_realspace_streamflow_data_a3_off |> 
-  select(gauge, year, realspace_a3_on, realspace_a3_off) |> 
+  select(gauge, year, realspace_a3_on, realspace_a3_off) |> # real space
+  #select(gauge, year, a3_off_modelled_boxcox_streamflow, modelled_boxcox_streamflow) |> # boxcox
   mutate(
-    relative_difference = realspace_a3_on - realspace_a3_off # I think I am subtracting two negative numbers here
-  ) |>
-  filter(year >= 2010) |> 
-  drop_na() 
+    relative_difference = realspace_a3_on - realspace_a3_off, # real space
+    #relative_difference = modelled_boxcox_streamflow - a3_off_modelled_boxcox_streamflow
+  ) |> 
+  # check for missing years - there are missing years - use my sen's slope to account for missing
+  mutate(
+    n = max(year) - year,
+    .by = gauge
+  ) |> 
+  mutate(
+    n_1 = lag(n - 1),
+    .by = gauge
+  ) |> 
+  mutate(
+    check = if_else(n - n_1 == 0, TRUE, FALSE)
+  ) |> 
+  # I am not subtracting negatives
+  mutate(
+    is_negative_a3_on = realspace_a3_on < 0,
+    is_negative_a3_off = realspace_a3_off < 0 
+  ) 
 
-# If there is only a single occurence then the following code errors
+# If there is only a single occurrence then the following code errors
 remove_single_entires <- rate_of_change |> 
   summarise(
     n = n(),
@@ -841,19 +991,78 @@ rate_of_change <- rate_of_change |>
 
 
 
+# Vectors into sens.slope must be:
+# - in chronological order
+# - be a timeseries object
+# - make two checks 
+# - I think this is already being done - the rate of change is in gauge and year order
 
-sens_slope_estimator <- function(x) {
+# Problem - deleting rows 
+# some things are not in order
+
+
+# Prove to Tim I am correct
+# - Excel
+# - My own sen slope
+# - Show him on powerpoint
+
+
+
+sens_slope_estimator <- function(x) { # function(x, t)
   sens.slope(x)$estimates |> unname()
 }
 
-sens_slope_p_value <- function(x) {
-  sens.slope(x)$p.value |> unname()
+
+test_flow <- rate_of_change |> 
+  filter(gauge == "407253") |>
+  pull(relative_difference)
+
+test_year <- rate_of_change |> 
+  filter(gauge == "407253") |>
+  pull(year)
+
+
+sum(1:(length(test) - 1))
+
+
+# My own sen slope function
+my_sens_slope <- function(x, t) {
+  
+  # the length of x and t must be the same
+  stopifnot(length(x) == length(t))
+  
+  # t must be continuous 
+  t_lag_1 <- lag(t, n = 1L)
+  diff_t <- t - t_lag_1
+  stopifnot(any(diff_t[-1] == 1))
+  
+  # pre-allocate array
+  length_pre_allocation <- sum(1:(length(x) - 1))
+  d <- numeric(length = length_pre_allocation)
+  seperate_index <- 1
+  
+  for (j in 2:length(x)) {
+    for (i in j:length(x)) {
+      d[seperate_index] <- (x[i] - x[j - 1]) / (t[i] - t[j - 1])
+      seperate_index <- seperate_index + 1
+    }
+  }
+  
+  #return(d)
+  return(median(d, na.rm = TRUE))
 }
+
+
+
+my_sens_slope(x = test_flow, t = test_year)
+sens_slope_estimator(test) # there is a non-continuous year. Does this matter?
+sens.slope(test)
+
 
 gauge_rate_of_change <- rate_of_change |> 
   summarise(
-    sens_slope = sens_slope_estimator(relative_difference),
-    p_value = sens_slope_p_value(relative_difference),
+    sens_slope = my_sens_slope(x = relative_difference, t = year),
+    n = n(),
     .by = gauge
   ) |> 
   arrange(sens_slope) |> 
@@ -1131,7 +1340,7 @@ sens_slope_map_aus <- aus_map |>
 sens_slope_map_aus
 
 ggsave(
-  filename = "./Graphs/Figures/sens_slope_map_2010_to_2021.pdf",
+  filename = "./Graphs/Figures/sens_slope_map_2010_2021.pdf",
   plot = sens_slope_map_aus,
   device = "pdf",
   width = 232,
