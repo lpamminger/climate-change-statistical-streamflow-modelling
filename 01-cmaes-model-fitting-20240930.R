@@ -28,7 +28,7 @@ gauge_information <- readr::read_csv(
 ## Utility functions ===========================================================
 source("./Functions/utility.R")
 
-source("./Functions/boxcox_transforms.R") # can remove
+source("./Functions/boxcox_transforms.R") 
 
 ## Import streamflow functions =================================================
 source("./Functions/streamflow_models.R")
@@ -43,31 +43,43 @@ source("./Functions/objective_function_setup.R")
 source("./Functions/result_set.R")
 
 
-#gauge <- "609010" #"238208" #226023, 603004, 146014A
+gauge <- "207015" 
 
-#example_catchment <- gauge |>
-#   catchment_data_blueprint(
-#    observed_data = data,
-#    start_stop_indexes = start_stop_indexes
-#  ) 
+example_catchment <- gauge |>
+   catchment_data_blueprint_v2(
+    observed_data = data,
+    start_stop_indexes = start_stop_indexes
+  ) 
 
-#results <- example_catchment |> 
-#  numerical_optimiser_setup_vary_inputs(
-#    streamflow_model = streamflow_model_slope_shifted_CO2,#streamflow_model_slope_shifted_CO2,
-#    objective_function = constant_sd_objective_function,
-#    bounds_and_transform_method = make_default_bounds_and_transform_methods(example_catchment),
-#    minimise_likelihood = TRUE
-#  ) |>
-#  my_cmaes(
-#    print_monitor = TRUE
-#    ) |> 
-#  result_set()
 
-#results$optimised_boxcox_streamflow
-#x <- parameters_summary(results)
-#plot(results, type = "streamflow-time")
-#plot(results, type = "rainfall-runoff")
+#plot_catchment_data_v2(example_catchment, type = "streamflow-time")
 
+results <- example_catchment |> 
+  numerical_optimiser_setup_vary_inputs_v2(
+    streamflow_model = streamflow_model_slope_shifted_CO2_seasonal_ratio_auto,
+    objective_function = constant_sd_objective_function_log_sinh,
+    bounds_and_transform_method = make_default_bounds_and_transform_methods(example_catchment),
+    minimise_likelihood = TRUE
+  ) |>
+  my_cmaes(
+    print_monitor = TRUE
+    ) |> 
+  result_set_v2()
+
+#plot_result_set_v2(results, type = "rainfall-runoff")
+plot_result_set_v2(results, type = "streamflow-time")
+parameters_summary(results)
+
+x <- results$numerical_optimiser_setup$catchment_data$stop_start_data_set |> 
+  list_rbind() |> 
+  mutate(
+    log_sinh_streamflow = log_sinh_transform(a = 0.693, b = 1.37, y = observed_streamflow)
+  )
+
+# Something is not right. Look at fitting in objective_functions
+# When transforming the observed streamflow using the "best" a and b paramaeters
+# there are Infs in the result. This is bad. 
+# Try b_hat scaling?
 
 
 # Number of times we want to repeat each catchment-optimiser-streamflow model combinations

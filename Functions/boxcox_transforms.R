@@ -43,3 +43,21 @@ boxcox_lambda_generator <- function(precipitation, streamflow, lambda_2) {
   # Return c(best_lambda, lower_confidence_interval and upper_confidence_interval
   return(best_lambda)
 }
+
+
+
+
+# Log-sinh transform -----------------------------------------------------------
+log_sinh_transform <- function(a, b, y) {
+  
+  #b <- b_hat / max(y)
+  
+  (1 / b) * log(sinh(a + (b * y)))
+}
+
+inverse_log_sinh_transform <- function(a, b, z, y) {
+  
+  #b <- b_hat / max(y)
+  
+  (asinh(exp(b * z)) / b) - (a / b)
+}

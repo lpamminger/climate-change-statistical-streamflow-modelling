@@ -4,17 +4,16 @@
 # This causes a divide by zero warning. To avoid warning just set to NA.
 # Let NA propogate without warnings
 lower_bound_correction <- function(uncorrected_mean_flow, uncorrected_uncertainty) {
-  
   alpha <- (0 - uncorrected_mean_flow) / uncorrected_uncertainty
-  
-  #cut_off_constant <- qnorm(p = 1 - .Machine$double.eps^0.5) # this is the limit using the inverse cdf alpha = max(alpha, qnorm(p = ...))
-  
-  #alpha[alpha >= cut_off_constant] <- cut_off_constant
-  
+
+  # cut_off_constant <- qnorm(p = 1 - .Machine$double.eps^0.5) # this is the limit using the inverse cdf alpha = max(alpha, qnorm(p = ...))
+
+  # alpha[alpha >= cut_off_constant] <- cut_off_constant
+
   near_machine_precision <- dplyr::near(pnorm(alpha), y = 1, tol = .Machine$double.eps^0.5) # check if within machine precision
-  
+
   alpha[near_machine_precision] <- NA # Set values that are near 1 to NA to avoid divide by zero warnings
-  
+
   return(alpha)
 }
 
@@ -24,26 +23,22 @@ lower_bound_correction <- function(uncorrected_mean_flow, uncorrected_uncertaint
 # Correcting modelled streamflow and standard deviation due to trun norm -------
 # https://en.wikipedia.org/wiki/Truncated_normal_distribution
 correct_mean_flow <- function(uncorrected_mean_flow, uncorrected_uncertainty) {
-  
   alpha <- lower_bound_correction(
     uncorrected_mean_flow = uncorrected_mean_flow,
     uncorrected_uncertainty = uncorrected_uncertainty
   )
 
   uncorrected_mean_flow + ((uncorrected_uncertainty * dnorm(alpha)) / (1 - pnorm(alpha)))
-  
 }
 
 
 correct_uncertainty_flow <- function(uncorrected_mean_flow, uncorrected_uncertainty) {
-  
   alpha <- lower_bound_correction(
     uncorrected_mean_flow = uncorrected_mean_flow,
     uncorrected_uncertainty = uncorrected_uncertainty
   )
-  
+
   sqrt(uncorrected_uncertainty^2 * (1 + ((alpha * dnorm(alpha)) / (1 - pnorm(alpha))) - (dnorm(alpha) / (1 - pnorm(alpha)))^2))
-  
 }
 
 
@@ -54,39 +49,38 @@ correct_uncertainty_flow <- function(uncorrected_mean_flow, uncorrected_uncertai
 # Objective functions ----------------------------------------------------------
 
 constant_sd_objective_function <- function(modelled_streamflow, observed_streamflow, stop_start_data_set, parameter_set) {
-  
-  if(is.null(names(as.list(match.call())[-1]))) { # if no arguments provided return description
+  if (is.null(names(as.list(match.call())[-1]))) { # if no arguments provided return description
     return(
       list(
         "name" = "constant_sd_objective_function",
         "parameters" = "sd"
       )
-    ) 
+    )
   }
-  
-  #browser()
+
+  # browser()
   # dtruncnorm only works with vectors (double)
   # matrix is a subclass of double and gets coerced into a double (double atomic vector)
   constant_sd <- parameter_set[nrow(parameter_set), ]
-  
+
   matrix_error_sd <- matrix(constant_sd,
     nrow = nrow(modelled_streamflow),
     ncol = ncol(modelled_streamflow),
     byrow = TRUE
   )
-  
+
   # Correct modelled streamflow and uncertainty
   corrected_modelled_streamflow <- correct_mean_flow(
-    uncorrected_mean_flow = modelled_streamflow, 
+    uncorrected_mean_flow = modelled_streamflow,
     uncorrected_uncertainty = matrix_error_sd
-    )
-  
+  )
+
   corrected_uncertainty <- correct_uncertainty_flow(
     uncorrected_mean_flow = modelled_streamflow,
     uncorrected_uncertainty = matrix_error_sd
   )
-  
-  
+
+
   # Produce probabilities using trunnorm
   prob_boxcox_observed <- truncnorm::dtruncnorm(
     x = observed_streamflow,
@@ -95,58 +89,149 @@ constant_sd_objective_function <- function(modelled_streamflow, observed_streamf
     mean = corrected_modelled_streamflow,
     sd = corrected_uncertainty
   )
-  
+
   # Convert vector back into a matrix
   prob_boxcox_observed <- matrix(prob_boxcox_observed,
     nrow = nrow(modelled_streamflow),
     ncol = ncol(modelled_streamflow)
   )
-  
+
   negative_log_likelihood <- colSums(-1 * log(prob_boxcox_observed))
-  
+
   return(negative_log_likelihood)
-  
 }
 
 
 
-CO2_variable_objective_function <- function(modelled_streamflow, observed_streamflow, stop_start_data_set, parameter_set) { 
+
+
+
+
+constant_sd_objective_function_log_sinh <- function(modelled_streamflow, observed_streamflow, stop_start_data_set, parameter_set) {
+  if (is.null(names(as.list(match.call())[-1]))) { # if no arguments provided return description
+    return(
+      list(
+        "name" = "constant_sd_objective_function_log_sinh",
+        "parameters" = c("sd", "a", "b")
+      )
+    )
+  }
+
+  #browser()
+  # dtruncnorm only works with vectors (double)
+  # matrix is a subclass of double and gets coerced into a double (double atomic vector)
+  constant_sd <- parameter_set[(nrow(parameter_set) - 2), ]
+  log_sinh_a <- parameter_set[(nrow(parameter_set) - 1), ]
+  log_sinh_b <- parameter_set[nrow(parameter_set), ]
+
+  matrix_error_sd <- matrix(constant_sd,
+    nrow = nrow(modelled_streamflow),
+    ncol = ncol(modelled_streamflow),
+    byrow = TRUE
+  )
+
+  matrix_log_sinh_a <- matrix(log_sinh_a,
+    nrow = nrow(modelled_streamflow),
+    ncol = ncol(modelled_streamflow),
+    byrow = TRUE
+  )
+
+
+  matrix_log_sinh_b <- matrix(log_sinh_b,
+    nrow = nrow(modelled_streamflow),
+    ncol = ncol(modelled_streamflow),
+    byrow = TRUE
+  )
+
+
+  # Correct modelled streamflow and uncertainty
+  corrected_modelled_streamflow <- correct_mean_flow(
+    uncorrected_mean_flow = modelled_streamflow,
+    uncorrected_uncertainty = matrix_error_sd
+  )
+
+  corrected_uncertainty <- correct_uncertainty_flow(
+    uncorrected_mean_flow = modelled_streamflow,
+    uncorrected_uncertainty = matrix_error_sd
+  )
+
+
+  # Transform observed_streamflow into log-sinh space
+  # Does it work with matrices? Yes
+  # Do I need to scale b into b_hat?
   
-  if(is.null(names(as.list(match.call())[-1]))) { # if no arguments provided return description
+  
+  transformed_observed_streamflow <- log_sinh_transform(
+    a = matrix_log_sinh_a,
+    b = matrix_log_sinh_b,
+    y = corrected_modelled_streamflow
+  )
+
+
+  # Produce probabilities using trunnorm
+  prob_boxcox_observed <- truncnorm::dtruncnorm(
+    x = transformed_observed_streamflow,
+    a = 0,
+    b = Inf,
+    mean = corrected_modelled_streamflow,
+    sd = corrected_uncertainty
+  )
+
+  # Convert vector back into a matrix
+  prob_boxcox_observed <- matrix(prob_boxcox_observed,
+    nrow = nrow(modelled_streamflow),
+    ncol = ncol(modelled_streamflow)
+  )
+
+  negative_log_likelihood <- colSums(-1 * log(prob_boxcox_observed))
+
+  return(negative_log_likelihood)
+}
+
+
+
+
+
+
+
+
+
+CO2_variable_objective_function <- function(modelled_streamflow, observed_streamflow, stop_start_data_set, parameter_set) {
+  if (is.null(names(as.list(match.call())[-1]))) { # if no arguments provided return description
     return(
       list(
         "name" = "CO2_variable_objective_function",
         "parameters" = c("sd", "scale_CO2")
       )
-    ) 
+    )
   }
-  
-  
+
+
   constant_sd <- parameter_set[(nrow(parameter_set) - 1), ]
   scale_CO2 <- parameter_set[nrow(parameter_set), ]
   CO2 <- stop_start_data_set$CO2
-  
+
   reshape_constant_sd <- matrix(constant_sd, nrow(modelled_streamflow), ncol(modelled_streamflow), byrow = TRUE)
   reshape_scale_CO2 <- matrix(scale_CO2, nrow(modelled_streamflow), ncol(modelled_streamflow), byrow = TRUE)
-  reshape_CO2 <- matrix(CO2, nrow = nrow(modelled_streamflow), ncol = ncol(modelled_streamflow), byrow = FALSE) 
-  
-  
+  reshape_CO2 <- matrix(CO2, nrow = nrow(modelled_streamflow), ncol = ncol(modelled_streamflow), byrow = FALSE)
+
+
   # each row will be increasing variable sd and column are combinations of constant sd and scale_CO2 parameters
-  variable_sd <- reshape_constant_sd + (reshape_scale_CO2 * reshape_CO2) 
-  
-  
+  variable_sd <- reshape_constant_sd + (reshape_scale_CO2 * reshape_CO2)
+
+
   # Correct modelled streamflow and uncertainty
   corrected_modelled_streamflow <- correct_mean_flow(
-    uncorrected_mean_flow = modelled_streamflow, 
+    uncorrected_mean_flow = modelled_streamflow,
     uncorrected_uncertainty = variable_sd
   )
-  
+
   corrected_uncertainty <- correct_uncertainty_flow(
     uncorrected_mean_flow = modelled_streamflow,
     uncorrected_uncertainty = variable_sd
   )
-  
-  
+
+
   # Produce probabilities using trunnorm
   prob_boxcox_observed <- truncnorm::dtruncnorm(
     x = observed_streamflow,
@@ -155,16 +240,16 @@ CO2_variable_objective_function <- function(modelled_streamflow, observed_stream
     mean = corrected_modelled_streamflow,
     sd = corrected_uncertainty
   )
-  
+
   # Convert vector back into a matrix
   prob_boxcox_observed <- matrix(prob_boxcox_observed,
     nrow = nrow(modelled_streamflow),
     ncol = ncol(modelled_streamflow)
   )
-  
+
   negative_log_likelihood <- colSums(-1 * log(prob_boxcox_observed))
-  
-  
+
+
   return(negative_log_likelihood)
 }
 
