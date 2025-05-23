@@ -238,7 +238,7 @@ model_components <- single_aus_map |>
 #model_components
 
 ggsave(
-  filename = "./Graphs/CMAES_graphs/model_components_v2.pdf",
+  filename = "./Graphs/Supplementary_Figures/model_components_v2.pdf",
   plot = model_components,
   device = "pdf",
   width = 297,
@@ -596,7 +596,7 @@ single_map_aus <- aus_map |>
 
 
 ggsave(
-  filename = "./Graphs/CMAES_graphs/evidence_ratio_aus_with_zoom_v4.pdf",
+  filename = "./Graphs/Figures/evidence_ratio_aus_with_zoom_v4.pdf",
   plot = single_map_aus,
   device = "pdf",
   width = 232,
@@ -799,13 +799,25 @@ custom_bins_time_of_emergence_data <- time_of_emergence_data |>
     summarised_sequences_ToE,
     by = join_by(gauge)
   ) |> 
+  # add state
+  left_join(
+    state_gauge,
+    by = join_by(gauge)
+  ) |> 
   mutate(custom_bins = year_time_of_emergence - (year_time_of_emergence %% 10)) |>
   mutate(custom_bins = as.character(custom_bins)) |>
   mutate(
     custom_bins = if_else(parameter_value < min_CO2, "Before 1959", custom_bins)
   ) |>
+  # Add evidence ratio for potential filtering
+  left_join(
+    a3_direction_binned_lat_lon_evidence_ratio,
+    by = join_by(gauge)
+  ) |> 
+  # filter out weak evidence ratio
+  filter(binned_evidence_ratio != "Weak") |> 
   # clean it up and add lat lon
-  select(gauge, year_time_of_emergence, state, custom_bins, DREAM_ToE_IQR) |>
+  select(gauge, state, year_time_of_emergence, custom_bins, DREAM_ToE_IQR, binned_evidence_ratio) |>
   left_join(
     lat_lon_gauge,
     by = join_by(gauge)
@@ -1060,13 +1072,23 @@ ToE_map_aus <- aus_map |>
 #ToE_map_aus
 
 ggsave(
-  filename = "./Graphs/CMAES_graphs/ToE_map_aus_uncertainty_v4.pdf",
+  filename = "./Graphs/Figures/ToE_map_aus_uncertainty_v5_no_weak.pdf",
   plot = ToE_map_aus,
   device = "pdf",
   width = 232,
   height = 200,
   units = "mm"
 )
+
+## Temp histogram
+custom_bins_time_of_emergence_data |> 
+  summarise(
+    n = n(),
+    .by = custom_bins
+  ) #|> 
+  ggplot(aes(x = custom_bins, y = n)) +
+  geom_col() +
+  theme_bw()
 
 ## TEMP What does ToE vs. DREAM_IQR_ToE look like
 ToE_against_uncertainty <- custom_bins_time_of_emergence_data |> 
