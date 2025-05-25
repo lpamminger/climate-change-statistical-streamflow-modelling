@@ -1081,11 +1081,12 @@ ggsave(
 )
 
 ## Temp histogram
-custom_bins_time_of_emergence_data |> 
+x <- custom_bins_time_of_emergence_data |> 
   summarise(
     n = n(),
-    .by = custom_bins
-  ) #|> 
+    .by = c(custom_bins, state)
+  ) |>
+  arrange(state) 
   ggplot(aes(x = custom_bins, y = n)) +
   geom_col() +
   theme_bw()
