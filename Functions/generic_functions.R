@@ -292,7 +292,7 @@ get_transformed_optimised_streamflow <- function(cmaes_or_dream_result) {
 }
 
 get_realspace_optimised_streamflow <- function(cmaes_or_dream_result) {
-  #browser()
+  # browser()
   transformed_modelled_streamflow <- get_transformed_optimised_streamflow(cmaes_or_dream_result)
 
   best_parameters <- get_best_parameters_real_space(cmaes_or_dream_result)
@@ -444,25 +444,30 @@ plot_result_set_v2 <- function(x, type) {
   observed_data <- x$numerical_optimiser_setup$catchment_data$stop_start_data_set |>
     list_rbind()
 
-  # Create tibble for plotting
-  streamflow_results <- list(
-    year = observed_data |> pull(year),
-    precipitation = observed_data |> pull(precipitation),
-    observed_streamflow = observed_data |> pull(observed_streamflow),
-    modelled_streamflow = x$optimised_modelled_streamflow_realspace
-  ) |>
-    as_tibble() |>
-    pivot_longer(
-      cols = contains("streamflow"),
-      names_to = "observed_or_modelled",
-      values_to = "streamflow"
-    ) |>
-    mutate(
-      observed_or_modelled = if_else(observed_or_modelled == "modelled_streamflow", "Modelled Streamflow", "Observed Streamflow")
-    )
+
 
   # Plotting
   if (type == "streamflow-time") {
+    # Create tibble for plotting
+    streamflow_results <- list(
+      year = observed_data |> pull(year),
+      precipitation = observed_data |> pull(precipitation),
+      observed_streamflow = observed_data |> pull(observed_streamflow),
+      modelled_streamflow = x$optimised_modelled_streamflow_realspace
+    ) |>
+      as_tibble() |>
+      pivot_longer(
+        cols = contains("streamflow"),
+        names_to = "observed_or_modelled",
+        values_to = "streamflow"
+      ) |>
+      mutate(
+        observed_or_modelled = if_else(observed_or_modelled == "modelled_streamflow", "Modelled Streamflow", "Observed Streamflow")
+      )
+
+
+
+
     streamflow_results |>
       ggplot(aes(x = year, y = streamflow, colour = observed_or_modelled)) +
       geom_line() +
@@ -479,6 +484,33 @@ plot_result_set_v2 <- function(x, type) {
         legend.position.inside = c(0.9, 0.9)
       )
   } else if (type == "rainfall-runoff") {
+    #browser()
+    
+    # Create tibble for plotting
+    streamflow_results <- list(
+      year = observed_data |> pull(year),
+      precipitation = observed_data |> pull(precipitation),
+      observed_streamflow = observed_data |> pull(observed_streamflow),
+      modelled_streamflow = x$optimised_modelled_streamflow_log_space
+    ) |>
+      as_tibble() |>
+      mutate(
+        observed_streamflow = log_sinh_transform(
+          a = x$best_parameter_set["a"],
+          b = x$best_parameter_set["b"],
+          y = observed_streamflow
+        )
+      ) |>
+      pivot_longer(
+        cols = contains("streamflow"),
+        names_to = "observed_or_modelled",
+        values_to = "streamflow"
+      ) |>
+      mutate(
+        observed_or_modelled = if_else(observed_or_modelled == "modelled_streamflow", "Modelled Streamflow", "Observed Streamflow")
+      )
+
+
     streamflow_results |>
       ggplot(aes(x = precipitation, y = streamflow, colour = observed_or_modelled)) +
       geom_smooth(
@@ -488,8 +520,8 @@ plot_result_set_v2 <- function(x, type) {
       ) +
       geom_point() +
       labs(
-        x = "Year",
-        y = "Streamflow",
+        x = "Precipitation (mm)",
+        y = "Log-sinh Streamflow",
         colour = NULL
       ) +
       scale_colour_brewer(palette = "Set1") +

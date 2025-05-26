@@ -48,7 +48,7 @@ correct_uncertainty_flow <- function(uncorrected_mean_flow, uncorrected_uncertai
 
 # Objective functions ----------------------------------------------------------
 
-constant_sd_objective_function <- function(modelled_streamflow, observed_streamflow, stop_start_data_set, parameter_set) {
+constant_sd_objective_function <- function(modelled_streamflow, observed_streamflow, parameter_set) {
   if (is.null(names(as.list(match.call())[-1]))) { # if no arguments provided return description
     return(
       list(
@@ -107,7 +107,9 @@ constant_sd_objective_function <- function(modelled_streamflow, observed_streamf
 
 
 
-constant_sd_objective_function_log_sinh <- function(modelled_streamflow, observed_streamflow, stop_start_data_set, parameter_set) {
+constant_sd_objective_function_log_sinh <- function(modelled_streamflow, observed_streamflow, parameter_set) {
+  
+
   if (is.null(names(as.list(match.call())[-1]))) { # if no arguments provided return description
     return(
       list(
@@ -164,7 +166,7 @@ constant_sd_objective_function_log_sinh <- function(modelled_streamflow, observe
   transformed_observed_streamflow <- log_sinh_transform(
     a = matrix_log_sinh_a,
     b = matrix_log_sinh_b,
-    y = corrected_modelled_streamflow
+    y = observed_streamflow
   )
 
 
