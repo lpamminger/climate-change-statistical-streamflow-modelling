@@ -28,7 +28,12 @@ obs_p_and_q <- data |>
   mutate(
     obs_q_greater_than_p = q_mm > p_mm
   ) |> 
-  filter(obs_q_greater_than_p)
+  filter(obs_q_greater_than_p) |> 
+  relocate(
+    q_mm,
+    .after = p_mm
+  ) |> 
+  select(gauge, year, p_mm, q_mm)
 
 
 ## Utility functions ===========================================================
