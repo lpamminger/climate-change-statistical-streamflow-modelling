@@ -24,6 +24,12 @@ gauge_information <- readr::read_csv(
 )
 
 
+obs_p_and_q <- data |>
+  mutate(
+    obs_q_greater_than_p = q_mm > p_mm
+  ) |> 
+  filter(obs_q_greater_than_p)
+
 
 ## Utility functions ===========================================================
 source("./Functions/utility.R")
@@ -44,10 +50,10 @@ source("./Functions/result_set.R")
 
 
 # Gauges to test:
-# 1. Streamflow w/ CO2 off > streamflow = "207015" - works. streamflow is always less than precip. Deals with zero values better as well
-# 2. 219001 (neg intercept change) - get model
-# 3. Good gauge 
-# 4. Good gauge
+# 1. Streamflow w/ CO2 off > streamflow = "207015" - works. streamflow is always less than precip. Deals with zero values better as well - in slides streamflow_model_slope_shifted_CO2_seasonal_ratio_auto
+# 2. 219001 (neg intercept change) - get model - streamflow_model_intercept_shifted_CO2_seasonal_ratio_auto - in slides
+# 3. Good gauge - 137101A streamflow_model_drought_precip_seasonal_ratio
+# 4. Good gauge - low flow - 613146 - streamflow_model_intercept_shifted_CO2_seasonal_ratio_auto
 
 gauge <- "207015" 
 
@@ -72,15 +78,16 @@ cmaes_results <- example_catchment |>
     print_monitor = TRUE
   ) 
 
+
 summarised_results <- cmaes_results |> 
   result_set_v2()
 
 
+parameters_summary(summarised_results)
+
 plot_result_set_v2(summarised_results, type = "rainfall-runoff")
 plot_result_set_v2(summarised_results, type = "streamflow-time") 
 
-
-parameters_summary(summarised_results)
 
 
 # What does the streamflow time plot look like when a3 is turned off? ----------
@@ -98,16 +105,16 @@ x <- example_catchment |>
   cbind("modelled_streamflow_CO2_on" = summarised_results$optimised_modelled_streamflow_realspace)
 
 
-x |> 
+log_sinh_plot <- x |> 
   pivot_longer(
     cols = contains("streamflow"),
     names_to = "streamflow_type",
     values_to = "streamflow"
   ) |> 
   ggplot(aes(x = year, y = streamflow, colour = streamflow_type)) +
-  geom_line() +
-  geom_point(alpha = 0.5) +
-  geom_line(aes(x = year, y = precipitation), colour = "black", linetype = "dashed") +
+  geom_line(linewidth = 0.8) +
+  geom_point(alpha = 0.9, size = 2) +
+  geom_line(aes(x = year, y = precipitation), colour = "black", linetype = "dashed", linewidth = 0.8) +
   # add secondary y axis
   scale_y_continuous(
     name = "Streamflow (mm)", # Features of the first axis
@@ -117,11 +124,13 @@ x |>
     x = "Year",
     y = "Streamflow (mm)",
     colour = NULL,
-    title = paste0("Gauge: ", summarised_results$numerical_optimiser_setup$catchment_data$gauge_ID)
+    title = "Log-sinh transform"
   ) +
   theme_bw() +
   theme(
     plot.title = element_text(hjust = 0.5)
   )
 
+
+log_sinh_plot
 

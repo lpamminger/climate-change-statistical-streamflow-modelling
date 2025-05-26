@@ -842,75 +842,35 @@ ggsave(
 
 
 
-x |> 
-  select(year:boxcox_a3_on) |> 
-  pivot_longer(
-    contains("boxcox"),
-    names_to = "type_boxcox_streamflow",
-    values_to = "boxcox_streamflow"
-  ) |> 
-  mutate(
-    type_boxcox_streamflow = factor(type_boxcox_streamflow, levels = c("observed_boxcox_streamflow", "boxcox_a3_on", "boxcox_a3_off")) 
-  ) |> 
-  ggplot(aes(x = precipitation, y = boxcox_streamflow, colour = type_boxcox_streamflow)) +
-  geom_point() +
-  geom_smooth(method = lm, formula = y ~ x, se = FALSE) +
-  labs(
-    x = "Precipitation (mm)",
-    y = "Box-Cox Streamflow",
-    colour = NULL
-  ) +
-  theme_bw() +
-  theme(
-    legend.position = "inside",
-    legend.position.inside = c(0.8, 0.1)
-  )
 
-boxcox_t_series <- x |> 
-  select(year:boxcox_a3_on) |> 
-  pivot_longer(
-    contains("boxcox"),
-    names_to = "type_boxcox_streamflow",
-    values_to = "boxcox_streamflow"
-  ) |> 
-  mutate(
-    type_boxcox_streamflow = factor(type_boxcox_streamflow, levels = c("observed_boxcox_streamflow", "boxcox_a3_on", "boxcox_a3_off")) 
-  ) |> 
-  ggplot(aes(x = year, y = boxcox_streamflow, colour = type_boxcox_streamflow)) +
-  geom_line(linewidth = 1) +
-  geom_point(size = 3) +
-  labs(
-    x = "Year",
-    y = "Box-Cox Streamflow",
-    colour = NULL
-  ) +
-  theme_bw() +
-  theme(
-    legend.position = "inside",
-    legend.position.inside = c(0.15, 0.85),
-    legend.background = element_blank(),
-    axis.title = element_text(size = 14),
-    legend.text = element_text(size = 14)
-  )
 
-realspace_t_series <- x |> 
-  select(!observed_boxcox_streamflow:boxcox_a3_on) |> 
+
+realspace_t_series <- altered_realspace_streamflow_data_a3_off |> 
+  filter(gauge == "207015") |> 
+  left_join(
+    observed_streamflow,
+    by = join_by(gauge, precipitation)
+  ) |> 
+  select(year, precipitation, realspace_a3_on, realspace_a3_off, q_mm) |>
+  rename(
+    observed_streamflow = q_mm,
+    modelled_streamflow_CO2_on = realspace_a3_on,
+    modelled_streamflow_CO2_off = realspace_a3_off
+  ) |> 
   pivot_longer(
-    contains("realspace"),
-    names_to = "type_realspace_streamflow",
-    values_to = "realspace_streamflow"
+    contains("streamflow"),
+    names_to = "streamflow_type",
+    values_to = "streamflow"
   ) |> 
-  mutate(
-    type_realspace_streamflow = factor(type_realspace_streamflow, levels = c("observed_realspace_streamflow", "realspace_a3_on", "realspace_a3_off"))  
-  ) |> 
-  ggplot(aes(x = year, y = realspace_streamflow, colour = type_realspace_streamflow)) +
-  geom_line(linewidth = 1) +
-  geom_point(size = 3) +
-  geom_col(aes(x = year, y = precipitation), inherit.aes = FALSE, colour = "black", alpha = 0, fill = "white", data = x) +
+  ggplot(aes(x = year, y = streamflow, colour = streamflow_type)) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 2, alpha = 0.9) +
+  geom_line(aes(x = year, y = precipitation), colour = "black", linewidth = 0.8, linetype = "dashed") +
   labs(
     x = "Year",
     y = "Streamflow (mm)",
-    colour = NULL
+    colour = NULL,
+    title = "Box-cox transform"
   ) +
   scale_y_continuous(
     name = "Streamflow (mm)",
@@ -918,12 +878,10 @@ realspace_t_series <- x |>
   ) +
   theme_bw() +
   theme(
-    legend.position = "inside",
-    legend.position.inside = c(0.15, 0.85),
-    legend.background = element_blank(),
-    axis.title = element_text(size = 14),
-    legend.text = element_text(size = 14)
+    plot.title = element_text(hjust = 0.5)
   )
+
+realspace_t_series
 
 test_plot <- boxcox_t_series / realspace_t_series
 
