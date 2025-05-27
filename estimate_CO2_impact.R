@@ -809,9 +809,10 @@ absolute_curves <- tims_curves_data |>
   )
 
 standardised_curves <- tims_curves_data |> 
-  ggplot(aes(x = standardised_precipitation, y = standardised_a3_on_off_diff, colour = change_type, shape = streamflow_bigger_than_precip)) +
+  #filter(gauge %in% c("112101B", "405228", "610001", "116011A")) |> 
+  ggplot(aes(x = standardised_precipitation, y = standardised_a3_on_off_diff, colour = change_type, shape = streamflow_bigger_than_precip)) + # 
   geom_point() +
-  labs(x = "Precipitation", y = "Q_CO2_on - Q_CO2_off") +
+  labs(x = "P / P_ave", y = "(Q_CO2_on - Q_CO2_off) / Q_obs") +
   theme_bw() +
   facet_wrap(~gauge, scales = "free") +
   theme(
