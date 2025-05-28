@@ -814,8 +814,8 @@ custom_bins_time_of_emergence_data <- time_of_emergence_data |>
     a3_direction_binned_lat_lon_evidence_ratio,
     by = join_by(gauge)
   ) |> 
-  # filter out weak evidence ratio
-  filter(binned_evidence_ratio != "Weak") |> 
+  # Only include moderately strong and above evidence ratio
+  filter(!binned_evidence_ratio %in% c("Weak", "Moderate", "Moderately Strong")) |> 
   # clean it up and add lat lon
   select(gauge, state, year_time_of_emergence, custom_bins, DREAM_ToE_IQR, binned_evidence_ratio) |>
   left_join(
@@ -870,6 +870,40 @@ TAS_data <- custom_bins_time_of_emergence_data |>
 
 ### Generate inset plots #######################################################
 
+
+# Generate inset histgrams of time of emergence for each plot
+generate_ToE_histograms <- function(STATE_data) {
+  STATE_data |> 
+    summarise(
+      count = n(),
+      .by = binned_evidence_ratio
+    ) |> 
+    # I want to show all the possible outcomes in the histogram
+    # This currently does not work
+    mutate(
+      binned_evidence_ratio = factor(binned_evidence_ratio, levels = c("Weak", "Moderate", "Moderately Strong", "Strong", "Very Strong", "Extremely Strong"))
+    ) |> 
+    ggplot(aes(x = binned_evidence_ratio, y = count)) +
+    geom_col() +
+    scale_x_discrete(drop = FALSE) +
+    labs(
+      x = "Frequency",
+      y = "Evidence Ratio"
+    ) +
+    theme_bw()
+}
+
+state_ToE_histograms <- map(
+  .x = list(QLD_data, NSW_data, VIC_data, WA_data, TAS_data),
+  .f = generate_ToE_histograms
+)
+
+state_ToE_histograms
+# Need to add these histograms as grobs in the inset
+# Main plot -> inset map -> inset histogram
+# Does patchwork do inset histograms?
+# See documentation: https://patchwork.data-imaginist.com/reference/inset_element.html
+
 # scale_size_binned()
 # Using scale_size_binned() is technically between because it is a 
 # does the binning for me.
@@ -899,6 +933,7 @@ inset_plot_QLD <- aus_map |>
   scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
   guides(size = guide_bins(show.limits = TRUE)) +
   theme_void()
+
 
 
 
@@ -1048,7 +1083,7 @@ ToE_map_aus <- aus_map |>
     x = NULL,#"Latitude",
     y = NULL,#"Longitude",
     fill = "Time of Emergence",
-    size = "Time of Emergence Uncertainty (IQR)"
+    size = "Time of Emergence Uncertainty Years (IQR)"
   ) +
   theme(
     legend.key = element_rect(fill = "grey80"),
@@ -1072,7 +1107,7 @@ ToE_map_aus <- aus_map |>
 #ToE_map_aus
 
 ggsave(
-  filename = "./Graphs/Figures/ToE_map_aus_uncertainty_v5_no_weak.pdf",
+  filename = "./Graphs/Figures/ToE_map_aus_uncertainty_v7_moderate_strong_above.pdf",
   plot = ToE_map_aus,
   device = "pdf",
   width = 232,
@@ -1098,8 +1133,9 @@ ToE_against_uncertainty <- custom_bins_time_of_emergence_data |>
   #geom_smooth(method = lm, formula = y ~ x) +
   labs(
     x = "Time of Emergence",
-    y = "Years of uncertainty around time of emergence"
+    y = "Time of Emergence Uncertainty Years (IQR)"
   ) +
+  facet_wrap(~binned_evidence_ratio, scales = "fixed") +
   theme_bw()
 
 
@@ -1117,16 +1153,17 @@ ToE_against_evi_ratio <- compare_ToE_and_evi_ratio |>
   geom_point() +
   scale_y_log10() +
   labs(
-    x = "Time of Activation",
+    x = "Time of Emergence",
     y = "Evidence Ratio (Log Scale)"
   ) +
   theme_bw()
 
 
+
 ggsave(
-  filename = "ToE_vs_uncertainty_and_ToE_vs_evi_ratio.pdf",
+  filename = "ToE_vs_uncertainty.pdf",
   plot = gridExtra::marrangeGrob(
-    list(ToE_against_uncertainty, ToE_against_evi_ratio), 
+    list(ToE_against_uncertainty, ToE_against_evi_ratio), # add other graphs here:  
     nrow = 1, 
     ncol = 1,
     top = NULL # no page numbers
