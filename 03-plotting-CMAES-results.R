@@ -1,21 +1,9 @@
 # Script produces the four key figures of the second paper
 
-
-# TODO - transfer code/graphs from playing_with_graphs
-# Key graphs to transfer are:
-# 1. Time of emergence histogram
-# - account for the different types of CO2 models - slope vs. intercept
-# 2. graphically compare (colour gradient evidence ratio, shape pos/neg, outline
-#    or stroke colour can be slope or intercept)
-# 3. some sort of slope and intercept analysis. Like proportion of pos/neg slope,
-#    pos/neg intercept
-
-
-
 cat("\014") # clear console
 
 # Import libraries--------------------------------------------------------------
-pacman::p_load(tidyverse, ozmaps, sf, ggmagnify, furrr, parallel) 
+pacman::p_load(tidyverse, ozmaps, sf, ggmagnify, furrr, parallel, patchwork) 
 
 
 ## Utility functions ===========================================================
@@ -881,7 +869,7 @@ generate_ToE_histograms <- function(STATE_data) {
     # I want to show all the possible outcomes in the histogram
     # This currently does not work
     mutate(
-      binned_evidence_ratio = factor(binned_evidence_ratio, levels = c("Weak", "Moderate", "Moderately Strong", "Strong", "Very Strong", "Extremely Strong"))
+      binned_evidence_ratio = factor(binned_evidence_ratio, levels = c("Strong", "Very Strong", "Extremely Strong")) # These don't exist if I filter them --> "Weak", "Moderate", "Moderately Strong", 
     ) |> 
     ggplot(aes(x = binned_evidence_ratio, y = count)) +
     geom_col() +
@@ -890,15 +878,19 @@ generate_ToE_histograms <- function(STATE_data) {
       x = "Frequency",
       y = "Evidence Ratio"
     ) +
-    theme_bw()
+    theme_bw() +
+    theme(
+      plot.background = element_blank()
+    )
 }
 
 state_ToE_histograms <- map(
   .x = list(QLD_data, NSW_data, VIC_data, WA_data, TAS_data),
   .f = generate_ToE_histograms
-)
+) |> 
+  `names<-`(c("QLD", "NSW", "VIC", "WA", "TAS"))
 
-state_ToE_histograms
+
 # Need to add these histograms as grobs in the inset
 # Main plot -> inset map -> inset histogram
 # Does patchwork do inset histograms?
@@ -932,7 +924,14 @@ inset_plot_QLD <- aus_map |>
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
   scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
   guides(size = guide_bins(show.limits = TRUE)) +
-  theme_void()
+  theme_void() #+
+  #annotation_custom(
+  #  ggplotGrob(state_ToE_histograms[["QLD"]]), 
+  #  xmin = 145, xmax = 150, ymin = -15, ymax = -10 # dial in the coords
+  #)
+  #inset_element(state_ToE_histograms[["QLD"]], left = 0.5, bottom = 0.5, right = 1, top = 1) 
+  # It looks as if geom_magnify treats it as two plots instead of a single plot - it only take the 2nd element in the list
+  # It must be a single plot (i.e., a list of length 1) - inset_element does not work
 
 
 
@@ -953,7 +952,7 @@ inset_plot_NSW <- aus_map |>
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
   scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
   guides(size = guide_bins(show.limits = TRUE)) +
-  theme_void()
+  theme_void() 
 
 
 
@@ -973,7 +972,7 @@ inset_plot_VIC <- aus_map |>
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
   scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
   guides(size = guide_bins(show.limits = TRUE)) +
-  theme_void()
+  theme_void() 
 
 
 
@@ -993,7 +992,7 @@ inset_plot_WA <- aus_map |>
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
   scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
   guides(size = guide_bins(show.limits = TRUE)) +
-  theme_void()
+  theme_void() 
 
 
 
@@ -1013,7 +1012,7 @@ inset_plot_TAS <- aus_map |>
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
   scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
   guides(size = guide_bins(show.limits = TRUE)) +
-  theme_void()
+  theme_void() 
 
 
 
@@ -1104,10 +1103,10 @@ ToE_map_aus <- aus_map |>
   )
 
 
-#ToE_map_aus
+ToE_map_aus
 
 ggsave(
-  filename = "./Graphs/Figures/ToE_map_aus_uncertainty_v7_moderate_strong_above.pdf",
+  filename = "./Graphs/Figures/ToE_map_aus_uncertainty_v8_moderate_strong_above_hist_inset.pdf",
   plot = ToE_map_aus,
   device = "pdf",
   width = 232,
