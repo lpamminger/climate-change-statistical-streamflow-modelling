@@ -59,15 +59,9 @@ boxcox_lambda_generator <- function(precipitation, streamflow, lambda_2) {
 
 # Log-sinh transform -----------------------------------------------------------
 log_sinh_transform <- function(a, b, y) {
-  
-  #b <- b / max(y)
-  
   (1 / b) * log(sinh(a + (b * y)))
 }
 
 inverse_log_sinh_transform <- function(a, b, z) {
-  
-  #b <- b_hat / max(y)
-  
   (asinh(exp(b * z)) / b) - (a / b)
 }

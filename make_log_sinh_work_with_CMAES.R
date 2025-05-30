@@ -60,10 +60,13 @@ source("./Functions/result_set.R")
 # Get gauges and data from previous attempts - hard code -----------------------
 gauge_streamflow_model_combinations <- tribble(
   ~gauge,    ~streamflow_model,
-  "207015",  streamflow_model_slope_shifted_CO2_seasonal_ratio_auto,
-  "219001",  streamflow_model_intercept_shifted_CO2_seasonal_ratio_auto
-  # add 4 more gauges
-  # positve slope, positive intercept, drought, very low flow
+  "207015",  streamflow_model_slope_shifted_CO2_seasonal_ratio_auto, # large peak in streamflow when CO2 turned off
+  "219001",  streamflow_model_intercept_shifted_CO2_seasonal_ratio_auto, # observed streamflow > precip
+  "112101B", streamflow_model_slope_shifted_CO2_seasonal_ratio_auto, # positive slope
+  "225213", streamflow_model_intercept_shifted_CO2_auto, # positive intercept
+  "G0050115", streamflow_model_intercept_shifted_CO2_seasonal_ratio, # very low flow
+  "603005", streamflow_model_drought_slope_shifted_CO2_seasonal_ratio_auto, # drought 
+  "405240", streamflow_model_intercept_shifted_CO2_seasonal_ratio_auto # very high evidence ratio
 )
 
 gauges <- gauge_streamflow_model_combinations |> pull(gauge)
@@ -135,11 +138,13 @@ numerical_optimiser_setup_combinations <- pmap(
   minimise_likelihood = TRUE
 )
 
-# Make this parallel - later
-cmaes_results <- map(
+# Make this parallel
+plan(multisession, workers = length(availableWorkers())) # set once for furrr
+cmaes_results <- future_map( 
   .x = numerical_optimiser_setup_combinations,
   .f = my_cmaes,
-  print_monitor = TRUE
+  print_monitor = FALSE,
+  .options = furrr_options(seed = 1L)
 )
 
 
@@ -150,9 +155,13 @@ summarise_cmaes_results <- map(
 )
 
 
-#plot_result_set_v2(summarise_cmaes_results[[4]], type = "rainfall-runoff")
-#plot_result_set_v2(summarise_cmaes_results[[4]], type = "streamflow-time")
-
+#plot_result_set_v2(summarise_cmaes_results[[1]], type = "rainfall-runoff")
+#plot_result_set_v2(summarise_cmaes_results[[1]], type = "streamflow-time")
+check_bounds <- map(
+  .x = summarise_cmaes_results,
+  .f = parameters_summary
+) |> 
+  list_rbind()
 
 
 
@@ -273,9 +282,8 @@ plotting_data <- map2(
 
 
 # What does the streamflow time plot look like when a3 is turned off? ----------
-
-## Rainfall-runoff #############################################################
-plotting_data |>
+## Streamflow-time #############################################################
+streamflow_time_plot <- plotting_data |>
   select(!contains("transformed")) |> 
   pivot_longer(
     cols = contains("realspace"),
@@ -309,10 +317,19 @@ plotting_data |>
   ) +
   facet_grid(gauge ~ transform_method, scales = "free_y")
 
+ggsave(
+  filename = "testing_streamflow_transform_methods_timeseries.pdf",
+  plot = streamflow_time_plot,
+  device = "pdf",
+  path = "./Graphs/Supplementary_Figures",
+  width = 594,
+  height = 420,
+  units = "mm"
+)
 
 
-## Streamflow-time #############################################################
-plotting_data |> 
+## Rainfall-runoff #############################################################
+rainfall_runoff_plot <- plotting_data |> 
   select(!contains("realspace")) |> 
   pivot_longer(
     cols = contains("transformed"),
@@ -331,6 +348,7 @@ plotting_data |>
     ),
     streamflow_type = factor(streamflow_type, levels = c("Observed Streamflow", "Modelled Streamflow CO2 On", "Modelled Streamflow CO2 Off"))
   ) |>
+  arrange(gauge) |> 
   ggplot(aes(x = precipitation, y = transformed_streamflow, colour = streamflow_type)) +
   geom_point() +
   geom_smooth(
@@ -348,8 +366,19 @@ plotting_data |>
   theme(
     legend.position = "bottom"
   ) +
-  facet_grid(transform_method ~ gauge, scales = "free")
+  facet_wrap(~ gauge + transform_method, nrow = 7, ncol = 2, scales = "free")
   
+ggsave(
+  filename = "testing_streamflow_transform_methods_rainfall_runoff.pdf",
+  plot = rainfall_runoff_plot,
+  device = "pdf",
+  path = "./Graphs/Supplementary_Figures",
+  width = 420,
+  height = 594,
+  units = "mm"
+)
+
+
 
 
 
