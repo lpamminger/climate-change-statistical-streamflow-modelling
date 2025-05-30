@@ -269,6 +269,42 @@ get_boxcox_streamflow <- function(cmaes_or_dream_result) {
 }
 
 
+get_transformed_observed_streamflow <- function(cmaes_or_dream_result) {
+  # This should only show the streamflow used in calibration
+  best_parameters <- get_best_parameters_real_space(cmaes_or_dream_result)
+
+  # Apply to start_stop_data_set (list of tibbles)
+  start_stop_data_set <- cmaes_or_dream_result$numerical_optimiser_setup$catchment_data$stop_start_data_set |>
+    list_rbind()
+
+  observed_streamflow <- start_stop_data_set$observed_streamflow
+
+  # Transforms change depending on objective function used
+  if (cmaes_or_dream_result$numerical_optimiser_setup$objective_function()$name == "constant_sd_boxcox_objective_function") {
+    best_lambda <- best_parameters[length(best_parameters)]
+
+    transformed_observed_streamflow <- boxcox_transform(
+      y = observed_streamflow,
+      lambda = best_lambda,
+      lambda_2 = 1
+    )
+  } else if (cmaes_or_dream_result$numerical_optimiser_setup$objective_function()$name == "constant_sd_log_sinh_objective_function") {
+    best_a <- best_parameters[length(best_parameters) - 1]
+
+    best_b <- best_parameters[length(best_parameters)]
+
+    transformed_observed_streamflow <- log_sinh_transform(
+      a = best_a,
+      b = best_b,
+      y = observed_streamflow
+    )
+  } else {
+    stop("Name of objective function not found")
+  }
+
+  return(transformed_observed_streamflow)
+}
+
 get_transformed_optimised_streamflow <- function(cmaes_or_dream_result) {
   # This should only show the streamflow used in calibration
   best_parameters <- get_best_parameters_real_space(cmaes_or_dream_result)
@@ -292,21 +328,34 @@ get_transformed_optimised_streamflow <- function(cmaes_or_dream_result) {
 }
 
 get_realspace_optimised_streamflow <- function(cmaes_or_dream_result) {
-  # browser()
   transformed_modelled_streamflow <- get_transformed_optimised_streamflow(cmaes_or_dream_result)
 
   best_parameters <- get_best_parameters_real_space(cmaes_or_dream_result)
 
-  best_a <- best_parameters[length(best_parameters) - 1]
+  # this will change based on the transformation in the objective_function
+  if (cmaes_or_dream_result$numerical_optimiser_setup$objective_function()$name == "constant_sd_boxcox_objective_function") {
+    best_lambda <- best_parameters[length(best_parameters)]
 
-  best_b <- best_parameters[length(best_parameters)]
+    realspace_modelled_streamflow <- boxcox_inverse_transform(
+      yt = transformed_modelled_streamflow,
+      lambda = best_lambda,
+      lambda_2 = 1
+    )
+  } else if (cmaes_or_dream_result$numerical_optimiser_setup$objective_function()$name == "constant_sd_log_sinh_objective_function") {
+    best_a <- best_parameters[length(best_parameters) - 1]
 
-  realspace_modelled_streamflow <- inverse_log_sinh_transform(
-    a = best_a,
-    b = best_b,
-    z = transformed_modelled_streamflow # ,
-    # y = observed_flow
-  )
+    best_b <- best_parameters[length(best_parameters)]
+
+    realspace_modelled_streamflow <- inverse_log_sinh_transform(
+      a = best_a,
+      b = best_b,
+      z = transformed_modelled_streamflow # ,
+      # y = observed_flow
+    )
+  } else {
+    stop("Name of objective function not found")
+  }
+
 
   return(realspace_modelled_streamflow)
 }
@@ -484,23 +533,14 @@ plot_result_set_v2 <- function(x, type) {
         legend.position.inside = c(0.9, 0.9)
       )
   } else if (type == "rainfall-runoff") {
-    #browser()
-    
     # Create tibble for plotting
     streamflow_results <- list(
       year = observed_data |> pull(year),
       precipitation = observed_data |> pull(precipitation),
-      observed_streamflow = observed_data |> pull(observed_streamflow),
-      modelled_streamflow = x$optimised_modelled_streamflow_log_space
+      observed_streamflow = x$transformed_observed_streamflow,
+      modelled_streamflow = x$optimised_modelled_streamflow_transformed_space
     ) |>
       as_tibble() |>
-      mutate(
-        observed_streamflow = log_sinh_transform(
-          a = x$best_parameter_set["a"],
-          b = x$best_parameter_set["b"],
-          y = observed_streamflow
-        )
-      ) |>
       pivot_longer(
         cols = contains("streamflow"),
         names_to = "observed_or_modelled",

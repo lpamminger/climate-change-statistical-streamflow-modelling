@@ -173,9 +173,10 @@ make_default_bounds_and_transform_methods <- function(catchment_data_set) {
     "a4",           -600,           600,               linear_parameter_transform, # seasonal parameter
     "a5",            0,             upper_a5_bound,    linear_parameter_transform, # Changes depending on last CO2 value in calibration
     "sd",            1E-8,          300,               logarithmic_parameter_transform, # constant sd objective function 
-    "scale_CO2",     1E-8,          2,                 logarithmic_parameter_transform, # CO2 scaler for objective function
+    #"scale_CO2",     1E-8,          2,                 logarithmic_parameter_transform, # CO2 scaler for objective function - not in use
     "a",             1E-8,          10,                logarithmic_parameter_transform,
-    "b",             1E-2,          5,                 logarithmic_parameter_transform
+    "b",             1E-2,          5,                 logarithmic_parameter_transform,
+    "boxcox_lambda", 0,             2,                 linear_parameter_transform # boxcox recommended range is -2 to 2(0-2 because we want to shift it from positive skew)
   )
   
   # Validator --> picks up if missing parameter (check_length_values) 

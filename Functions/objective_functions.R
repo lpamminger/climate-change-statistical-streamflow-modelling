@@ -47,8 +47,9 @@ correct_uncertainty_flow <- function(uncorrected_mean_flow, uncorrected_uncertai
 
 
 # Objective functions ----------------------------------------------------------
+# put observed streamflow transformation in the objective function
 
-constant_sd_objective_function <- function(modelled_streamflow, observed_streamflow, parameter_set) {
+constant_sd_no_transform_objective_function <- function(modelled_streamflow, observed_streamflow, parameter_set) {
   if (is.null(names(as.list(match.call())[-1]))) { # if no arguments provided return description
     return(
       list(
@@ -107,19 +108,17 @@ constant_sd_objective_function <- function(modelled_streamflow, observed_streamf
 
 
 
-constant_sd_objective_function_log_sinh <- function(modelled_streamflow, observed_streamflow, parameter_set) {
-  
-
+constant_sd_log_sinh_objective_function <- function(modelled_streamflow, observed_streamflow, parameter_set) {
   if (is.null(names(as.list(match.call())[-1]))) { # if no arguments provided return description
     return(
       list(
-        "name" = "constant_sd_objective_function_log_sinh",
+        "name" = "constant_sd_log_sinh_objective_function",
         "parameters" = c("sd", "a", "b")
       )
     )
   }
 
-  #browser()
+  # browser()
   # dtruncnorm only works with vectors (double)
   # matrix is a subclass of double and gets coerced into a double (double atomic vector)
   constant_sd <- parameter_set[(nrow(parameter_set) - 2), ]
@@ -159,10 +158,6 @@ constant_sd_objective_function_log_sinh <- function(modelled_streamflow, observe
 
 
   # Transform observed_streamflow into log-sinh space
-  # Does it work with matrices? Yes
-  # Do I need to scale b into b_hat?
-  
-  
   transformed_observed_streamflow <- log_sinh_transform(
     a = matrix_log_sinh_a,
     b = matrix_log_sinh_b,
@@ -189,6 +184,86 @@ constant_sd_objective_function_log_sinh <- function(modelled_streamflow, observe
 
   return(negative_log_likelihood)
 }
+
+
+
+constant_sd_boxcox_objective_function <- function(modelled_streamflow, observed_streamflow, parameter_set) {
+  
+  
+  if (is.null(names(as.list(match.call())[-1]))) { # if no arguments provided return description
+    return(
+      list(
+        "name" = "constant_sd_boxcox_objective_function",
+        "parameters" = c("sd", "boxcox_lambda")
+      )
+    )
+  }
+
+  # dtruncnorm only works with vectors (double)
+  # matrix is a subclass of double and gets coerced into a double (double atomic vector)
+  constant_sd <- parameter_set[(nrow(parameter_set) - 1), ]
+  boxcox_lambda <- parameter_set[nrow(parameter_set), ]
+
+  matrix_error_sd <- matrix(constant_sd,
+    nrow = nrow(modelled_streamflow),
+    ncol = ncol(modelled_streamflow),
+    byrow = TRUE
+  )
+
+  matrix_boxcox_lambda <- matrix(boxcox_lambda,
+    nrow = nrow(modelled_streamflow),
+    ncol = ncol(modelled_streamflow),
+    byrow = TRUE
+  )
+
+
+  # Correct modelled streamflow and uncertainty
+  corrected_modelled_streamflow <- correct_mean_flow(
+    uncorrected_mean_flow = modelled_streamflow,
+    uncorrected_uncertainty = matrix_error_sd
+  )
+
+  corrected_uncertainty <- correct_uncertainty_flow(
+    uncorrected_mean_flow = modelled_streamflow,
+    uncorrected_uncertainty = matrix_error_sd
+  )
+
+
+  # Transform observed_streamflow into log-sinh space
+  # Does it work with matrices? Yes
+  # Do I need to scale b into b_hat?
+
+
+  transformed_observed_streamflow <- boxcox_transform(
+    y = observed_streamflow,
+    lambda = matrix_boxcox_lambda,
+    lambda_2 = 1
+  )
+
+
+  # Produce probabilities using trunnorm
+  prob_boxcox_observed <- truncnorm::dtruncnorm(
+    x = transformed_observed_streamflow,
+    a = 0,
+    b = Inf,
+    mean = corrected_modelled_streamflow,
+    sd = corrected_uncertainty
+  )
+
+  # Convert vector back into a matrix
+  prob_boxcox_observed <- matrix(prob_boxcox_observed,
+    nrow = nrow(modelled_streamflow),
+    ncol = ncol(modelled_streamflow)
+  )
+
+  negative_log_likelihood <- colSums(-1 * log(prob_boxcox_observed))
+
+  return(negative_log_likelihood)
+}
+
+
+
+
 
 
 
