@@ -178,7 +178,6 @@ check_bounds <- map(
 turn_off_CO2_component <- function(result_set) {
   stopifnot(s3_class(result_set)[1] == "result_set")
 
-  browser()
   # Get best parameters
   best_parameters_CO2_on <- result_set$best_parameter_set
 
@@ -280,9 +279,12 @@ plotting_data <- map2(
     cols = gauge_transform,
     delim = "-",
     names = c("gauge", "transform_method")
-  )
-
-
+  ) |> 
+# Manually adjust transform - realspace cannot be less than zero
+mutate(
+  realspace_mod_flow_CO2_on = if_else(realspace_mod_flow_CO2_on < 0, 0, realspace_mod_flow_CO2_on),
+  realspace_mod_flow_CO2_off = if_else(realspace_mod_flow_CO2_off < 0, 0, realspace_mod_flow_CO2_off)
+)
 
 # What does the streamflow time plot look like when a3 is turned off? ----------
 ## Streamflow-time #############################################################
