@@ -155,8 +155,8 @@ summarise_cmaes_results <- map(
 )
 
 
-#plot_result_set_v2(summarise_cmaes_results[[1]], type = "rainfall-runoff")
-#plot_result_set_v2(summarise_cmaes_results[[1]], type = "streamflow-time")
+#plot_result_set_v2(summarise_cmaes_results[[2]], type = "rainfall-runoff")
+#plot_result_set_v2(summarise_cmaes_results[[2]], type = "streamflow-time")
 check_bounds <- map(
   .x = summarise_cmaes_results,
   .f = parameters_summary
@@ -178,6 +178,7 @@ check_bounds <- map(
 turn_off_CO2_component <- function(result_set) {
   stopifnot(s3_class(result_set)[1] == "result_set")
 
+  browser()
   # Get best parameters
   best_parameters_CO2_on <- result_set$best_parameter_set
 
@@ -224,6 +225,8 @@ turn_off_CO2_component <- function(result_set) {
 
 
 ## Get turn of CO2 streamflow values ###########################################
+x <- turn_off_CO2_component(summarise_cmaes_results[[5]])
+
 turn_off_CO2_component_results <- map(
   .x = summarise_cmaes_results,
   .f = turn_off_CO2_component
@@ -283,6 +286,23 @@ plotting_data <- map2(
 
 # What does the streamflow time plot look like when a3 is turned off? ----------
 ## Streamflow-time #############################################################
+
+
+# PROBLEM: inverse_log_sinh produces infs when a3 is turned off
+
+# Check if inverse transforming produces Inf
+# The exponential part of inverse_log_sinh is the issue - sometimes it exceeds .Machine$double.xmax 
+# check exp(b * transformed_observed_streamflow) < .Machine$double.xmax
+# if TRUE it is an invalid parameter set because we cannot inverse transform it
+
+#inverse_transform_check <- exp(matrix_log_sinh_b * transformed_observed_streamflow) > .Machine$double.xmax
+#inverse_transform_invalid_combinations <- apply(X = inverse_transform_check, MARGIN = 2, FUN = any)
+#negative_log_likelihood[inverse_transform_invalid_combinations] <- Inf
+
+
+
+
+
 streamflow_time_plot <- plotting_data |>
   select(!contains("transformed")) |> 
   pivot_longer(
@@ -373,7 +393,7 @@ ggsave(
   plot = rainfall_runoff_plot,
   device = "pdf",
   path = "./Graphs/Supplementary_Figures",
-  width = 420,
+  width = 250,
   height = 594,
   units = "mm"
 )
