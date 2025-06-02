@@ -492,6 +492,12 @@ plot_result_set_v2 <- function(x, type) {
   # Get precipitation and observed streamfow from stop_start_index
   observed_data <- x$numerical_optimiser_setup$catchment_data$stop_start_data_set |>
     list_rbind()
+  
+  # Identify streamflow transformation method in objective function
+  streamflow_transformation_method <- x$numerical_optimiser_setup$objective_function()[1] |> 
+    str_remove("constant_sd_") |> 
+    str_remove("_objective_function")
+  
 
 
 
@@ -561,7 +567,7 @@ plot_result_set_v2 <- function(x, type) {
       geom_point() +
       labs(
         x = "Precipitation (mm)",
-        y = "Log-sinh Streamflow",
+        y = paste0("Streamflow (", streamflow_transformation_method, ")"),
         colour = NULL
       ) +
       scale_colour_brewer(palette = "Set1") +
