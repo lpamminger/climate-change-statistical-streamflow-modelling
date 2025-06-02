@@ -163,6 +163,7 @@ constant_sd_log_sinh_objective_function <- function(modelled_streamflow, observe
     b = matrix_log_sinh_b,
     y = observed_streamflow
   )
+  
 
 
   # Produce probabilities using trunnorm
@@ -179,8 +180,18 @@ constant_sd_log_sinh_objective_function <- function(modelled_streamflow, observe
     nrow = nrow(modelled_streamflow),
     ncol = ncol(modelled_streamflow)
   )
+  
 
   negative_log_likelihood <- colSums(-1 * log(prob_boxcox_observed))
+  
+  
+  # Check if inverse transforming produces Inf
+  # The exponential part of inverse_log_sinh is the issue - sometimes it exceeds .Machine$double.xmax 
+  # check exp(b * transformed_observed_streamflow) < .Machine$double.xmax
+  # if TRUE it is an invalid parameter set because we cannot inverse transform it
+  inverse_transform_check <- exp(matrix_log_sinh_b * transformed_observed_streamflow) > .Machine$double.xmax
+  inverse_transform_invalid_combinations <- apply(X = inverse_transform_check, MARGIN = 2, FUN = any)
+  negative_log_likelihood[inverse_transform_invalid_combinations] <- Inf
 
   return(negative_log_likelihood)
 }
