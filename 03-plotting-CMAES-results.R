@@ -835,6 +835,7 @@ custom_bins_time_of_emergence_data <- time_of_emergence_data |>
   arrange(desc(DREAM_ToE_IQR))
 
 
+
 ## Time of emergence plotting ==================================================
 
 ## Generate Insets =============================================================
@@ -1114,17 +1115,30 @@ ggsave(
   units = "mm"
 )
 
+# Plot range?
+custom_bins_time_of_emergence_data |> 
+  ggplot(aes(x = year_time_of_emergence)) +
+  geom_histogram(bins = 10, colour = "black", fill = "grey50") +
+  theme_bw() +
+  facet_wrap(~binned_evidence_ratio)
+
+custom_bins_time_of_emergence_data |> 
+  ggplot(aes(x = DREAM_ToE_IQR)) +
+  geom_histogram(bins = 10, colour = "black", fill = "grey50") +
+  theme_bw() +
+  facet_wrap(~binned_evidence_ratio)
+
 ## Temp histogram
 x <- custom_bins_time_of_emergence_data |> 
   summarise(
     n = n(),
     .by = c(custom_bins, state)
   ) |>
-  arrange(state) 
+  arrange(state) |> 
   ggplot(aes(x = custom_bins, y = n)) +
   geom_col() +
   theme_bw()
-
+x
 ## TEMP What does ToE vs. DREAM_IQR_ToE look like
 ToE_against_uncertainty <- custom_bins_time_of_emergence_data |> 
   ggplot(aes(x = year_time_of_emergence, y = DREAM_ToE_IQR)) +
