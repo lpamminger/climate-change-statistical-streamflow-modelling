@@ -286,6 +286,60 @@ mutate(
   realspace_mod_flow_CO2_off = if_else(realspace_mod_flow_CO2_off < 0, 0, realspace_mod_flow_CO2_off)
 )
 
+
+# Compare boxcox and log-sinh AIC values ---------------------------------------
+get_streamflow_transform_method <- function(result_set) {
+  # only works for result_set objects
+  result_set$numerical_optimiser_setup$objective_function()$name[1] |> 
+    str_remove("constant_sd_") |> 
+    str_remove("_objective_function")
+}
+
+gauge_AIC_streamflow_transform <- function(result_set) {
+  list(
+    "gauge" = result_set$numerical_optimiser_setup$catchment_data$gauge_ID,
+    "transform_method" = get_streamflow_transform_method(result_set),
+    "AIC" = result_set$AIC_best_parameter_set
+  ) |> 
+    as_tibble()
+}
+
+
+
+
+
+coord_for_labels <- plotting_data |> 
+  summarise(
+    y_pos = max(precipitation),
+    .by = c(gauge, transform_method)
+  ) |> 
+  mutate(
+    transform_method = str_remove(transform_method, "constant_sd_"),
+    transform_method = str_remove(transform_method, "_objective_function"),
+    y_pos = ceiling(y_pos) - (ceiling(y_pos) * 0.05)
+  ) |> 
+  add_column(
+    x_pos = 1965
+  )
+
+AIC_streamflow_transform_comparison <- map(
+  .x = summarise_cmaes_results,
+  .f = gauge_AIC_streamflow_transform
+) |>
+  list_rbind() |>
+  left_join(
+    coord_for_labels,
+    by = join_by(gauge, transform_method)
+  ) |>
+  mutate(
+    AIC = paste0("AIC: ", round(AIC, digits = 2)),
+    transform_method = case_when(
+      transform_method == "boxcox" ~ "Box-Cox Transform",
+      transform_method == "log_sinh" ~ "Log-Sinh Transform",
+      .default = NA
+    )
+  )
+
 # What does the streamflow time plot look like when a3 is turned off? ----------
 ## Streamflow-time #############################################################
 
@@ -302,6 +356,8 @@ mutate(
 #negative_log_likelihood[inverse_transform_invalid_combinations] <- Inf
 
 
+# TODO
+# - Add AIC value to plotting data
 
 
 
@@ -328,6 +384,11 @@ streamflow_time_plot <- plotting_data |>
   geom_line(linewidth = 0.8) +
   geom_point(alpha = 0.9, size = 2) +
   geom_line(aes(x = year, y = precipitation), colour = "black", linetype = "dashed", linewidth = 0.8) +
+  geom_label(
+    aes(x = x_pos, y = y_pos, label = AIC),
+    data = AIC_streamflow_transform_comparison,
+    inherit.aes = FALSE
+  ) +
   labs(
     x = "Year",
     y = "Streamflow (mm)",
@@ -337,14 +398,14 @@ streamflow_time_plot <- plotting_data |>
   theme(
     legend.position = "bottom"
   ) +
-  facet_grid(gauge ~ transform_method, scales = "free_y")
+  facet_wrap( ~ gauge + transform_method, ncol = 2, nrow = 7, scales = "free_y")
 
 ggsave(
   filename = "testing_streamflow_transform_methods_timeseries.pdf",
   plot = streamflow_time_plot,
   device = "pdf",
   path = "./Graphs/Supplementary_Figures",
-  width = 594,
+  width = 320,
   height = 420,
   units = "mm"
 )
