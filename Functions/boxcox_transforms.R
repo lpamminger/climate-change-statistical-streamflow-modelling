@@ -62,6 +62,37 @@ log_sinh_transform <- function(a, b, y) {
   (1 / b) * log(sinh(a + (b * y)))
 }
 
-inverse_log_sinh_transform <- function(a, b, z) {
-  (asinh(exp(b * z)) / b) - (a / b)
+asinh_exp_approximation <- function(x) {
+  # Input: asinh(exp(x))
+  
+  #Testing tim's log-sinh - add to inverse_log_sinh then delete
+  #x <- 0.1:1000
+  #y <- asinh(exp(x))
+  #y2 <- log(exp(x) + sqrt(exp(2 * x) + 1))
+  #y3 <- x + log(1 + sqrt(exp(2 * x) + 1) / exp(x))
+  #y4 <- x + log(1 + sqrt(1 + (1 / exp(2 * x))))
+  #y5 <- (is.infinite(y4) * y4) + (is.infinite(y4) * (x + log(2))) - I am not sure what this is for
+  
+  x + log(1 + sqrt(1 + (1 / exp(2 * x))))
+  
 }
+
+
+
+inverse_log_sinh_transform <- function(a, b, z) {
+  # If any streamflow value is infinite the approximation is done for everything
+  # I am not sure it works with matrices
+  browser()
+  if (any(is.infinite(exp(b * z)))) {
+    asinh_component <- asinh_exp_approximation(b * z)
+  } else {
+    asinh_component <- asinh(exp(b * z))
+  }
+  
+  (asinh_component / b) - (a / b)
+}
+
+
+#inverse_log_sinh_transform <- function(a, b, z) {
+#  (asinh(exp(b * z)) / b) - (a / b)
+#}
