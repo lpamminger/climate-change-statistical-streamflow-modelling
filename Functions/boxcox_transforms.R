@@ -82,7 +82,6 @@ asinh_exp_approximation <- function(x) {
 inverse_log_sinh_transform <- function(a, b, z) {
   # If any streamflow value is infinite the approximation is done for everything
   # I am not sure it works with matrices
-  browser()
   if (any(is.infinite(exp(b * z)))) {
     asinh_component <- asinh_exp_approximation(b * z)
   } else {

@@ -26,16 +26,16 @@ gauge_information <- readr::read_csv(
 )
 
 
-obs_p_and_q <- data |>
-  mutate(
-    obs_q_greater_than_p = q_mm > p_mm
-  ) |>
-  filter(obs_q_greater_than_p) |>
-  relocate(
-    q_mm,
-    .after = p_mm
-  ) |>
-  select(gauge, year, p_mm, q_mm)
+#obs_p_and_q <- data |>
+#  mutate(
+#    obs_q_greater_than_p = q_mm > p_mm
+#  ) |>
+#  filter(obs_q_greater_than_p) |>
+#  relocate(
+#    q_mm,
+#    .after = p_mm
+#  ) |>
+#  select(gauge, year, p_mm, q_mm)
 
 
 ## Utility functions ===========================================================
@@ -70,6 +70,8 @@ gauge_streamflow_model_combinations <- tribble(
 )
 
 gauges <- gauge_streamflow_model_combinations |> pull(gauge)
+
+
 
 
 # Make catchment data ----------------------------------------------------------
@@ -138,9 +140,9 @@ numerical_optimiser_setup_combinations <- pmap(
   minimise_likelihood = TRUE
 )
 
-# Make this parallel
+
 plan(multisession, workers = length(availableWorkers())) # set once for furrr
-cmaes_results <- future_map( 
+cmaes_results <- future_map(
   .x = numerical_optimiser_setup_combinations,
   .f = my_cmaes,
   print_monitor = FALSE,
@@ -224,7 +226,6 @@ turn_off_CO2_component <- function(result_set) {
 
 
 ## Get turn of CO2 streamflow values ###########################################
-x <- turn_off_CO2_component(summarise_cmaes_results[[5]])
 
 turn_off_CO2_component_results <- map(
   .x = summarise_cmaes_results,
@@ -310,7 +311,7 @@ gauge_AIC_streamflow_transform <- function(result_set) {
 
 coord_for_labels <- plotting_data |> 
   summarise(
-    y_pos = max(precipitation),
+    y_pos = max(transformed_obs_flow),
     .by = c(gauge, transform_method)
   ) |> 
   mutate(
@@ -341,26 +342,73 @@ AIC_streamflow_transform_comparison <- map(
   )
 
 # What does the streamflow time plot look like when a3 is turned off? ----------
-## Streamflow-time #############################################################
 
 
-# PROBLEM: inverse_log_sinh produces infs when a3 is turned off
+## Transformed streamflow time graphs ==========================================
+### Look at the results
+residuals_check <- plotting_data |> 
+  mutate(obs_minus_mod_residual = transformed_obs_flow - transformed_mod_flow_CO2_on) |> 
+  summarise(
+    sum_residual = sum(obs_minus_mod_residual),
+    .by = c(gauge, transform_method)
+  )
 
-# Check if inverse transforming produces Inf
-# The exponential part of inverse_log_sinh is the issue - sometimes it exceeds .Machine$double.xmax 
-# check exp(b * transformed_observed_streamflow) < .Machine$double.xmax
-# if TRUE it is an invalid parameter set because we cannot inverse transform it
-
-#inverse_transform_check <- exp(matrix_log_sinh_b * transformed_observed_streamflow) > .Machine$double.xmax
-#inverse_transform_invalid_combinations <- apply(X = inverse_transform_check, MARGIN = 2, FUN = any)
-#negative_log_likelihood[inverse_transform_invalid_combinations] <- Inf
-
-
-# TODO
-# - Add AIC value to plotting data
-
+### Look at uncertainty parameter
+uncertainty_parameter_comparison <- check_bounds |> 
+  filter(parameter == "sd") |> 
+  select(-c(streamflow_model, optimiser, exit_message, near_bounds))
 
 
+transformed_streamflow_time_plot <- plotting_data |>
+  select(!contains("realspace")) |> 
+  pivot_longer(
+    cols = contains("transformed"),
+    names_to = "streamflow_type",
+    values_to = "transformed_streamflow"
+  ) |> 
+  mutate(
+    transform_method = if_else(transform_method == "constant_sd_boxcox_objective_function", "Box-Cox Transform", "Log-Sinh Transform")
+  ) |> 
+  mutate(
+    streamflow_type = case_when(
+      streamflow_type == "transformed_mod_flow_CO2_off" ~ "Modelled Streamflow CO2 Off",
+      streamflow_type == "transformed_mod_flow_CO2_on" ~ "Modelled Streamflow CO2 On",
+      streamflow_type == "transformed_obs_flow" ~ "Observed Streamflow",
+      .default = NA
+    ),
+    streamflow_type = factor(streamflow_type, levels = c("Observed Streamflow", "Modelled Streamflow CO2 On", "Modelled Streamflow CO2 Off"))
+  ) |> 
+  filter(streamflow_type != "Modelled Streamflow CO2 Off") |> # ingore for now
+  ggplot(aes(x = year, y = transformed_streamflow, colour = streamflow_type)) +
+  geom_line(linewidth = 0.8) +
+  geom_point(alpha = 0.9, size = 2) +
+  geom_label(
+    aes(x = x_pos, y = y_pos, label = AIC),
+    data = AIC_streamflow_transform_comparison,
+    inherit.aes = FALSE
+  ) +
+  labs(
+    x = "Year",
+    y = "Transformed Streamflow",
+    colour = NULL
+  ) +
+  theme_bw() +
+  theme(
+    legend.position = "bottom"
+  ) +
+  facet_wrap( ~ gauge + transform_method, ncol = 2, nrow = 7, scales = "free_y")
+
+ggsave(
+  filename = "showing_tim_transform_issue_timeseries.pdf",
+  plot = transformed_streamflow_time_plot,
+  device = "pdf",
+  path = "./Graphs/Supplementary_Figures",
+  width = 320,
+  height = 420,
+  units = "mm"
+)
+
+## Streamflow time =============================================================
 streamflow_time_plot <- plotting_data |>
   select(!contains("transformed")) |> 
   pivot_longer(
@@ -382,13 +430,13 @@ streamflow_time_plot <- plotting_data |>
   ) |> 
   ggplot(aes(x = year, y = realspace_streamflow, colour = streamflow_type)) +
   geom_line(linewidth = 0.8) +
-  geom_point(alpha = 0.9, size = 2) +
+  geom_point(alpha = 0.9, size = 1.2) +
   geom_line(aes(x = year, y = precipitation), colour = "black", linetype = "dashed", linewidth = 0.8) +
-  geom_label(
-    aes(x = x_pos, y = y_pos, label = AIC),
-    data = AIC_streamflow_transform_comparison,
-    inherit.aes = FALSE
-  ) +
+  #geom_label(
+  #  aes(x = x_pos, y = y_pos, label = AIC),
+  #  data = AIC_streamflow_transform_comparison,
+  #  inherit.aes = FALSE
+  #) +
   labs(
     x = "Year",
     y = "Streamflow (mm)",
@@ -411,7 +459,7 @@ ggsave(
 )
 
 
-## Rainfall-runoff #############################################################
+## Rainfall-runoff =============================================================
 rainfall_runoff_plot <- plotting_data |> 
   select(!contains("realspace")) |> 
   pivot_longer(
