@@ -3,7 +3,7 @@
 cat("\014") # clear console
 
 # Import libraries--------------------------------------------------------------
-pacman::p_load(tidyverse, ozmaps, sf, ggmagnify, furrr, parallel, patchwork) 
+pacman::p_load(tidyverse, ozmaps, sf, ggmagnify, furrr, parallel, patchwork)
 
 
 ## Utility functions ===========================================================
@@ -26,9 +26,9 @@ source("./Functions/boxcox_transforms.R")
 
 # Import data ------------------------------------------------------------------
 CMAES_results <- read_csv(
-  "./Results/my_cmaes/CMAES_parameter_results_20250331.csv", 
+  "./Results/my_cmaes/CMAES_parameter_results_20250331.csv",
   show_col_types = FALSE
-) 
+)
 
 data <- readr::read_csv(
   "./Data/Tidy/with_NA_yearly_data_CAMELS.csv",
@@ -51,15 +51,19 @@ gauge_information <- read_csv(
 best_CO2_non_CO2_per_gauge <- read_csv(
   "./Results/my_cmaes/unmodified_best_CO2_non_CO2_per_catchment_CMAES_20250331.csv",
   show_col_types = FALSE
-) 
-  
+)
 
-# Uncertainty important and calculations done in section "Figure 3. ToE map" 
-  
+gauge_information_with_climate <- read_csv(
+  "./Data/Tidy/gauge_information_with_climate_data_CAMELS.csv",
+  show_col_types = FALSE
+)
+
+# Uncertainty important and calculations done in section "Figure 3. ToE map"
+
 
 # Objects used for all figures -------------------------------------------------
 ### Add lat and lon ############################################################
-lat_lon_gauge <- gauge_information |> 
+lat_lon_gauge <- gauge_information |>
   select(gauge, lat, lon)
 
 # Get shapefiles for Australia ------------------------------------------------
@@ -93,8 +97,8 @@ aus_map <- aus_map |>
 
 
 # Now Supplementary - Figure S1. A of best components of streamflow models of Australia -------------
-single_aus_map <- ozmaps::ozmap("country") |> 
-  uncount(5) |>  # repeat the geometry 4 times
+single_aus_map <- ozmaps::ozmap("country") |>
+  uncount(5) |> # repeat the geometry 4 times
   mutate(
     simple_name = c("Drought", "Autocorrelation", "CO2 Intercept", "CO2 Slope", "Rainfall Seasonality")
   )
@@ -103,10 +107,10 @@ best_model_per_gauge <- best_CO2_non_CO2_per_gauge |>
   slice_min(
     AIC,
     by = gauge
-  ) |> 
+  ) |>
   distinct()
 
-lat_long_gauge <- gauge_information |> 
+lat_long_gauge <- gauge_information |>
   select(gauge, lat, lon)
 
 
@@ -120,8 +124,10 @@ lat_long_gauge <- gauge_information |>
 # etc.
 
 # make my own tibble
-parameters <- c("Autocorrelation", "CO2 Intercept", "CO2 Slope", "Drought", "Rainfall Seasonality") 
-gauges <- best_model_per_gauge |> pull(gauge) |> unique() 
+parameters <- c("Autocorrelation", "CO2 Intercept", "CO2 Slope", "Drought", "Rainfall Seasonality")
+gauges <- best_model_per_gauge |>
+  pull(gauge) |>
+  unique()
 
 repeat_best_model_components <- tibble(
   gauge = gauges |> rep(each = length(parameters)),
@@ -129,9 +135,9 @@ repeat_best_model_components <- tibble(
 )
 
 
-condensed_best_model_components <- best_model_per_gauge |> 
-  select(gauge, parameter) |> 
-  filter(parameter %in% c("a2", "a3_intercept", "a3_slope", "a0_d", "a4")) |> 
+condensed_best_model_components <- best_model_per_gauge |>
+  select(gauge, parameter) |>
+  filter(parameter %in% c("a2", "a3_intercept", "a3_slope", "a0_d", "a4")) |>
   mutate(
     simple_name = case_when(
       parameter == "a2" ~ "Autocorrelation",
@@ -141,19 +147,19 @@ condensed_best_model_components <- best_model_per_gauge |>
       parameter == "a4" ~ "Rainfall Seasonality",
       .default = NA
     )
-  ) |> 
-  add_column(show = TRUE) |> 
+  ) |>
+  add_column(show = TRUE) |>
   select(!parameter)
 
 
 plot_best_model_components <- repeat_best_model_components |>
   left_join(
-    condensed_best_model_components, 
+    condensed_best_model_components,
     by = join_by(gauge, simple_name)
-  ) |> 
+  ) |>
   mutate(
     show = coalesce(show, FALSE)
-  ) |> 
+  ) |>
   left_join(
     lat_long_gauge,
     by = join_by(gauge)
@@ -161,25 +167,28 @@ plot_best_model_components <- repeat_best_model_components |>
 
 
 # Count of components and plot labels
-total_gauges <- best_model_per_gauge |> pull(gauge) |> unique() |> length()
-count_components <- plot_best_model_components |> 
+total_gauges <- best_model_per_gauge |>
+  pull(gauge) |>
+  unique() |>
+  length()
+count_components <- plot_best_model_components |>
   summarise(
     n = n(),
     .by = c(simple_name, show)
-  ) |> 
-  filter(show) |> 
+  ) |>
+  filter(show) |>
   mutate(
     label = paste0(round((n / total_gauges) * 100, digits = 2), "%", " (n = ", n, ")")
-  ) |> 
+  ) |>
   add_column(
     lon = 122
-  ) |> 
+  ) |>
   add_column(
     lat = -40
-  ) 
+  )
 
 # Plot map
-model_components <- single_aus_map |> 
+model_components <- single_aus_map |>
   ggplot(aes(geometry = geometry)) +
   geom_sf(
     colour = "black",
@@ -223,7 +232,7 @@ model_components <- single_aus_map |>
     fill = guide_legend(override.aes = list(size = 5, shape = 21, colour = "black"))
   )
 
-#model_components
+# model_components
 
 ggsave(
   filename = "./Graphs/Supplementary_Figures/model_components_v2.pdf",
@@ -272,7 +281,7 @@ lat_long_evidence_ratio <- evidence_ratio_calc |>
   )
 
 ### Add qualitative labels instead of using numerical evidence ratio ###########
-state_gauge <- gauge_information |> 
+state_gauge <- gauge_information |>
   select(gauge, state)
 
 binned_lat_lon_evidence_ratio <- lat_long_evidence_ratio |>
@@ -305,19 +314,19 @@ best_model_per_gauge <- best_CO2_non_CO2_per_gauge |>
   slice_min(
     AIC,
     by = gauge
-  ) |> 
+  ) |>
   distinct()
 
 
-direction_of_a3_change <- best_model_per_gauge |> 
+direction_of_a3_change <- best_model_per_gauge |>
   filter(parameter %in% c("a3_intercept", "a3_slope")) |>
   mutate(
     intercept_or_slope = if_else(str_detect(streamflow_model, "intercept"), "Intercept", "Slope")
-  ) |> 
-  select(gauge, streamflow_model, parameter, parameter_value, intercept_or_slope) |> 
+  ) |>
+  select(gauge, streamflow_model, parameter, parameter_value, intercept_or_slope) |>
   mutate(
     CO2_direction = if_else(parameter_value < 0, "Negative", "Positive")
-  ) |> 
+  ) |>
   select(gauge, CO2_direction, intercept_or_slope)
 
 
@@ -342,14 +351,87 @@ a3_direction_binned_lat_lon_evidence_ratio <- binned_lat_lon_evidence_ratio |>
       impact_of_CO2_term,
       levels = c("No CO2 Term", "Negative-Intercept", "Positive-Intercept", "Negative-Slope", "Positive-Slope")
     )
-  ) 
+  )
 
 
+# Examine the relationship between climate type and evidence ratio -------------
+climate_type_evi_ratio <- a3_direction_binned_lat_lon_evidence_ratio |>
+  left_join(
+    gauge_information_with_climate,
+    by = join_by(gauge, lat, lon)
+  ) |>
+  mutate(
+    binned_evidence_ratio = factor(
+      binned_evidence_ratio,
+      levels = c("Weak", "Moderate", "Moderately Strong", "Strong", "Very Strong", "Extremely Strong")
+    )
+  )
+
+
+
+climate_type_aus_map <- ozmaps::ozmap("country") |>
+  uncount(6) |> # repeat the geometry 4 times
+  mutate(
+    binned_evidence_ratio = c("Weak", "Moderate", "Moderately Strong", "Strong", "Very Strong", "Extremely Strong")
+  ) |>
+  mutate(
+    binned_evidence_ratio = factor(
+      binned_evidence_ratio,
+      levels = c("Weak", "Moderate", "Moderately Strong", "Strong", "Very Strong", "Extremely Strong")
+    )
+  )
+
+# Look at component make and work out the difference
+climate_type_evi_ratio_plot <- climate_type_aus_map |>
+  ggplot(aes(geometry = geometry)) +
+  geom_sf(
+    colour = "black",
+    fill = "grey80"
+  ) +
+  coord_sf(xlim = c(111, 155), ylim = c(-44.5, -9.5)) +
+  geom_point(
+    aes(x = lon, y = lat, fill = climate_type, shape = impact_of_CO2_term),
+    data = climate_type_evi_ratio,
+    inherit.aes = FALSE,
+    colour = "black",
+    size = 1.5,
+    stroke = 0.1
+  ) +
+  labs(
+    x = "Longitude",
+    y = "Latitude",
+    shape = "Type of CO2 change",
+    fill = "Climate type"
+  ) +
+  scale_shape_manual(
+    values = c(21, 22, 23, 25, 24),
+    drop = FALSE # Very important - every plots has the same discrete values
+  ) +
+  theme_bw() +
+  facet_wrap(~binned_evidence_ratio) +
+  theme(
+    legend.position = "bottom"
+  ) +
+  guides(
+    fill = guide_legend(override.aes = list(size = 5, shape = 21), nrow = 3), # Wrap legend with nrow
+    shape = guide_legend(override.aes = list(size = 5, fill = "grey50"), nrow = 3)
+  )
+
+
+ggsave(
+  filename = "climate_type_evidence_ratio.pdf",
+  plot = climate_type_evi_ratio_plot,
+  path = "Graphs/Supplementary_Figures",
+  device = "pdf",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
 
 
 # Make final plot --------------------------------------------------------------
 
-### Custom colour palette 
+### Custom colour palette
 custom_palette <- function(x) {
   rev(c("#67001f", "#b2182b", "#d6604d", "#f4a582", "#fddbc7", "#f7f7f7"))
 }
@@ -393,7 +475,7 @@ inset_plot_QLD <- aus_map |>
   ) +
   scale_shape_manual(
     values = c(21, 22, 23, 25, 24),
-    drop = FALSE # Very important - every plots has the same discrete values 
+    drop = FALSE # Very important - every plots has the same discrete values
   ) +
   theme_void()
 
@@ -524,7 +606,7 @@ single_map_aus <- aus_map |>
   ) +
   # magnify VIC
   geom_magnify(
-    #aes(from = state == "VIC"), # use aes rather than manually selecting area
+    # aes(from = state == "VIC"), # use aes rather than manually selecting area
     from = c(141, 149.5, -39, -34),
     to = c(95, 136, -38, -60),
     shadow = FALSE,
@@ -559,16 +641,16 @@ single_map_aus <- aus_map |>
     proj = "single"
   ) +
   labs(
-    x = NULL,#"Latitude",
-    y = NULL,#"Longitude",
+    x = NULL, # "Latitude",
+    y = NULL, # "Longitude",
     fill = "Evidence Ratio",
-    shape = bquote("Impact of "~CO[2]~"Term")
+    shape = bquote("Impact of " ~ CO[2] ~ "Term")
   ) +
   theme(
     legend.key = element_rect(fill = "grey80"),
     legend.title = element_text(hjust = 0.5),
     legend.background = element_rect(colour = "black"),
-    axis.text = element_blank(), 
+    axis.text = element_blank(),
     legend.position = "inside",
     legend.position.inside = c(0.351, 0.9),
     legend.box = "horizontal", # side-by-side legends
@@ -588,7 +670,7 @@ ggsave(
   plot = single_map_aus,
   device = "pdf",
   width = 232,
-  height = 200,#210,
+  height = 200, # 210,
   units = "mm"
 )
 
@@ -607,14 +689,14 @@ best_model_per_gauge <- best_CO2_non_CO2_per_gauge |>
 
 ## Turn the a5 parameter (CO2 pmm) into a given year ===========================
 CO2_time_of_emergence <- best_model_per_gauge |>
-  filter(parameter == "a5") 
+  filter(parameter == "a5")
 
 CO2_data <- readr::read_csv(
   "./Data/Raw/20241125_Mauna_Loa_CO2_data.csv",
   skip = 43,
   col_select = !unc,
   show_col_types = FALSE
-) |> 
+) |>
   mutate(
     CO2_280 = mean - 280
   )
@@ -628,32 +710,30 @@ year <- CO2_data |> pull(year)
 ## year using the CO2 index
 single_a5_to_time_of_emergence <- function(a5, CO2, year) {
   adjusted_CO2 <- if_else(CO2 - a5 < 0, 0, CO2 - a5)
-  
+
   year_where_CO2_impacts_flow <- year[adjusted_CO2 != 0][1]
-  
+
   return(year_where_CO2_impacts_flow)
 }
 
 a5_to_time_of_emergence <- function(CO2, year) {
   # Save CO2 and year vectors to the function itself
   # They do not change
-  
+
   force(CO2)
   force(year)
   stopifnot(is.numeric(CO2))
   stopifnot(is.numeric(year))
-  
+
   function(a5) {
-    
     future_map_dbl(
       .x = a5,
       .f = single_a5_to_time_of_emergence,
       CO2 = CO2,
       year = year,
       .progress = TRUE
-      )
+    )
   }
-  
 }
 
 # Function factory
@@ -663,10 +743,10 @@ adjusted_a5_to_ToE <- a5_to_time_of_emergence(CO2 = CO2, year = year)
 gauge_state <- gauge_information |>
   select(gauge, state)
 
-time_of_emergence_data <- CO2_time_of_emergence |> 
+time_of_emergence_data <- CO2_time_of_emergence |>
   mutate(
     year_time_of_emergence = adjusted_a5_to_ToE(parameter_value)
-  ) |> 
+  ) |>
   left_join(
     gauge_state,
     by = join_by(gauge)
@@ -690,22 +770,22 @@ time_of_emergence_data <- CO2_time_of_emergence |>
 # 4. run plan() --> adjusted_a5_to_ToE code to turn CO2 ppm into year
 # 5. summarise to find IQR
 # 6. Save results
-# 7. Repeat 1-6 for the number of parts. Cannot do them all at once due to 
+# 7. Repeat 1-6 for the number of parts. Cannot do them all at once due to
 #    RAM limiations
 # 8. Combine repeated files into one --> summarised_sequences_ToE_20250429.csv
 
 # Get all sequences
-#all_sequence_files <- list.files(
+# all_sequence_files <- list.files(
 #  path = "Results/my_dream/",
 #  pattern = "big_chunk",
 #  full.names = TRUE,
 #  recursive = FALSE
-#) 
+# )
 
-#parameter_uncertainty <- all_sequence_files[1] |> # we cannot do everything in one go > 32 gb of RAM
+# parameter_uncertainty <- all_sequence_files[1] |> # we cannot do everything in one go > 32 gb of RAM
 #  read_csv(
 #    show_col_types = FALSE
-#  ) |> 
+#  ) |>
 #  filter(parameter == "a5")
 
 
@@ -717,14 +797,14 @@ time_of_emergence_data <- CO2_time_of_emergence |>
 
 # This works but it is really slow and RAM intensive
 
-#plan(multisession, workers = length(availableWorkers()))
-#filtered_parameter_uncertainty <- parameter_uncertainty |> 
+# plan(multisession, workers = length(availableWorkers()))
+# filtered_parameter_uncertainty <- parameter_uncertainty |>
 #  mutate(
 #    year_ToE = adjusted_a5_to_ToE(parameter_value)
 #  )
 
 
-#ToE_range_uncertainty <- filtered_parameter_uncertainty |> 
+# ToE_range_uncertainty <- filtered_parameter_uncertainty |>
 #  summarise(
 #    DREAM_ToE_IQR = IQR(year_ToE),
 #    DREAM_ToE_median = median(year_ToE),
@@ -733,27 +813,27 @@ time_of_emergence_data <- CO2_time_of_emergence |>
 
 
 ### Save ToE_range_uncertainty ###
-### Repeat with part_1 and part_2 
+### Repeat with part_1 and part_2
 ### Join and save the summarised information for plotting
-#write_csv(
+# write_csv(
 #  ToE_range_uncertainty,
 #  file = "Results/my_dream/part_5_summarised_sequences_20250429.csv"
-#)
+# )
 
-#combined_summarised_ToE_data <- list.files( # get
+# combined_summarised_ToE_data <- list.files( # get
 #  path = "./Results/my_dream/",
 #  recursive = FALSE, # I don't want it looking in other folders
 #  pattern = "summarised_sequence",
 #  full.names = TRUE
-#)
+# )
 
-#combined_summarised_ToE_data |> # merge and save
-#  read_csv(show_col_types = FALSE) |> 
+# combined_summarised_ToE_data |> # merge and save
+#  read_csv(show_col_types = FALSE) |>
 #  write_csv(
 #    paste0("./Results/my_dream/summarised_sequences_ToE_", get_date(), ".csv")
 #  )
 
-#duplicated_gauges <- test |> pull(gauge) 
+# duplicated_gauges <- test |> pull(gauge)
 # duplicated_gauges[duplicated(duplicated_gauges)]
 
 
@@ -765,7 +845,7 @@ time_of_emergence_data <- CO2_time_of_emergence |>
 summarised_sequences_ToE <- read_csv(
   "Results/my_dream/summarised_sequences_ToE_20250429.csv",
   show_col_types = FALSE
-  ) |> 
+) |>
   distinct()
 
 
@@ -786,12 +866,12 @@ custom_bins_time_of_emergence_data <- time_of_emergence_data |>
   left_join(
     summarised_sequences_ToE,
     by = join_by(gauge)
-  ) |> 
+  ) |>
   # add state
   left_join(
     state_gauge,
     by = join_by(gauge)
-  ) |> 
+  ) |>
   mutate(custom_bins = year_time_of_emergence - (year_time_of_emergence %% 10)) |>
   mutate(custom_bins = as.character(custom_bins)) |>
   mutate(
@@ -801,9 +881,9 @@ custom_bins_time_of_emergence_data <- time_of_emergence_data |>
   left_join(
     a3_direction_binned_lat_lon_evidence_ratio,
     by = join_by(gauge)
-  ) |> 
+  ) |>
   # Only include moderately strong and above evidence ratio
-  filter(!binned_evidence_ratio %in% c("Weak", "Moderate", "Moderately Strong")) |> 
+  filter(!binned_evidence_ratio %in% c("Weak", "Moderate", "Moderately Strong")) |>
   # clean it up and add lat lon
   select(gauge, state, year_time_of_emergence, custom_bins, DREAM_ToE_IQR, binned_evidence_ratio) |>
   left_join(
@@ -813,7 +893,7 @@ custom_bins_time_of_emergence_data <- time_of_emergence_data |>
   # factor custom_bins to force then into order
   mutate(
     custom_bins = factor(custom_bins, levels = c("Before 1959", "1960", "1970", "1980", "1990", "2000", "2010", "2020"))
-  ) |> 
+  ) |>
   # Binning is required to DREAM_ToE_IQR
   mutate(
     binned_DREAM_ToE_IQR = case_when(
@@ -825,14 +905,94 @@ custom_bins_time_of_emergence_data <- time_of_emergence_data |>
       DREAM_ToE_IQR > 50 ~ ">50",
       .default = NA
     )
-  ) |> 
+  ) |>
   # factor it so all plots ahve the same bins
   mutate(
     binned_DREAM_ToE_IQR = factor(binned_DREAM_ToE_IQR, levels = rev(c("<=10", "11-20", "21-30", "31-40", "41-50", "51-60", ">60")))
-  ) |> 
+  ) |>
   # Points are plotted based on the order they appear in the tibble
   # Order the tibble from largest IQR to smalleest before plotting.
   arrange(desc(DREAM_ToE_IQR))
+
+
+
+
+
+
+
+# Examine the relationship between climate type and time of emergence ----------
+climate_type_ToE <- custom_bins_time_of_emergence_data |>
+  left_join(
+    gauge_information_with_climate,
+    by = join_by(gauge, lat, lon)
+  )
+
+
+
+climate_type_aus_map <- ozmaps::ozmap("country") |>
+  uncount(7) |> # repeat the geometry 4 times
+  mutate(
+    custom_bins = c("Before 1959", "1960", "1970", "1980", "1990", "2000", "2010")
+  ) |>
+  mutate(
+    custom_bins = factor(custom_bins, levels = c("Before 1959", "1960", "1970", "1980", "1990", "2000", "2010"))
+  )
+
+
+scale_size_limits <- custom_bins_time_of_emergence_data |>
+  pull(DREAM_ToE_IQR) |>
+  range() # can round up if I want to
+
+climate_type_ToE_plot <- climate_type_aus_map |>
+  ggplot(aes(geometry = geometry)) +
+  geom_sf(
+    colour = "black",
+    fill = "grey80"
+  ) +
+  coord_sf(xlim = c(111, 155), ylim = c(-44.5, -9.5)) +
+  geom_point(
+    aes(x = lon, y = lat, fill = climate_type, size = DREAM_ToE_IQR), # circle size as uncertainty?
+    data = climate_type_ToE,
+    inherit.aes = FALSE,
+    colour = "black",
+    stroke = 0.1,
+    shape = 21
+  ) +
+  scale_size_binned(limits = scale_size_limits, breaks = c(5, 10, 15, 20, 25, 30, 35), range = c(0.1, 3)) +
+  labs(
+    x = "Longitude",
+    y = "Latitude",
+    fill = "Climate type",
+    size = "Time of Emergence Uncertaity (Years)"
+  ) +
+  theme_bw() +
+  theme(
+    legend.position = "inside",
+    legend.position.inside = c(0.7, 0.15)
+  ) +
+  guides(
+    fill = guide_legend(override.aes = list(size = 5, shape = 21), nrow = 3), # Wrap legend with nrow
+    size = guide_bins(show.limits = TRUE, direction = "horizontal")
+  ) +
+  facet_wrap(~custom_bins)
+
+
+
+ggsave(
+  filename = "climate_type_ToE.pdf",
+  plot = climate_type_ToE_plot,
+  path = "Graphs/Supplementary_Figures",
+  device = "pdf",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
+
+
+
+
+
+
 
 
 
@@ -862,16 +1022,16 @@ TAS_data <- custom_bins_time_of_emergence_data |>
 
 # Generate inset histgrams of time of emergence for each plot
 generate_ToE_histograms <- function(STATE_data) {
-  STATE_data |> 
+  STATE_data |>
     summarise(
       count = n(),
       .by = binned_evidence_ratio
-    ) |> 
+    ) |>
     # I want to show all the possible outcomes in the histogram
     # This currently does not work
     mutate(
-      binned_evidence_ratio = factor(binned_evidence_ratio, levels = c("Strong", "Very Strong", "Extremely Strong")) # These don't exist if I filter them --> "Weak", "Moderate", "Moderately Strong", 
-    ) |> 
+      binned_evidence_ratio = factor(binned_evidence_ratio, levels = c("Strong", "Very Strong", "Extremely Strong")) # These don't exist if I filter them --> "Weak", "Moderate", "Moderately Strong",
+    ) |>
     ggplot(aes(x = binned_evidence_ratio, y = count)) +
     geom_col() +
     scale_x_discrete(drop = FALSE) +
@@ -888,7 +1048,7 @@ generate_ToE_histograms <- function(STATE_data) {
 state_ToE_histograms <- map(
   .x = list(QLD_data, NSW_data, VIC_data, WA_data, TAS_data),
   .f = generate_ToE_histograms
-) |> 
+) |>
   `names<-`(c("QLD", "NSW", "VIC", "WA", "TAS"))
 
 
@@ -898,13 +1058,13 @@ state_ToE_histograms <- map(
 # See documentation: https://patchwork.data-imaginist.com/reference/inset_element.html
 
 # scale_size_binned()
-# Using scale_size_binned() is technically between because it is a 
+# Using scale_size_binned() is technically between because it is a
 # does the binning for me.
 
 #
-scale_size_limits <- custom_bins_time_of_emergence_data |> 
-  pull(DREAM_ToE_IQR) |> 
-  range() # can round up if I want to 
+scale_size_limits <- custom_bins_time_of_emergence_data |>
+  pull(DREAM_ToE_IQR) |>
+  range() # can round up if I want to
 
 
 transparent_dots_constant <- 0.75
@@ -926,13 +1086,13 @@ inset_plot_QLD <- aus_map |>
   scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
   guides(size = guide_bins(show.limits = TRUE)) +
   theme_void() #+
-  #annotation_custom(
-  #  ggplotGrob(state_ToE_histograms[["QLD"]]), 
-  #  xmin = 145, xmax = 150, ymin = -15, ymax = -10 # dial in the coords
-  #)
-  #inset_element(state_ToE_histograms[["QLD"]], left = 0.5, bottom = 0.5, right = 1, top = 1) 
-  # It looks as if geom_magnify treats it as two plots instead of a single plot - it only take the 2nd element in the list
-  # It must be a single plot (i.e., a list of length 1) - inset_element does not work
+# annotation_custom(
+#  ggplotGrob(state_ToE_histograms[["QLD"]]),
+#  xmin = 145, xmax = 150, ymin = -15, ymax = -10 # dial in the coords
+# )
+# inset_element(state_ToE_histograms[["QLD"]], left = 0.5, bottom = 0.5, right = 1, top = 1)
+# It looks as if geom_magnify treats it as two plots instead of a single plot - it only take the 2nd element in the list
+# It must be a single plot (i.e., a list of length 1) - inset_element does not work
 
 
 
@@ -953,7 +1113,7 @@ inset_plot_NSW <- aus_map |>
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
   scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
   guides(size = guide_bins(show.limits = TRUE)) +
-  theme_void() 
+  theme_void()
 
 
 
@@ -973,7 +1133,7 @@ inset_plot_VIC <- aus_map |>
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
   scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
   guides(size = guide_bins(show.limits = TRUE)) +
-  theme_void() 
+  theme_void()
 
 
 
@@ -993,7 +1153,7 @@ inset_plot_WA <- aus_map |>
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
   scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
   guides(size = guide_bins(show.limits = TRUE)) +
-  theme_void() 
+  theme_void()
 
 
 
@@ -1013,7 +1173,7 @@ inset_plot_TAS <- aus_map |>
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
   scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
   guides(size = guide_bins(show.limits = TRUE)) +
-  theme_void() 
+  theme_void()
 
 
 
@@ -1045,7 +1205,7 @@ ToE_map_aus <- aus_map |>
   ) +
   # magnify VIC
   geom_magnify(
-    #aes(from = state == "VIC"), # use aes rather than manually selecting area
+    # aes(from = state == "VIC"), # use aes rather than manually selecting area
     from = c(141, 149.5, -39, -34),
     to = c(95, 136, -38, -60),
     shadow = FALSE,
@@ -1080,8 +1240,8 @@ ToE_map_aus <- aus_map |>
     proj = "single"
   ) +
   labs(
-    x = NULL,#"Latitude",
-    y = NULL,#"Longitude",
+    x = NULL, # "Latitude",
+    y = NULL, # "Longitude",
     fill = "Time of Emergence",
     size = "Time of Emergence Uncertainty Years (IQR)"
   ) +
@@ -1090,13 +1250,13 @@ ToE_map_aus <- aus_map |>
     legend.title = element_text(hjust = 0.5),
     legend.title.position = "top",
     legend.background = element_rect(colour = "black"),
-    axis.text = element_blank(), 
+    axis.text = element_blank(),
     panel.border = element_blank(),
     panel.grid = element_blank(),
     axis.ticks = element_blank(),
     legend.position = "inside",
     legend.position.inside = c(0.325, 0.9),
-    legend.box = "horizontal"#, # side-by-side legends
+    legend.box = "horizontal" # , # side-by-side legends
   ) +
   guides(
     fill = guide_legend(override.aes = list(size = 5, shape = 21), nrow = 3), # Wrap legend with nrow
@@ -1116,34 +1276,34 @@ ggsave(
 )
 
 # Plot range?
-custom_bins_time_of_emergence_data |> 
+custom_bins_time_of_emergence_data |>
   ggplot(aes(x = year_time_of_emergence)) +
   geom_histogram(bins = 10, colour = "black", fill = "grey50") +
   theme_bw() +
   facet_wrap(~binned_evidence_ratio)
 
-custom_bins_time_of_emergence_data |> 
+custom_bins_time_of_emergence_data |>
   ggplot(aes(x = DREAM_ToE_IQR)) +
   geom_histogram(bins = 10, colour = "black", fill = "grey50") +
   theme_bw() +
   facet_wrap(~binned_evidence_ratio)
 
 ## Temp histogram
-x <- custom_bins_time_of_emergence_data |> 
+x <- custom_bins_time_of_emergence_data |>
   summarise(
     n = n(),
     .by = c(custom_bins, state)
   ) |>
-  arrange(state) |> 
+  arrange(state) |>
   ggplot(aes(x = custom_bins, y = n)) +
   geom_col() +
   theme_bw()
 x
 ## TEMP What does ToE vs. DREAM_IQR_ToE look like
-ToE_against_uncertainty <- custom_bins_time_of_emergence_data |> 
+ToE_against_uncertainty <- custom_bins_time_of_emergence_data |>
   ggplot(aes(x = year_time_of_emergence, y = DREAM_ToE_IQR)) +
   geom_point() +
-  #geom_smooth(method = lm, formula = y ~ x) +
+  # geom_smooth(method = lm, formula = y ~ x) +
   labs(
     x = "Time of Emergence",
     y = "Time of Emergence Uncertainty Years (IQR)"
@@ -1155,13 +1315,13 @@ ToE_against_uncertainty <- custom_bins_time_of_emergence_data |>
 # TEMP. Compare evidence ratio with ToE
 # evidence ratio data is lat_long_evidence_ratio
 # ToE data is custom_bins_time_of_emergence_data
-compare_ToE_and_evi_ratio <- custom_bins_time_of_emergence_data |> 
+compare_ToE_and_evi_ratio <- custom_bins_time_of_emergence_data |>
   left_join(
     lat_long_evidence_ratio,
     by = join_by(gauge, lat, lon)
   )
 
-ToE_against_evi_ratio <- compare_ToE_and_evi_ratio |> 
+ToE_against_evi_ratio <- compare_ToE_and_evi_ratio |>
   ggplot(aes(x = year_time_of_emergence, y = evidence_ratio)) +
   geom_point() +
   scale_y_log10() +
@@ -1176,8 +1336,8 @@ ToE_against_evi_ratio <- compare_ToE_and_evi_ratio |>
 ggsave(
   filename = "ToE_vs_uncertainty.pdf",
   plot = gridExtra::marrangeGrob(
-    list(ToE_against_uncertainty, ToE_against_evi_ratio), # add other graphs here:  
-    nrow = 1, 
+    list(ToE_against_uncertainty, ToE_against_evi_ratio), # add other graphs here:
+    nrow = 1,
     ncol = 1,
     top = NULL # no page numbers
   ),
@@ -1209,21 +1369,21 @@ best_streamflow_results <- streamflow_results |>
 
 ## Only include best streamflow that was calibrated on =========================
 ## join the included_in_calibration column
-in_calibration <- data |> 
+in_calibration <- data |>
   select(year, gauge, included_in_calibration)
 
-best_calibration_streamflow_results <- best_streamflow_results |> 
+best_calibration_streamflow_results <- best_streamflow_results |>
   left_join(
     in_calibration,
     by = join_by(year, gauge)
-  ) |> 
+  ) |>
   filter(included_in_calibration)
 
 
 
 ## Summarise results into a tidy format ========================================
 tidy_boxcox_streamflow <- best_calibration_streamflow_results |>
-  drop_na() |>  # only include if observed streamflow is present
+  drop_na() |> # only include if observed streamflow is present
   pivot_longer(
     cols = c(observed_boxcox_streamflow, modelled_boxcox_streamflow),
     names_to = "name",
@@ -1231,20 +1391,20 @@ tidy_boxcox_streamflow <- best_calibration_streamflow_results |>
   ) |>
   mutate(
     name = if_else(name == "observed_boxcox_streamflow", "observed", "modelled")
-  ) |> 
+  ) |>
   mutate(
     contains_CO2 = str_detect(streamflow_model, "CO2")
-  ) |> 
+  ) |>
   mutate(
     legend = case_when(
       contains_CO2 & (name != "observed") ~ "modelled_CO2",
       !contains_CO2 & (name != "observed") ~ "modelled_non_CO2",
       .default = name
     )
-  ) |> 
+  ) |>
   select(
     !c(streamflow_model, objective_function, included_in_calibration, name, contains_CO2)
-    )
+  )
 
 
 ## Convert from box-cox space to real space ====================================
@@ -1276,14 +1436,14 @@ tidy_streamflow <- tidy_boxcox_streamflow |>
 # Gauges must not be across multiple groups
 # Randomly assign 1,2 or 3 to each group then split? This works
 # but is probably not the best way of doing it
-ready_split_tidy_streamflow <- tidy_streamflow |> 
+ready_split_tidy_streamflow <- tidy_streamflow |>
   mutate(
     split = sample(c(1, 2, 3), size = 1, replace = TRUE),
     .by = gauge,
     .before = 1
-  ) 
+  )
 
-split_tidy_streamflow <- ready_split_tidy_streamflow |> 
+split_tidy_streamflow <- ready_split_tidy_streamflow |>
   split(f = ready_split_tidy_streamflow$split)
 
 
@@ -1291,15 +1451,15 @@ split_tidy_streamflow <- ready_split_tidy_streamflow |>
 ## Need to split plot into smaller chunks. PC struggles to load it.
 
 repeat_rainfall_runoff_plots <- function(segmented_tidy_streamflow) {
-  rainfall_runoff_plots <- segmented_tidy_streamflow |> 
+  rainfall_runoff_plots <- segmented_tidy_streamflow |>
     ggplot(
       aes(
-        x = precipitation, 
-        y = boxcox_streamflow, 
-        colour = legend, 
+        x = precipitation,
+        y = boxcox_streamflow,
+        colour = legend,
         shape = legend
-        )
-      ) +
+      )
+    ) +
     geom_point() +
     geom_line(
       stat = "smooth",
@@ -1340,7 +1500,6 @@ ggsave(
 
 ## Plot streamflow time ========================================================
 chunk_streamflow_timeseries_plot <- function(data) {
-  
   data |>
     ggplot(aes(x = year, y = streamflow, colour = legend)) +
     geom_line(na.rm = TRUE, alpha = 0.5) +
@@ -1353,7 +1512,6 @@ chunk_streamflow_timeseries_plot <- function(data) {
     ) +
     facet_wrap(~gauge, scales = "free_y") +
     theme(legend.title = element_blank())
-  
 }
 
 
@@ -1394,9 +1552,9 @@ result <- keyword_search(
   file,
   keyword = c("a3_slope"),
   path = TRUE
-) 
+)
 
-remove_pages <- result |> 
+remove_pages <- result |>
   pull(line_num)
 
 keep_pages <- seq(from = 1, to = 534, by = 1)
