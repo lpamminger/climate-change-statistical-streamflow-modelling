@@ -300,7 +300,8 @@ gauge_AIC_streamflow_transform <- function(result_set) {
   list(
     "gauge" = result_set$numerical_optimiser_setup$catchment_data$gauge_ID,
     "transform_method" = get_streamflow_transform_method(result_set),
-    "AIC" = result_set$AIC_best_parameter_set
+    "AIC" = result_set$AIC_best_parameter_set,
+    "LL" = result_set$LL_best_parameter_set
   ) |> 
     as_tibble()
 }
@@ -398,15 +399,16 @@ transformed_streamflow_time_plot <- plotting_data |>
   ) +
   facet_wrap( ~ gauge + transform_method, ncol = 2, nrow = 7, scales = "free_y")
 
-ggsave(
-  filename = "showing_tim_transform_issue_timeseries.pdf",
-  plot = transformed_streamflow_time_plot,
-  device = "pdf",
-  path = "./Graphs/Supplementary_Figures",
-  width = 320,
-  height = 420,
-  units = "mm"
-)
+#ggsave(
+#  filename = "offset_log_sinh_showing_tim_transform_issue_timeseries.pdf",
+#  plot = transformed_streamflow_time_plot,
+#  device = "pdf",
+#  path = "./Graphs/Supplementary_Figures",
+#  width = 320,
+#  height = 420,
+#  units = "mm"
+#)
+
 
 ## Streamflow time =============================================================
 streamflow_time_plot <- plotting_data |>
@@ -448,15 +450,15 @@ streamflow_time_plot <- plotting_data |>
   ) +
   facet_wrap( ~ gauge + transform_method, ncol = 2, nrow = 7, scales = "free_y")
 
-ggsave(
-  filename = "testing_streamflow_transform_methods_timeseries.pdf",
-  plot = streamflow_time_plot,
-  device = "pdf",
-  path = "./Graphs/Supplementary_Figures",
-  width = 320,
-  height = 420,
-  units = "mm"
-)
+#ggsave(
+#  filename = "offset_log_sinh_testing_streamflow_transform_methods_timeseries.pdf",
+#  plot = streamflow_time_plot,
+#  device = "pdf",
+#  path = "./Graphs/Supplementary_Figures",
+#  width = 320,
+#  height = 420,
+#  units = "mm"
+#)
 
 
 ## Rainfall-runoff =============================================================
@@ -499,19 +501,49 @@ rainfall_runoff_plot <- plotting_data |>
   ) +
   facet_wrap(~ gauge + transform_method, nrow = 7, ncol = 2, scales = "free")
   
-ggsave(
-  filename = "testing_streamflow_transform_methods_rainfall_runoff.pdf",
-  plot = rainfall_runoff_plot,
-  device = "pdf",
-  path = "./Graphs/Supplementary_Figures",
-  width = 250,
-  height = 594,
-  units = "mm"
+#ggsave(
+#  filename = "offset_log_sinh_testing_streamflow_transform_methods_rainfall_runoff.pdf",
+#  plot = rainfall_runoff_plot,
+#  device = "pdf",
+#  path = "./Graphs/Supplementary_Figures",
+#  width = 250,
+#  height = 594,
+#  units = "mm"
+#)
+
+
+
+# Why are the AIC so different? ------------------------------------------------
+
+# Does the different transform methods produce different LL? 
+
+# 1. generate observed streamflow - realspace
+set.seed(1)
+observed_streamflow <- runif(n = 100, min = 25, 400)
+
+# 2. generate modelled streamflow - realspace
+modelled_streamflow <- observed_streamflow + rnorm(n = 100, mean = 0, sd = 20)
+
+# 3. transform modelled streamflow into boxcox and log-sinh space
+boxcox_parameters <- c(5, 0.1) # c(sd, lambda)
+log_sinh_parameters <- c(50, 0.1, 0.5) # c(sd, a, b)
+
+boxcox_modelled_streamflow <- boxcox_transform(y = modelled_streamflow, lambda = boxcox_parameters[2], lambda_2 = 1)
+log_sinh_modelled_streamflow <- log_sinh_transform(a = log_sinh_parameters[2], b = log_sinh_parameters[3], y = modelled_streamflow, offset = 300)
+
+# 4. calculate log-likelihoods
+boxcox_loglikelihood <- constant_sd_boxcox_objective_function(
+  modelled_streamflow = as.matrix(boxcox_modelled_streamflow, ncol = 1),
+  observed_streamflow = as.matrix(observed_streamflow, ncol = 1),
+  parameter_set = as.matrix(boxcox_parameters, ncol = 1) 
 )
 
+log_sinh_loglikelihood <- constant_sd_log_sinh_objective_function(
+  modelled_streamflow = as.matrix(log_sinh_modelled_streamflow, ncol = 1),
+  observed_streamflow = as.matrix(observed_streamflow, ncol = 1),
+  parameter_set = as.matrix(log_sinh_parameters, ncol = 1)
+)
 
-
-
-
+cat("boxcox LL =", boxcox_loglikelihood, "\nlog_sinh LL =", log_sinh_loglikelihood)
 
 
