@@ -117,27 +117,28 @@ constant_sd_log_sinh_objective_function <- function(modelled_streamflow, observe
     )
   }
 
-  # browser()
-  # dtruncnorm only works with vectors (double)
-  # matrix is a subclass of double and gets coerced into a double (double atomic vector)
+
   constant_sd <- parameter_set[(nrow(parameter_set) - 2), ]
   log_sinh_a <- parameter_set[(nrow(parameter_set) - 1), ]
   log_sinh_b <- parameter_set[nrow(parameter_set), ]
 
-  matrix_error_sd <- matrix(constant_sd,
+  matrix_error_sd <- matrix(
+    constant_sd,
     nrow = nrow(modelled_streamflow),
     ncol = ncol(modelled_streamflow),
     byrow = TRUE
   )
 
-  matrix_log_sinh_a <- matrix(log_sinh_a,
+  matrix_log_sinh_a <- matrix(
+    log_sinh_a,
     nrow = nrow(modelled_streamflow),
     ncol = ncol(modelled_streamflow),
     byrow = TRUE
   )
 
 
-  matrix_log_sinh_b <- matrix(log_sinh_b,
+  matrix_log_sinh_b <- matrix(
+    log_sinh_b,
     nrow = nrow(modelled_streamflow),
     ncol = ncol(modelled_streamflow),
     byrow = TRUE
@@ -160,12 +161,15 @@ constant_sd_log_sinh_objective_function <- function(modelled_streamflow, observe
   transformed_observed_streamflow <- log_sinh_transform(
     a = matrix_log_sinh_a,
     b = matrix_log_sinh_b,
-    y = observed_streamflow
+    y = observed_streamflow,
+    offset = 300
   )
-  
 
 
   # Produce probabilities using trunnorm
+  # dtruncnorm only works with vectors (double)
+  # matrix is a subclass of double and gets coerced into a double (double atomic vector)
+  # when matrix is coerced into double convert it back into matrix
   prob_boxcox_observed <- truncnorm::dtruncnorm(
     x = transformed_observed_streamflow,
     a = 0,
@@ -175,11 +179,12 @@ constant_sd_log_sinh_objective_function <- function(modelled_streamflow, observe
   )
 
   # Convert vector back into a matrix
-  prob_boxcox_observed <- matrix(prob_boxcox_observed,
+  prob_boxcox_observed <- matrix(
+    prob_boxcox_observed,
     nrow = nrow(modelled_streamflow),
     ncol = ncol(modelled_streamflow)
   )
-  
+
 
   negative_log_likelihood <- colSums(-1 * log(prob_boxcox_observed))
 
@@ -189,8 +194,6 @@ constant_sd_log_sinh_objective_function <- function(modelled_streamflow, observe
 
 
 constant_sd_boxcox_objective_function <- function(modelled_streamflow, observed_streamflow, parameter_set) {
-  
-  
   if (is.null(names(as.list(match.call())[-1]))) { # if no arguments provided return description
     return(
       list(
@@ -200,8 +203,7 @@ constant_sd_boxcox_objective_function <- function(modelled_streamflow, observed_
     )
   }
 
-  # dtruncnorm only works with vectors (double)
-  # matrix is a subclass of double and gets coerced into a double (double atomic vector)
+
   constant_sd <- parameter_set[(nrow(parameter_set) - 1), ]
   boxcox_lambda <- parameter_set[nrow(parameter_set), ]
 
@@ -230,10 +232,6 @@ constant_sd_boxcox_objective_function <- function(modelled_streamflow, observed_
   )
 
 
-  # Transform observed_streamflow into log-sinh space
-  # Does it work with matrices? Yes
-  # Do I need to scale b into b_hat?
-
 
   transformed_observed_streamflow <- boxcox_transform(
     y = observed_streamflow,
@@ -243,6 +241,9 @@ constant_sd_boxcox_objective_function <- function(modelled_streamflow, observed_
 
 
   # Produce probabilities using trunnorm
+  # dtruncnorm only works with vectors (double)
+  # matrix is a subclass of double and gets coerced into a double (double atomic vector)
+  # when matrix is coerced into double convert it back into matrix
   prob_boxcox_observed <- truncnorm::dtruncnorm(
     x = transformed_observed_streamflow,
     a = 0,
@@ -252,7 +253,8 @@ constant_sd_boxcox_objective_function <- function(modelled_streamflow, observed_
   )
 
   # Convert vector back into a matrix
-  prob_boxcox_observed <- matrix(prob_boxcox_observed,
+  prob_boxcox_observed <- matrix(
+    prob_boxcox_observed,
     nrow = nrow(modelled_streamflow),
     ncol = ncol(modelled_streamflow)
   )
@@ -262,74 +264,6 @@ constant_sd_boxcox_objective_function <- function(modelled_streamflow, observed_
   return(negative_log_likelihood)
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-CO2_variable_objective_function <- function(modelled_streamflow, observed_streamflow, stop_start_data_set, parameter_set) {
-  if (is.null(names(as.list(match.call())[-1]))) { # if no arguments provided return description
-    return(
-      list(
-        "name" = "CO2_variable_objective_function",
-        "parameters" = c("sd", "scale_CO2")
-      )
-    )
-  }
-
-
-  constant_sd <- parameter_set[(nrow(parameter_set) - 1), ]
-  scale_CO2 <- parameter_set[nrow(parameter_set), ]
-  CO2 <- stop_start_data_set$CO2
-
-  reshape_constant_sd <- matrix(constant_sd, nrow(modelled_streamflow), ncol(modelled_streamflow), byrow = TRUE)
-  reshape_scale_CO2 <- matrix(scale_CO2, nrow(modelled_streamflow), ncol(modelled_streamflow), byrow = TRUE)
-  reshape_CO2 <- matrix(CO2, nrow = nrow(modelled_streamflow), ncol = ncol(modelled_streamflow), byrow = FALSE)
-
-
-  # each row will be increasing variable sd and column are combinations of constant sd and scale_CO2 parameters
-  variable_sd <- reshape_constant_sd + (reshape_scale_CO2 * reshape_CO2)
-
-
-  # Correct modelled streamflow and uncertainty
-  corrected_modelled_streamflow <- correct_mean_flow(
-    uncorrected_mean_flow = modelled_streamflow,
-    uncorrected_uncertainty = variable_sd
-  )
-
-  corrected_uncertainty <- correct_uncertainty_flow(
-    uncorrected_mean_flow = modelled_streamflow,
-    uncorrected_uncertainty = variable_sd
-  )
-
-
-  # Produce probabilities using trunnorm
-  prob_boxcox_observed <- truncnorm::dtruncnorm(
-    x = observed_streamflow,
-    a = 0,
-    b = Inf,
-    mean = corrected_modelled_streamflow,
-    sd = corrected_uncertainty
-  )
-
-  # Convert vector back into a matrix
-  prob_boxcox_observed <- matrix(prob_boxcox_observed,
-    nrow = nrow(modelled_streamflow),
-    ncol = ncol(modelled_streamflow)
-  )
-
-  negative_log_likelihood <- colSums(-1 * log(prob_boxcox_observed))
-
-
-  return(negative_log_likelihood)
-}
 
 
 # Get function -----------------------------------------------------------------
