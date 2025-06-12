@@ -1,7 +1,7 @@
+# Boxcox transforms ------------------------------------------------------------
+
 boxcox_transform <- function(y, lambda = 0, lambda_2 = 0) {
 
-  # the difference in very small and zero lambda is not that big
-  # for now ignore the zero
   transformed_result <- ((y + lambda_2)^lambda - 1) / lambda
   
   # to make it work with log
@@ -14,7 +14,6 @@ boxcox_transform <- function(y, lambda = 0, lambda_2 = 0) {
  
 
 }
-
 
 
 
@@ -31,28 +30,6 @@ boxcox_inverse_transform <- function(yt, lambda = 0, lambda_2 = 0) {
   return(realspace_result)
 }
 
-
-# REMOVE
-boxcox_lambda_generator <- function(precipitation, streamflow, lambda_2) {
-  # , confidence_interval_percentage = 0.95
-  ## Response variable q must be positive. Zero is not positive. Add a really small number + 1e-7.
-  # Use MASS boxcox function to find best lambda
-  boxcox_result_object <- MASS::boxcox(lm((streamflow + lambda_2) ~ precipitation, y = TRUE), # , y = TRUE IS NEEDED FOR WRAPPER TO WORK https://community.rstudio.com/t/error-in-eval-predvars-data-env-object-x-not-found-when-creating-a-function/129475/2
-    lambda = seq(0, 5, 1 / 1000), # this should be between -2 to 2 (or -3 to 3)
-    plotit = FALSE
-  )
-
-
-  best_lambda <- boxcox_result_object$x[which.max(boxcox_result_object$y)]
-
-  # Calculate confidence intervals
-  ## What this code is doing
-  ## Find the max likelihood. Then find the two 0.95 values. Return the lower and larger lambda values
-  # confidence_interval <- range(boxcox_result_object$x[boxcox_result_object$y > max(boxcox_result_object$y) - qchisq(confidence_interval_percentage, df = 1) / 2])
-
-  # Return c(best_lambda, lower_confidence_interval and upper_confidence_interval
-  return(best_lambda)
-}
 
 
 
@@ -81,7 +58,6 @@ asinh_exp_approximation <- function(x) {
 
 inverse_log_sinh_transform <- function(a, b, z, offset = 300) {
   # If any streamflow value is infinite the approximation is done for everything
-  # I am not sure it works with matrices
   if (any(is.infinite(exp(b * z)))) {
     asinh_component <- asinh_exp_approximation(b * z)
   } else {
