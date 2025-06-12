@@ -5,11 +5,10 @@ rm(list = ls())
 cat("\014")
 
 # Import libraries -------------------------------------------------------------
-pacman::p_load(tidyverse, MASS, checkmate)
+pacman::p_load(tidyverse, checkmate)
 
 
 # Functions for tidying --------------------------------------------------------
-source("./Functions/boxcox_transforms.R")
 source("./Functions/utility.R")
 
 
@@ -142,7 +141,7 @@ annual_seasonal_rainfall_ratio <- monthly_rainfall |>
     standardised_warm_to_cool_season_rainfall_ratio = warm_to_cool_season_rainfall_ratio - mean_warm_to_cool_season_rainfall_ratio,
     standardised_warm_season_to_annual_rainfall_ratio = warm_season_to_annual_rainfall_ratio - mean_warm_season_to_annual_rainfall_ratio
   ) |>
-  dplyr::select(
+  select(
     c(
       year,
       gauge,
@@ -259,7 +258,6 @@ counting_chunks <- function(input_vector) {
 ## Gauge specific data (with catchment information) ============================
 gauge_data <- yearly_data |>
   summarise(
-    bc_lambda = boxcox_lambda_generator(precipitation = p_mm, streamflow = q_mm, lambda_2 = 1), # lambda_2 + 1 to all streamflow to removes zeros
     drought = any(drought == TRUE & included_in_calibration == TRUE), # if there is a drought but we are not calibrating on it we ignore that there is a drought
     max_run_start = max_continuous_run_start_end(q_mm)[1],
     max_run_end = max_continuous_run_start_end(q_mm)[2],
@@ -274,55 +272,71 @@ gauge_data <- yearly_data |>
   left_join( # Add chunks to gauge_data i.e., continuous runs
     catchment_information, 
     by = join_by(gauge)
+  ) |> 
+  # remove chunk and run length stuff
+  select(!c(max_run_start, max_run_end, chunks, max_run))
+
+
+
+# Add climate type to gauge data -----------------------------------------------
+# Assign gauge a climate type using kgc 
+
+## `LookupCZ` function provides the climate zone based on lon and lat 
+## Relies on the climatezone dataframe
+climatezones <- kgc::climatezones
+
+## To use LookupCZ the data must be in |site_ID|lon|lat| format ================
+formatted_gauge_data <- gauge_data |> 
+  select(gauge, lon, lat) |> # mass overwrites dplyr select 
+  mutate(
+    rndCoord.lon = kgc::RoundCoordinates(lon),
+    rndCoord.lat = kgc::RoundCoordinates(lat)
+  ) 
+
+
+## Gauge information with climate type =========================================
+climate_type_gauge_data <- cbind(
+  formatted_gauge_data, 
+  "climate_type" = kgc::LookupCZ(data = formatted_gauge_data)
+) |> 
+  as_tibble() |> 
+  mutate(
+    major_climate_type = str_sub(climate_type, start = 1L, end = 1L)
+  ) |> 
+  # Nice names for plotting
+  mutate(
+    major_climate_type = case_when(
+      major_climate_type == "A" ~ "Tropical (A)",
+      major_climate_type == "B" ~ "Dry (B)",
+      major_climate_type == "C" ~ "Temperate (C)",
+      .default = major_climate_type
+    )
+  ) |> 
+  select(gauge, lat, lon, climate_type, major_climate_type)
+
+
+## Add to gauge data ===========================================================
+gauge_data <- gauge_data |> 
+  left_join(
+    climate_type_gauge_data,
+    by = join_by(gauge, lat, lon)
   )
 
 
+# gauge_data filtered out gauges that do not meet record length requirements ---
+# remove these gauges from start_stop and yearly data
+yearly_data <- yearly_data |> 
+  filter(gauge %in% gauge_data$gauge)
 
-### Update yearly data with removed catchments #################################
-updated_yearly_data <- yearly_data |>
+start_end_index <- start_end_index |> 
   filter(gauge %in% gauge_data$gauge)
 
 
-# Convert streamflow (mm) into box-cox streamflow ------------------------------
-## Function to convert streamflow (q_mm) into box-cox streamflow ===============
-bc_q_generator <- function(gauge_id, a_priori_boxcox_lambda, yearly_data, lambda_2) {
-  
-  extracted_q_mm <- yearly_data |>
-    filter(gauge == gauge_id) |>
-    dplyr::select(q_mm)
-
-  if (any(extracted_q_mm[!is.na(extracted_q_mm)] <= 0) & (lambda_2 < 1)) {
-    stop("Cannot transform value less than zero. Make lambda_2 >= 1")
-  }
-
-  boxcox_transform(extracted_q_mm, lambda = a_priori_boxcox_lambda, lambda_2 = lambda_2)
-}
-
-
-
-with_NA_bc_q <- map2(
-  .x = gauge_data$gauge,
-  .y = gauge_data$bc_lambda,
-  .f = bc_q_generator,
-  yearly_data = updated_yearly_data,
-  lambda_2 = 1
-) |> 
-  list_rbind()
-
-
-names(with_NA_bc_q) <- "bc_q"
-
-
-with_NA_yearly_data <- updated_yearly_data |>
-  add_column(
-    with_NA_bc_q,
-    .before = 5
-  )
-
-
 # Account for pre-industrial-CO2 -----------------------------------------------
-with_NA_yearly_data <- with_NA_yearly_data |>
-  mutate(CO2 = CO2 - pre_ind_CO2_ppm)
+with_NA_yearly_data <- yearly_data |>
+  mutate(CO2 = CO2 - pre_ind_CO2_ppm) |> 
+  # I am currently not using standardised_warm_to_cool_ratio - remove
+  select(!standardised_warm_to_cool_season_rainfall_ratio)
 
 
 # Save .csv  -------------------------------------------------------------------
@@ -330,30 +344,6 @@ write_csv(gauge_data, paste0("./Data/Tidy/gauge_information_CAMELS.csv"))
 write_csv(start_end_index, paste0("./Data/Tidy/start_end_index.csv"))
 write_csv(with_NA_yearly_data, paste0("./Data/Tidy/with_NA_yearly_data_CAMELS.csv"))
 
-
-
-
-# Examining data ---------------------------------------------------------------
-# Plot rainfall-runoff relationship for everything - identify outliers for cutting
-rainfall_runoff_check <- with_NA_yearly_data |> 
-  ggplot(aes(x = p_mm, bc_q)) +
-  geom_point(na.rm = TRUE) +
-  geom_smooth(method = "lm", formula = y~x, se = FALSE, na.rm = TRUE) +
-  theme_bw() +
-  facet_wrap(~gauge, scales = "free")
-
-# Using trial and error, setting acceptable_missing_streamflow_days = 10
-# does not produce any unusable drop in the rainfall-runoff relationship
-
-ggsave(
-  filename = "rainfall_runoff_check.pdf",
-  plot = rainfall_runoff_check,
-  device = "pdf",
-  path = "Graphs",
-  height = 841,
-  width = 1189,
-  units = "mm"
-)
 
 
 
