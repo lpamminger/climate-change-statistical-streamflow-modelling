@@ -58,8 +58,8 @@ boxcox_lambda_generator <- function(precipitation, streamflow, lambda_2) {
 
 
 # Log-sinh transform -----------------------------------------------------------
-log_sinh_transform <- function(a, b, y) {
-  (1 / b) * log(sinh(a + (b * y)))
+log_sinh_transform <- function(a, b, y, offset = 300) {
+  (1 / b) * log(sinh(a + (b * (y + offset))))
 }
 
 asinh_exp_approximation <- function(x) {
@@ -79,7 +79,7 @@ asinh_exp_approximation <- function(x) {
 
 
 
-inverse_log_sinh_transform <- function(a, b, z) {
+inverse_log_sinh_transform <- function(a, b, z, offset = 300) {
   # If any streamflow value is infinite the approximation is done for everything
   # I am not sure it works with matrices
   if (any(is.infinite(exp(b * z)))) {
@@ -88,10 +88,8 @@ inverse_log_sinh_transform <- function(a, b, z) {
     asinh_component <- asinh(exp(b * z))
   }
   
-  (asinh_component / b) - (a / b)
+  (asinh_component / b) - (a / b) - offset
 }
 
 
-#inverse_log_sinh_transform <- function(a, b, z) {
-#  (asinh(exp(b * z)) / b) - (a / b)
-#}
+
