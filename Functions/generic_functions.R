@@ -349,12 +349,16 @@ get_realspace_optimised_streamflow <- function(cmaes_or_dream_result) {
     realspace_modelled_streamflow <- inverse_log_sinh_transform(
       a = best_a,
       b = best_b,
-      z = transformed_modelled_streamflow # ,
-      # y = observed_flow
+      z = transformed_modelled_streamflow,
+      offset = 300
     )
   } else {
     stop("Name of objective function not found")
   }
+  
+  # realspace_modelled_streamflow cannot be less than zero
+  # if less than zero set to zero
+  realspace_modelled_streamflow[realspace_modelled_streamflow < 0] <- 0
 
 
   return(realspace_modelled_streamflow)
@@ -362,105 +366,8 @@ get_realspace_optimised_streamflow <- function(cmaes_or_dream_result) {
 
 
 
-plot.catchment_data <- function(x, type) {
-  # This should be the entire dataset
-
-  stopifnot(type %in% c("streamflow-time", "rainfall-runoff"))
-
-  if (type == "streamflow-time") {
-    x$full_data_set |>
-      ggplot(aes(x = year, y = observed_boxcox_streamflow)) +
-      geom_line() +
-      geom_point() +
-      labs(
-        x = "Year",
-        y = "Observed Box-Cox Streamflow"
-      ) +
-      theme_bw()
-  } else if (type == "rainfall-runoff") {
-    x$full_data_set |>
-      ggplot(aes(x = precipitation, y = observed_boxcox_streamflow)) +
-      geom_smooth(
-        formula = y ~ x,
-        method = lm,
-        se = FALSE,
-        colour = "black"
-      ) +
-      labs(
-        x = "Precipitation (mm)",
-        y = "Observed Box-Cox Streamflow"
-      ) +
-      geom_point() +
-      theme_bw()
-  }
-}
 
 
-
-plot.result_set <- function(x, type) {
-  stopifnot(type %in% c("streamflow-time", "rainfall-runoff"))
-  # This should only show the streamflow used in calibration
-
-  # Get precipitation and observed streamfow from stop_start_index
-  observed_data <- x$numerical_optimiser_setup$catchment_data$stop_start_data_set |>
-    list_rbind()
-
-  # Create tibble for plotting
-  streamflow_results <- list(
-    year = observed_data |> pull(year),
-    precipitation = observed_data |> pull(precipitation),
-    observed_bc_streamflow = observed_data |> pull(observed_boxcox_streamflow),
-    modelled_bc_streamflow = x$optimised_boxcox_streamflow
-  ) |>
-    as_tibble() |>
-    pivot_longer(
-      cols = ends_with("streamflow"),
-      names_to = "observed_or_modelled",
-      values_to = "streamflow"
-    ) |>
-    mutate(
-      observed_or_modelled = if_else(observed_or_modelled == "modelled_bc_streamflow", "Modelled Box-Cox Streamflow", "Observed Box-Cox Streamflow")
-    )
-
-  # Plotting
-  if (type == "streamflow-time") {
-    streamflow_results |>
-      ggplot(aes(x = year, y = streamflow, colour = observed_or_modelled)) +
-      geom_line() +
-      geom_point() +
-      labs(
-        x = "Year",
-        y = "Streamflow",
-        colour = NULL
-      ) +
-      scale_colour_brewer(palette = "Set1") +
-      theme_bw() +
-      theme(
-        legend.position = "inside",
-        legend.position.inside = c(0.9, 0.9)
-      )
-  } else if (type == "rainfall-runoff") {
-    streamflow_results |>
-      ggplot(aes(x = precipitation, y = streamflow, colour = observed_or_modelled)) +
-      geom_smooth(
-        formula = y ~ x,
-        method = lm,
-        se = FALSE
-      ) +
-      geom_point() +
-      labs(
-        x = "Year",
-        y = "Streamflow",
-        colour = NULL
-      ) +
-      scale_colour_brewer(palette = "Set1") +
-      theme_bw() +
-      theme(
-        legend.position = "inside",
-        legend.position.inside = c(0.9, 0.9)
-      )
-  }
-}
 
 
 summary.result_set <- function(x) {
@@ -583,7 +490,7 @@ plot_result_set_v2 <- function(x, type) {
 
 
 
-plot_catchment_data_v2 <- function(x, type) {
+plot.catchment_data <- function(x, type) {
   # This should be the entire dataset
 
   stopifnot(type %in% c("streamflow-time", "rainfall-runoff"))
@@ -606,12 +513,6 @@ plot_catchment_data_v2 <- function(x, type) {
   } else if (type == "rainfall-runoff") {
     x$full_data_set |>
       ggplot(aes(x = precipitation, y = observed_streamflow)) +
-      geom_smooth(
-        formula = y ~ x,
-        method = lm,
-        se = FALSE,
-        colour = "black"
-      ) +
       labs(
         x = "Precipitation (mm)",
         y = "Observed Streamflow (mm)"
