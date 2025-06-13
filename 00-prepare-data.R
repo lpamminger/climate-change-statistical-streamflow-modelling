@@ -199,6 +199,34 @@ yearly_data <- yearly_precip |>
   )
 
 
+# Check if streamflow is greater than rainfall ---------------------------------
+is_streamflow_greater_than_rainfall <- yearly_data |>
+  mutate(
+    q_greater_than_p = q_mm > p_mm,
+  ) |> 
+  filter(q_greater_than_p) |> 
+  # how much greater?
+  mutate(
+    magnitude_q_greater_than_p = q_mm - p_mm
+  ) |> 
+  arrange(desc(magnitude_q_greater_than_p))
+
+
+count_gauge_is_streamflow_greater_than_rainfall <- is_streamflow_greater_than_rainfall |> 
+  summarise(
+    n = n(),
+    .by = gauge
+  ) |> 
+  arrange(desc(n))
+
+
+# Remove from data
+yearly_data <- yearly_data |> 
+  anti_join(
+    is_streamflow_greater_than_rainfall,
+    by = join_by(gauge, year, p_mm)
+  )
+
 
 # Tom's slice function ---------------------------------------------------------
 ## Find the start and end of all continous streamflow measurements.
@@ -337,6 +365,8 @@ with_NA_yearly_data <- yearly_data |>
   mutate(CO2 = CO2 - pre_ind_CO2_ppm) |> 
   # I am currently not using standardised_warm_to_cool_ratio - remove
   select(!standardised_warm_to_cool_season_rainfall_ratio)
+
+
 
 
 # Save .csv  -------------------------------------------------------------------
