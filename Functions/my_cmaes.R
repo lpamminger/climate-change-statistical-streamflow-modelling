@@ -100,7 +100,7 @@ my_cmaes <- function(numerical_optimiser_setup, cmaes_control = list(), print_mo
   ## Run cmaes =================================================================
   cmaes_result <- cmaesr::cmaes(
     objective.fun = cmaes_objective_function,
-    start.point = rep((SCALE * 0.5), times = PARAMETER_NUMBER),
+    start.point = rep((SCALE * 0.5), times = PARAMETER_NUMBER), # start point is the middle of 0-100 transformed lower and upper bound
     monitor = create_monitor,
     control = cmaes_control
   )

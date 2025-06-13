@@ -105,6 +105,65 @@ constant_sd_no_transform_objective_function <- function(modelled_streamflow, obs
 
 
 
+constant_sd_objective_function <- function(modelled_streamflow, observed_streamflow, parameter_set) {
+  if (is.null(names(as.list(match.call())[-1]))) { # if no arguments provided return description
+    return(
+      list(
+        "name" = "constant_sd_objective_function",
+        "parameters" = c("sd")
+      )
+    )
+  }
+
+  # both modelled and observed streamflow should be in the transformed space
+
+  constant_sd <- parameter_set[nrow(parameter_set), ]
+
+  matrix_error_sd <- matrix(
+    constant_sd,
+    nrow = nrow(modelled_streamflow),
+    ncol = ncol(modelled_streamflow),
+    byrow = TRUE
+  )
+
+  # Correct modelled streamflow and uncertainty
+  corrected_modelled_streamflow <- correct_mean_flow(
+    uncorrected_mean_flow = modelled_streamflow,
+    uncorrected_uncertainty = matrix_error_sd
+  )
+
+  corrected_uncertainty <- correct_uncertainty_flow(
+    uncorrected_mean_flow = modelled_streamflow,
+    uncorrected_uncertainty = matrix_error_sd
+  )
+
+
+  # Produce probabilities using trunnorm
+  # dtruncnorm only works with vectors (double)
+  # matrix is a subclass of double and gets coerced into a double (double atomic vector)
+  # when matrix is coerced into double convert it back into matrix
+  prob_observed <- truncnorm::dtruncnorm(
+    x = observed_streamflow,
+    a = 0,
+    b = Inf,
+    mean = corrected_modelled_streamflow,
+    sd = corrected_uncertainty
+  )
+
+  # Convert vector back into a matrix
+  prob_observed <- matrix(
+    prob_observed,
+    nrow = nrow(modelled_streamflow),
+    ncol = ncol(modelled_streamflow)
+  )
+
+  negative_log_likelihood <- colSums(-1 * log(prob_observed))
+
+  return(negative_log_likelihood)
+}
+
+
+
 
 
 constant_sd_log_sinh_objective_function <- function(modelled_streamflow, observed_streamflow, parameter_set) {

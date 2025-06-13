@@ -223,13 +223,15 @@ get_restart_count.default <- function(cmaes_result, ...) {
 ## Covert parameter into real space ============================================
 ## uses coef
 get_best_parameters_real_space <- function(cmaes_or_dream_result) {
+  
+  
   force(cmaes_or_dream_result)
 
   scaled_parameters <- coef(cmaes_or_dream_result)
 
   best_parameters <- purrr::pmap(
     .l = list(
-      cmaes_or_dream_result$numerical_optimiser_setup$transform_parameter_methods,
+      cmaes_or_dream_result$numerical_optimiser_setup$parameter_transform_method,
       seq(from = 1, to = length(cmaes_or_dream_result$numerical_optimiser_setup$parameter_names)),
       cmaes_or_dream_result$numerical_optimiser_setup$lower_bound,
       cmaes_or_dream_result$numerical_optimiser_setup$upper_bound
@@ -270,39 +272,23 @@ get_boxcox_streamflow <- function(cmaes_or_dream_result) {
 
 
 get_transformed_observed_streamflow <- function(cmaes_or_dream_result) {
-  # This should only show the streamflow used in calibration
-  best_parameters <- get_best_parameters_real_space(cmaes_or_dream_result)
-
-  # Apply to start_stop_data_set (list of tibbles)
-  start_stop_data_set <- cmaes_or_dream_result$numerical_optimiser_setup$catchment_data$stop_start_data_set |>
-    list_rbind()
-
-  observed_streamflow <- start_stop_data_set$observed_streamflow
-
-  # Transforms change depending on objective function used
-  if (cmaes_or_dream_result$numerical_optimiser_setup$objective_function()$name == "constant_sd_boxcox_objective_function") {
-    best_lambda <- best_parameters[length(best_parameters)]
-
-    transformed_observed_streamflow <- boxcox_transform(
-      y = observed_streamflow,
-      lambda = best_lambda,
-      lambda_2 = 1
-    )
-  } else if (cmaes_or_dream_result$numerical_optimiser_setup$objective_function()$name == "constant_sd_log_sinh_objective_function") {
-    best_a <- best_parameters[length(best_parameters) - 1]
-
-    best_b <- best_parameters[length(best_parameters)]
-
-    transformed_observed_streamflow <- log_sinh_transform(
-      a = best_a,
-      b = best_b,
-      y = observed_streamflow
-    )
-  } else {
-    stop("Name of objective function not found")
-  }
-
-  return(transformed_observed_streamflow)
+  
+  # get realspace streamflow
+  realspace_streamflow <- cmaes_or_dream_result$numerical_optimiser_setup$catchment_data$stop_start_data_set |>
+    list_rbind() |> 
+    pull(observed_streamflow)
+  
+  # get transform function
+  # get parameters for transform
+  # apply transform
+  
+  select_streamflow_transform_method(
+    streamflow_transform_method = cmaes_or_dream_result$numerical_optimiser_setup$streamflow_transform_method,
+    parameter_set = as.matrix(get_best_parameters_real_space(cmaes_or_dream_result), ncol = 1), # function relies on matrices as inputs
+    timeseries = as.matrix(realspace_streamflow, ncol = 1),
+    offset = cmaes_or_dream_result$numerical_optimiser_setup$streamflow_transform_method_offset
+  )
+  
 }
 
 get_transformed_optimised_streamflow <- function(cmaes_or_dream_result) {
@@ -328,54 +314,33 @@ get_transformed_optimised_streamflow <- function(cmaes_or_dream_result) {
 }
 
 get_realspace_optimised_streamflow <- function(cmaes_or_dream_result) {
+  
+  # Requires and inverse transform on modelled streamflow
   transformed_modelled_streamflow <- get_transformed_optimised_streamflow(cmaes_or_dream_result)
+  
 
-  best_parameters <- get_best_parameters_real_space(cmaes_or_dream_result)
-
-  # this will change based on the transformation in the objective_function
-  if (cmaes_or_dream_result$numerical_optimiser_setup$objective_function()$name == "constant_sd_boxcox_objective_function") {
-    best_lambda <- best_parameters[length(best_parameters)]
-
-    realspace_modelled_streamflow <- boxcox_inverse_transform(
-      yt = transformed_modelled_streamflow,
-      lambda = best_lambda,
-      lambda_2 = 1
-    )
-  } else if (cmaes_or_dream_result$numerical_optimiser_setup$objective_function()$name == "constant_sd_log_sinh_objective_function") {
-    best_a <- best_parameters[length(best_parameters) - 1]
-
-    best_b <- best_parameters[length(best_parameters)]
-
-    realspace_modelled_streamflow <- inverse_log_sinh_transform(
-      a = best_a,
-      b = best_b,
-      z = transformed_modelled_streamflow,
-      offset = 300
-    )
-  } else {
-    stop("Name of objective function not found")
-  }
+  # Get inverse transform - add inverse to front of function
+  # this requires all streamflow_transform methods to have inverse_function_name style
+  inverse_streamflow_transform_method_name <- paste0("inverse_", cmaes_or_dream_result$numerical_optimiser_setup$streamflow_transform_method()$name)
+  
+  realspace_modelled_streamflow <- select_streamflow_transform_method(
+    streamflow_transform_method = match.fun(FUN = inverse_streamflow_transform_method_name),
+    parameter_set = as.matrix(get_best_parameters_real_space(cmaes_or_dream_result), ncol = 1), # function relies on matrices as inputs
+    timeseries = as.matrix(transformed_modelled_streamflow, ncol = 1),
+    offset = cmaes_or_dream_result$numerical_optimiser_setup$streamflow_transform_method_offset
+  )
+  
   
   # realspace_modelled_streamflow cannot be less than zero
   # if less than zero set to zero
+  # modify the results
+  
   realspace_modelled_streamflow[realspace_modelled_streamflow < 0] <- 0
 
 
   return(realspace_modelled_streamflow)
 }
 
-
-
-
-
-
-
-summary.result_set <- function(x) {
-  # summary() # print a summary
-  # should show the the exit_message, best AIC and fitted parameters. List the models used and gauge
-  cat("Best fitnesss (AIC):", x$AIC_best_parameter_set)
-  cat("\nBest Parameters:", paste(names(dream_example$best_parameter_set), signif(dream_example$best_parameter_set, 3), sep = ":", collapse = " "))
-}
 
 
 
@@ -389,10 +354,8 @@ is_empty_tibble <- function(x) {
 
 
 
-
-
-
-plot_result_set_v2 <- function(x, type) {
+plot.result_set <- function(x, type) {
+  
   stopifnot(type %in% c("streamflow-time", "rainfall-runoff"))
   # This should only show the streamflow used in calibration
 
@@ -401,15 +364,15 @@ plot_result_set_v2 <- function(x, type) {
     list_rbind()
   
   # Identify streamflow transformation method in objective function
-  streamflow_transformation_method <- x$numerical_optimiser_setup$objective_function()[1] |> 
-    str_remove("constant_sd_") |> 
-    str_remove("_objective_function")
+  streamflow_transformation_method <- x$numerical_optimiser_setup$streamflow_transform_method()[[1]]
   
 
 
 
   # Plotting
   if (type == "streamflow-time") {
+  
+    
     # Create tibble for plotting
     streamflow_results <- list(
       year = observed_data |> pull(year),

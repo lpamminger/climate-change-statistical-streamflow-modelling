@@ -1,5 +1,5 @@
-make_parameter_names <- function(streamflow_model, objective_function) {
-  c(streamflow_model()[[2]], objective_function()[[2]]) # [[2]] extracts parameters from the list
+make_parameter_names <- function(streamflow_model, streamflow_transform_method, objective_function) {
+  c(streamflow_model()[[2]], streamflow_transform_method()[[2]], objective_function()[[2]]) # [[2]] extracts parameters from the list
   # streamflow_model() and objective_function() must return character atomic of parameters
 }
 
@@ -10,35 +10,39 @@ make_parameter_names <- function(streamflow_model, objective_function) {
 ## Builds object to be passed to either CMAES or DREAM
 ## I have limited the class to only have one model, objective_function and gauge
 
-new_numerical_optimiser_setup <- function(streamflow_model, transform_parameter_methods, lower_bound, upper_bound, objective_function, catchment_data, scale, minimise_likelihood) {
+new_numerical_optimiser_setup <- function(streamflow_model, parameter_transform_method, streamflow_transform_method, lower_bound, upper_bound, objective_function, catchment_data, scale, minimise_likelihood, streamflow_transform_method_offset) {
   
   ## Check types ===============================================================
   stopifnot(sloop::s3_class(catchment_data)[1] == "catchment_data")
   stopifnot(is.function(streamflow_model)) #if putting list of functions in stopifnot(all(map_lgl(.x = streamflow_model, is.function)))
   stopifnot(is.function(objective_function)) # leave this for now. It would be good if I could have multiple objective_functions
+  stopifnot(is.function(streamflow_transform_method))
   stopifnot(is.logical(minimise_likelihood))
   stopifnot(is.double(lower_bound))
   stopifnot(is.double(upper_bound))
-  stopifnot(is.list(transform_parameter_methods))
+  stopifnot(is.list(parameter_transform_method))
   stopifnot(is.double(scale))
-  stopifnot(all(purrr::map_lgl(.x = transform_parameter_methods, is.function)))
+  stopifnot(all(purrr::map_lgl(.x = parameter_transform_method, is.function)))
+  stopifnot(is.double(streamflow_transform_method_offset))
   
   
   ## Objective function ========================================================
   ready_objective_function <- objective_function_setup(
     streamflow_model = streamflow_model,
-    transform_parameter_methods = transform_parameter_methods,
+    parameter_transform_method = parameter_transform_method,
+    streamflow_transform_method = streamflow_transform_method,
     lower_bound = lower_bound,
     upper_bound = upper_bound,
     objective_function = objective_function,
     catchment_data = catchment_data, 
     scale = scale,
-    minimise_likelihood = minimise_likelihood
+    minimise_likelihood = minimise_likelihood,
+    streamflow_transform_method_offset = streamflow_transform_method_offset
   )
   
   
   ## Make list of parameters ===================================================
-  parameter_names <- make_parameter_names(streamflow_model, objective_function)
+  parameter_names <- make_parameter_names(streamflow_model, streamflow_transform_method, objective_function)
   
   ## Make class ================================================================
   structure(
@@ -46,18 +50,21 @@ new_numerical_optimiser_setup <- function(streamflow_model, transform_parameter_
       "catchment_data" = catchment_data,
       "streamflow_model" = streamflow_model,
       "objective_function" = objective_function,
-      "transform_parameter_methods" = transform_parameter_methods,
+      "parameter_transform_method" = parameter_transform_method,
+      "streamflow_transform_method" = streamflow_transform_method,
       "lower_bound" = lower_bound,
       "upper_bound" = upper_bound, 
       "scale" = scale,
       "minimise_likelihood" = minimise_likelihood,
       "ready_objective_function" = ready_objective_function,
-      "parameter_names" = parameter_names
+      "parameter_names" = parameter_names,
+      "streamflow_transform_method_offset" = streamflow_transform_method_offset
     ),
     class = c("numerical_optimiser_setup", "list")
   )
   
 }
+
 
 
 # Validator --------------------------------------------------------------------
@@ -69,11 +76,11 @@ validate_optimiser_set <- function(numerical_optimiser_setup) {
   ##  putting non-drought catchment in a drought model should throw an error - put in optimiser class
   
   ## Check length of transform parameter method and lower/upper bound ==========
-  check_length_values <- values[c("transform_parameter_methods", "lower_bound", "upper_bound", "parameter_names")]
+  check_length_values <- values[c("parameter_transform_method", "lower_bound", "upper_bound", "parameter_names")]
   
   if (length(unique(lengths(check_length_values))) != 1) {
     stop(
-      "transform_parameter_methods, lower_bound, upper_bound all must be the same length",
+      "parameter_transform_method, lower_bound, upper_bound all must be the same length. Default method: make_default_bounds_and_transform_methods may not have parameter listed.",
       call. = FALSE
     )
   }
@@ -91,7 +98,7 @@ validate_optimiser_set <- function(numerical_optimiser_setup) {
   
   
   # If using log-transform cannot have bound less then zero ===================
-  logarithmic_parameter_transform_index <- names(values$transform_parameter_methods) == "logarithmic_parameter_transform"
+  logarithmic_parameter_transform_index <- names(values$parameter_transform_method) == "logarithmic_parameter_transform"
   
   if(any(values$lower_bound[logarithmic_parameter_transform_index] <= 0)) {
     stop(
@@ -114,15 +121,10 @@ validate_optimiser_set <- function(numerical_optimiser_setup) {
 }
 
 
-
-
 # Helper -----------------------------------------------------------------------
-# give the user suggested pre-sets?
-# i.e., recommended transform methods based on streamflow model and optimiser combinations, single bounds tibble
-
-numerical_optimiser_setup <- function(streamflow_model, objective_function, catchment_data, bounds_and_transform_method, scale = 100, minimise_likelihood) { # same as constructor
+numerical_optimiser_setup <- function(streamflow_model, objective_function, streamflow_transform_method, catchment_data, bounds_and_transform_method, streamflow_transform_method_offset = 0, scale = 100, minimise_likelihood) { # same as constructor
   
-  parameter_names <- make_parameter_names(streamflow_model, objective_function)
+  parameter_names <- make_parameter_names(streamflow_model, streamflow_transform_method, objective_function)
   
   selected_defaults <- bounds_and_transform_method |> 
     dplyr::filter(parameter %in% parameter_names)
@@ -134,22 +136,27 @@ numerical_optimiser_setup <- function(streamflow_model, objective_function, catc
   ## Make and validate optimiser_set class =====================================
   new_numerical_optimiser_setup(
     streamflow_model = streamflow_model,
-    transform_parameter_methods = selected_defaults |> dplyr::pull(transform_method),
+    parameter_transform_method = selected_defaults |> dplyr::pull(transform_method),
+    streamflow_transform_method = streamflow_transform_method,
     lower_bound = selected_defaults |> dplyr::pull(lower_bound),
     upper_bound = selected_defaults |> dplyr::pull(upper_bound),
     objective_function = objective_function,
     catchment_data = catchment_data,
     scale = scale,
-    minimise_likelihood = minimise_likelihood
+    minimise_likelihood = minimise_likelihood,
+    streamflow_transform_method_offset = streamflow_transform_method_offset
   ) |> 
     validate_optimiser_set()
   
 }
 
-
+# Helpers helper - this is not great
 numerical_optimiser_setup_vary_inputs <- function(catchment_data, ...) {
   numerical_optimiser_setup(catchment_data = catchment_data, ...)
 }
+
+
+
 
 
 # Make default bounds and transfer methods -------------------------------------
@@ -164,108 +171,19 @@ make_default_bounds_and_transform_methods <- function(catchment_data_set) {
   tibble::tribble(
     ~parameter,     ~lower_bound,   ~upper_bound,      ~transform_method,
     "a0",           -2000,          200,               linear_parameter_transform, # intercept
-    "a0_d",         -2000,          200,                linear_parameter_transform, # intercept - no drought
-    "a0_n",         -2000,          200,                linear_parameter_transform, # intercept - drought
+    "a0_d",         -2000,          200,               linear_parameter_transform, # intercept - no drought
+    "a0_n",         -2000,          200,               linear_parameter_transform, # intercept - drought
     "a1",            1E-6 ,         2,                 logarithmic_parameter_transform, # slope
     "a2",           -1,             1,                 linear_parameter_transform, # autocorrelation
     "a3_intercept", -25,            50,                linear_parameter_transform, # CO2 coefficient for intercept 
     "a3_slope",     -1E-2,          5E-3,              linear_parameter_transform, # CO2 coefficent for slope
     "a4",           -600,           600,               linear_parameter_transform, # seasonal parameter
     "a5",            0,             upper_a5_bound,    linear_parameter_transform, # Changes depending on last CO2 value in calibration
-    "sd",            1E-8,          300,               logarithmic_parameter_transform, # constant sd objective function 
-    #"scale_CO2",     1E-8,          2,                 logarithmic_parameter_transform, # CO2 scaler for objective function - not in use
     "a",             1E-8,          10,                logarithmic_parameter_transform,
-    "b",             1E-2,          5,                 logarithmic_parameter_transform,
-    "boxcox_lambda", 0,             2,                 linear_parameter_transform # boxcox recommended range is -2 to 2(0-2 because we want to shift it from positive skew)
+    "b",             1E-3,          5,                 logarithmic_parameter_transform,
+    "lambda",        0,             2,                 linear_parameter_transform, # boxcox recommended range is -2 to 2(0-2 because we want to shift it from positive skew)
+    "sd",            1E-8,          300,               logarithmic_parameter_transform # constant sd objective function 
+
   )
   
-  # Validator --> picks up if missing parameter (check_length_values) 
-}
-
-
-
-# New setups -------------------------------------------------------------------
-## validator does not change
-## Builds object to be passed to either CMAES or DREAM
-## I have limited the class to only have one model, objective_function and gauge
-
-new_numerical_optimiser_setup_v2 <- function(streamflow_model, transform_parameter_methods, lower_bound, upper_bound, objective_function, catchment_data, scale, minimise_likelihood) {
-  
-  ## Check types ===============================================================
-  stopifnot(sloop::s3_class(catchment_data)[1] == "catchment_data")
-  stopifnot(is.function(streamflow_model)) #if putting list of functions in stopifnot(all(map_lgl(.x = streamflow_model, is.function)))
-  stopifnot(is.function(objective_function)) # leave this for now. It would be good if I could have multiple objective_functions
-  stopifnot(is.logical(minimise_likelihood))
-  stopifnot(is.double(lower_bound))
-  stopifnot(is.double(upper_bound))
-  stopifnot(is.list(transform_parameter_methods))
-  stopifnot(is.double(scale))
-  stopifnot(all(purrr::map_lgl(.x = transform_parameter_methods, is.function)))
-  
-  
-  ## Objective function ========================================================
-  ready_objective_function <- objective_function_setup_v2(
-    streamflow_model = streamflow_model,
-    transform_parameter_methods = transform_parameter_methods,
-    lower_bound = lower_bound,
-    upper_bound = upper_bound,
-    objective_function = objective_function,
-    catchment_data = catchment_data, 
-    scale = scale,
-    minimise_likelihood = minimise_likelihood
-  )
-  
-  
-  ## Make list of parameters ===================================================
-  parameter_names <- make_parameter_names(streamflow_model, objective_function)
-  
-  ## Make class ================================================================
-  structure(
-    list(
-      "catchment_data" = catchment_data,
-      "streamflow_model" = streamflow_model,
-      "objective_function" = objective_function,
-      "transform_parameter_methods" = transform_parameter_methods,
-      "lower_bound" = lower_bound,
-      "upper_bound" = upper_bound, 
-      "scale" = scale,
-      "minimise_likelihood" = minimise_likelihood,
-      "ready_objective_function" = ready_objective_function,
-      "parameter_names" = parameter_names
-    ),
-    class = c("numerical_optimiser_setup", "list")
-  )
-  
-}
-
-
-numerical_optimiser_setup_v2 <- function(streamflow_model, objective_function, catchment_data, bounds_and_transform_method, scale = 100, minimise_likelihood) { # same as constructor
-  
-  parameter_names <- make_parameter_names(streamflow_model, objective_function)
-  
-  selected_defaults <- bounds_and_transform_method |> 
-    dplyr::filter(parameter %in% parameter_names)
-  
-  
-  ## Override defaults if NULL is replaced =====================================
-  ### Add later...
-  
-  ## Make and validate optimiser_set class =====================================
-  new_numerical_optimiser_setup_v2(
-    streamflow_model = streamflow_model,
-    transform_parameter_methods = selected_defaults |> dplyr::pull(transform_method),
-    lower_bound = selected_defaults |> dplyr::pull(lower_bound),
-    upper_bound = selected_defaults |> dplyr::pull(upper_bound),
-    objective_function = objective_function,
-    catchment_data = catchment_data,
-    scale = scale,
-    minimise_likelihood = minimise_likelihood
-  ) |> 
-    validate_optimiser_set()
-  
-}
-
-
-numerical_optimiser_setup_vary_inputs_v2 <- function(catchment_data, ...) {
-  numerical_optimiser_setup_v2(catchment_data = catchment_data, ...)
 }
