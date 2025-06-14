@@ -227,3 +227,7 @@ select_streamflow_transform_method <- function(timeseries, parameter_set, stream
   }
   
 }
+
+get_streamflow_transform_method <- function() {
+  c(log_sinh_transform, boxcox_transform)
+}

@@ -406,7 +406,8 @@ plot.result_set <- function(x, type) {
       theme_bw() +
       theme(
         legend.position = "inside",
-        legend.position.inside = c(0.9, 0.9)
+        legend.position.inside = c(0.9, 0.9),
+        legend.background = element_rect(colour = "black")
       )
   } else if (type == "rainfall-runoff") {
     # Create tibble for plotting
@@ -444,7 +445,8 @@ plot.result_set <- function(x, type) {
       theme_bw() +
       theme(
         legend.position = "inside",
-        legend.position.inside = c(0.9, 0.9)
+        legend.position.inside = c(0.1, 0.9),
+        legend.background = element_rect(colour = "black")
       )
   }
 }
