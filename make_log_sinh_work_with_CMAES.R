@@ -1,7 +1,4 @@
 # Fitting streamflow models to catchments
-cat("\014") # clear console
-
-
 
 # Import libraries--------------------------------------------------------------
 pacman::p_load(tidyverse, cmaesr, smoof, tictoc, furrr, parallel, truncnorm, sloop, tictoc)
@@ -41,42 +38,13 @@ source("./Functions/cmaes_dream_summaries.R")
 source("./Functions/objective_functions.R")
 source("./Functions/numerical_optimiser_setup.R")
 source("./Functions/generic_functions.R")
-source("./Functions/my_cmaes.R")
+source("./Functions/CMAES.R")
 source("./Functions/objective_function_setup.R")
 source("./Functions/result_set.R")
 
 
-# Testing changes here ---------------------------------------------------------
-
-
-# probably problem with matrices in objective_function_setup
-gauge <- "112101B" 
-
-example_catchment <- gauge |>
-  catchment_data_blueprint(
-    observed_data = data,
-    start_stop_indexes = start_stop_indexes
-  ) 
-
-
-plot(example_catchment, type = "streamflow-time")
-
-results <- example_catchment |>
-  numerical_optimiser_setup_vary_inputs(
-    streamflow_model = streamflow_model_slope_shifted_CO2_seasonal_ratio_auto,
-    objective_function = constant_sd_objective_function,
-    streamflow_transform_method = boxcox_transform, #boxcox_transform
-    bounds_and_transform_method = make_default_bounds_and_transform_methods(example_catchment),
-    minimise_likelihood = TRUE,
-    streamflow_transform_method_offset = 300
-  ) |>
-  my_cmaes(
-    print_monitor = TRUE
-  ) 
-
-
-x <- results |> result_set() 
-plot(x, type = "streamflow-time")
+# TODO:
+# - make this work with the new numerical optimiser
 
 
 
@@ -109,7 +77,7 @@ catchment_data_per_gauge <- map(
 )
 
 
-#plot(catchment_data_per_gauge[[5]], type = "streamflow-time")
+#plot(catchment_data_per_gauge[[6]], type = "streamflow-time")
 #plot(catchment_data_per_gauge[[5]], type = "rainfall-runoff")
 
 
@@ -117,12 +85,6 @@ catchment_data_per_gauge <- map(
 
 
 # Calibrate data ---------------------------------------------------------------
-
-## Add to gauge_streamflow_model_combinations tibble:
-## - objective function
-## - bounds
-## - streamflow_transform_methods
-## - offset?
 
 streamflow_transform_methods <- c(
   log_sinh_transform,
@@ -173,22 +135,19 @@ numerical_optimiser_setup_combinations <- pmap(
 plan(multisession, workers = length(availableWorkers())) # set once for furrr
 cmaes_results <- future_map(
   .x = numerical_optimiser_setup_combinations,
-  .f = my_cmaes,
+  .f = CMAES,
   print_monitor = FALSE,
   .options = furrr_options(seed = 1L)
 )
 
 
 ## Summarise results ###########################################################
-# cmaes_results are correct
-
-
 summarise_cmaes_results <- map(
   .x = cmaes_results,
   .f = result_set
 )
 
-plot(summarise_cmaes_results[[14]], type = "rainfall-runoff")
+plot(summarise_cmaes_results[[1]], type = "rainfall-runoff")
 plot(summarise_cmaes_results[[2]], type = "streamflow-time")
 
 check_bounds <- map(
@@ -196,15 +155,6 @@ check_bounds <- map(
   .f = parameters_summary
 ) |>
   list_rbind()
-
-stop_here()
-
-
-
-# TODO:
-# 1. fix the code below here to work with the changes
-# 2. 
-
 
 
 
@@ -220,8 +170,9 @@ stop_here()
 # 3. re-run model to get transformed streamflow
 # 4. turn transformed streamflow into realspace
 turn_off_CO2_component <- function(result_set) {
+  
   stopifnot(s3_class(result_set)[1] == "result_set")
-
+  
   # Get best parameters
   best_parameters_CO2_on <- result_set$best_parameter_set
 
@@ -237,36 +188,24 @@ turn_off_CO2_component <- function(result_set) {
   ) |>
     pull(streamflow_results)
 
-  # Transform to realspace
-  if (result_set$numerical_optimiser_setup$objective_function()$name == "constant_sd_boxcox_objective_function") {
-    best_lambda <- best_parameters_CO2_off[length(best_parameters_CO2_off)]
-
-    realspace_modelled_streamflow_CO2_off <- boxcox_inverse_transform(
-      yt = transformed_CO2_off_modelled_streamflow,
-      lambda = best_lambda,
-      lambda_2 = 1
-    )
-  } else if (result_set$numerical_optimiser_setup$objective_function()$name == "constant_sd_log_sinh_objective_function") {
-    best_a <- best_parameters_CO2_off[length(best_parameters_CO2_off) - 1]
-    best_b <- best_parameters_CO2_off[length(best_parameters_CO2_off)]
-
-    realspace_modelled_streamflow_CO2_off <- inverse_log_sinh_transform(
-      a = best_a,
-      b = best_b,
-      z = transformed_CO2_off_modelled_streamflow
-    )
-  } else {
-    stop("Name of objective function not found")
-  }
-
+  # Transform to realspace using select_streamflow_transform_method 
+  inverse_streamflow_transform_method_name <- paste0("inverse_", result_set$numerical_optimiser_setup$streamflow_transform_method()$name)
+  
+  realspace_modelled_streamflow_CO2_off <- select_streamflow_transform_method(
+    timeseries = as.matrix(transformed_CO2_off_modelled_streamflow, ncol = 1), # this function requires matrix input for timeseries and parameter_set
+    parameter_set = as.matrix(best_parameters_CO2_off, ncol = 1),
+    streamflow_transform_method = match.fun(FUN = inverse_streamflow_transform_method_name), # get the inverse from name then match the function
+    offset = result_set$numerical_optimiser_setup$streamflow_transform_method_offset # get result set
+  ) |> 
+    as.numeric() # convert back into vector
 
   # Return a tibble of both results
   return(list("transformed_CO2_off" = transformed_CO2_off_modelled_streamflow, "realspace_CO2_off" = realspace_modelled_streamflow_CO2_off))
 }
 
 
-## Get turn of CO2 streamflow values ###########################################
 
+## Get turn of CO2 streamflow values ###########################################
 turn_off_CO2_component_results <- map(
   .x = summarise_cmaes_results,
   .f = turn_off_CO2_component
@@ -290,7 +229,9 @@ result_set_to_plotting_data <- function(result_set, turn_off_CO2_component) {
       "transformed_mod_flow_CO2_on" = result_set$optimised_modelled_streamflow_transformed_space,
       "realspace_mod_flow_CO2_on" = result_set$optimised_modelled_streamflow_realspace,
       "transformed_mod_flow_CO2_off" = turn_off_CO2_component(result_set)$transformed_CO2_off,
-      "realspace_mod_flow_CO2_off" = turn_off_CO2_component(result_set)$realspace_CO2_off
+      "realspace_mod_flow_CO2_off" = turn_off_CO2_component(result_set)$realspace_CO2_off,
+      "streamflow_transform_method" = result_set$numerical_optimiser_setup$streamflow_transform_method()$name,
+      "gauge" = result_set$numerical_optimiser_setup$catchment_data$gauge_ID
     ) |>
     select(-c(is_drought_year, CO2, seasonal_ratio)) |>
     rename(
@@ -301,97 +242,55 @@ result_set_to_plotting_data <- function(result_set, turn_off_CO2_component) {
 
 
 
-## Produce data for plotting ###################################################
-gauge_transform_method_key <- gauge_objective_function_combinations |>
-  select(gauge, transform_method) |>
-  unite(col = "gauge_transform", sep = "-") |>
-  pull(gauge_transform)
-
+### Produce data for plotting ##################################################
 
 plotting_data <- map2(
   .x = summarise_cmaes_results,
   .y = turn_off_CO2_component_results,
   .f = result_set_to_plotting_data
 ) |>
-  `names<-`(gauge_transform_method_key) |>
-  list_rbind(names_to = "gauge_transform") |>
-  separate_wider_delim(
-    cols = gauge_transform,
-    delim = "-",
-    names = c("gauge", "transform_method")
-  ) |>
-  # Manually adjust transform - realspace cannot be less than zero
-  mutate(
-    realspace_mod_flow_CO2_on = if_else(realspace_mod_flow_CO2_on < 0, 0, realspace_mod_flow_CO2_on),
-    realspace_mod_flow_CO2_off = if_else(realspace_mod_flow_CO2_off < 0, 0, realspace_mod_flow_CO2_off)
+  list_rbind()
+
+
+
+# Compare boxcox and log-sinh AIC and residuals values -------------------------
+residuals_check <- plotting_data |>
+  mutate(obs_minus_mod_residual = transformed_obs_flow - transformed_mod_flow_CO2_on) |>
+  summarise(
+    sum_residual = sum(obs_minus_mod_residual),
+    .by = c(gauge, streamflow_transform_method)
   )
 
 
-# Compare boxcox and log-sinh AIC values ---------------------------------------
-get_streamflow_transform_method <- function(result_set) {
-  # only works for result_set objects
-  result_set$numerical_optimiser_setup$objective_function()$name[1] |>
-    str_remove("constant_sd_") |>
-    str_remove("_objective_function")
-}
-
-gauge_AIC_streamflow_transform <- function(result_set) {
+get_likelihood_information <- function(result_set) {
   list(
     "gauge" = result_set$numerical_optimiser_setup$catchment_data$gauge_ID,
-    "transform_method" = get_streamflow_transform_method(result_set),
+    "loglikelihood" = result_set$LL_best_parameter_set,
     "AIC" = result_set$AIC_best_parameter_set,
-    "LL" = result_set$LL_best_parameter_set
-  ) |>
+    "streamflow_transform_method" = result_set$numerical_optimiser_setup$streamflow_transform_method()$name
+  ) |> 
     as_tibble()
 }
 
-
-
-
-
-coord_for_labels <- plotting_data |>
-  summarise(
-    y_pos = max(transformed_obs_flow),
-    .by = c(gauge, transform_method)
-  ) |>
-  mutate(
-    transform_method = str_remove(transform_method, "constant_sd_"),
-    transform_method = str_remove(transform_method, "_objective_function"),
-    y_pos = ceiling(y_pos) - (ceiling(y_pos) * 0.05)
-  ) |>
-  add_column(
-    x_pos = 1965
-  )
-
-AIC_streamflow_transform_comparison <- map(
+loglikelihood_information <- map(
   .x = summarise_cmaes_results,
-  .f = gauge_AIC_streamflow_transform
-) |>
-  list_rbind() |>
+  .f = get_likelihood_information
+) |> 
+  list_rbind()
+
+
+numerical_comparison_boxcox_logsinh <- residuals_check |> 
   left_join(
-    coord_for_labels,
-    by = join_by(gauge, transform_method)
-  ) |>
-  mutate(
-    AIC = paste0("AIC: ", round(AIC, digits = 2)),
-    transform_method = case_when(
-      transform_method == "boxcox" ~ "Box-Cox Transform",
-      transform_method == "log_sinh" ~ "Log-Sinh Transform",
-      .default = NA
-    )
+    loglikelihood_information,
+    by = join_by(gauge, streamflow_transform_method)
   )
+
+
 
 # What does the streamflow time plot look like when a3 is turned off? ----------
 
 
 ## Transformed streamflow time graphs ==========================================
-### Look at the results
-residuals_check <- plotting_data |>
-  mutate(obs_minus_mod_residual = transformed_obs_flow - transformed_mod_flow_CO2_on) |>
-  summarise(
-    sum_residual = sum(obs_minus_mod_residual),
-    .by = c(gauge, transform_method)
-  )
 
 ### Look at uncertainty parameter
 uncertainty_parameter_comparison <- check_bounds |>
@@ -407,9 +306,6 @@ transformed_streamflow_time_plot <- plotting_data |>
     values_to = "transformed_streamflow"
   ) |>
   mutate(
-    transform_method = if_else(transform_method == "constant_sd_boxcox_objective_function", "Box-Cox Transform", "Log-Sinh Transform")
-  ) |>
-  mutate(
     streamflow_type = case_when(
       streamflow_type == "transformed_mod_flow_CO2_off" ~ "Modelled Streamflow CO2 Off",
       streamflow_type == "transformed_mod_flow_CO2_on" ~ "Modelled Streamflow CO2 On",
@@ -418,15 +314,15 @@ transformed_streamflow_time_plot <- plotting_data |>
     ),
     streamflow_type = factor(streamflow_type, levels = c("Observed Streamflow", "Modelled Streamflow CO2 On", "Modelled Streamflow CO2 Off"))
   ) |>
-  filter(streamflow_type != "Modelled Streamflow CO2 Off") |> # ingore for now
+  filter(streamflow_type != "Modelled Streamflow CO2 Off") |> # ignore for now
   ggplot(aes(x = year, y = transformed_streamflow, colour = streamflow_type)) +
   geom_line(linewidth = 0.8) +
   geom_point(alpha = 0.9, size = 2) +
-  geom_label(
-    aes(x = x_pos, y = y_pos, label = AIC),
-    data = AIC_streamflow_transform_comparison,
-    inherit.aes = FALSE
-  ) +
+  #geom_label(
+  #  aes(x = x_pos, y = y_pos, label = AIC),
+  #  data = AIC_streamflow_transform_comparison,
+  #  inherit.aes = FALSE
+  #) +
   labs(
     x = "Year",
     y = "Transformed Streamflow",
@@ -436,17 +332,17 @@ transformed_streamflow_time_plot <- plotting_data |>
   theme(
     legend.position = "bottom"
   ) +
-  facet_wrap(~ gauge + transform_method, ncol = 2, nrow = 7, scales = "free_y")
+  facet_wrap(~ gauge + streamflow_transform_method, ncol = 2, nrow = 7, scales = "free_y")
 
-# ggsave(
-#  filename = "offset_log_sinh_showing_tim_transform_issue_timeseries.pdf",
-#  plot = transformed_streamflow_time_plot,
-#  device = "pdf",
-#  path = "./Graphs/Supplementary_Figures",
-#  width = 320,
-#  height = 420,
-#  units = "mm"
-# )
+ ggsave(
+  filename = "offset_log_sinh_showing_tim_transform_issue_timeseries.pdf",
+  plot = transformed_streamflow_time_plot,
+  device = "pdf",
+  path = "./Graphs/Supplementary_Figures",
+  width = 320,
+  height = 420,
+  units = "mm"
+ )
 
 
 ## Streamflow time =============================================================
@@ -456,9 +352,6 @@ streamflow_time_plot <- plotting_data |>
     cols = contains("realspace"),
     names_to = "streamflow_type",
     values_to = "realspace_streamflow"
-  ) |>
-  mutate(
-    transform_method = if_else(transform_method == "constant_sd_boxcox_objective_function", "Box-Cox Transform", "Log-Sinh Transform")
   ) |>
   mutate(
     streamflow_type = case_when(
@@ -487,17 +380,17 @@ streamflow_time_plot <- plotting_data |>
   theme(
     legend.position = "bottom"
   ) +
-  facet_wrap(~ gauge + transform_method, ncol = 2, nrow = 7, scales = "free_y")
+  facet_wrap(~ gauge + streamflow_transform_method, ncol = 2, nrow = 7, scales = "free_y")
 
-# ggsave(
-#  filename = "offset_log_sinh_testing_streamflow_transform_methods_timeseries.pdf",
-#  plot = streamflow_time_plot,
-#  device = "pdf",
-#  path = "./Graphs/Supplementary_Figures",
-#  width = 320,
-#  height = 420,
-#  units = "mm"
-# )
+ ggsave(
+  filename = "offset_log_sinh_testing_streamflow_transform_methods_timeseries.pdf",
+  plot = streamflow_time_plot,
+  device = "pdf",
+  path = "./Graphs/Supplementary_Figures",
+  width = 320,
+  height = 420,
+  units = "mm"
+ )
 
 
 ## Rainfall-runoff =============================================================
@@ -507,9 +400,6 @@ rainfall_runoff_plot <- plotting_data |>
     cols = contains("transformed"),
     names_to = "streamflow_type",
     values_to = "transformed_streamflow"
-  ) |>
-  mutate(
-    transform_method = if_else(transform_method == "constant_sd_boxcox_objective_function", "Box-Cox Transform", "Log-Sinh Transform")
   ) |>
   mutate(
     streamflow_type = case_when(
@@ -538,23 +428,25 @@ rainfall_runoff_plot <- plotting_data |>
   theme(
     legend.position = "bottom"
   ) +
-  facet_wrap(~ gauge + transform_method, nrow = 7, ncol = 2, scales = "free")
+  facet_wrap(~ gauge + streamflow_transform_method, nrow = 7, ncol = 2, scales = "free")
 
-# ggsave(
-#  filename = "offset_log_sinh_testing_streamflow_transform_methods_rainfall_runoff.pdf",
-#  plot = rainfall_runoff_plot,
-#  device = "pdf",
-#  path = "./Graphs/Supplementary_Figures",
-#  width = 250,
-#  height = 594,
-#  units = "mm"
-# )
+ ggsave(
+  filename = "offset_log_sinh_testing_streamflow_transform_methods_rainfall_runoff.pdf",
+  plot = rainfall_runoff_plot,
+  device = "pdf",
+  path = "./Graphs/Supplementary_Figures",
+  width = 250,
+  height = 594,
+  units = "mm"
+ )
 
 
 
 # Why are the AIC so different? ------------------------------------------------
 
 # Does the different transform methods produce different LL?
+ 
+ # Try Tim's suggestion of qq and *2 sd here...
 
 # 1. generate observed streamflow - realspace
 set.seed(1)
@@ -586,4 +478,4 @@ log_sinh_loglikelihood <- constant_sd_log_sinh_objective_function(
 cat("boxcox LL =", boxcox_loglikelihood, "\nlog_sinh LL =", log_sinh_loglikelihood)
 
 
-# Try Tim's suggestion of qq and *2 sd here...
+

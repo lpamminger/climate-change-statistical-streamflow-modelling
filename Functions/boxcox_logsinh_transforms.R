@@ -126,7 +126,6 @@ inverse_log_sinh_transform <- function(a, b, z, offset) {
 
 select_streamflow_transform_method <- function(timeseries, parameter_set, streamflow_transform_method, offset) {
   
-  
   # call the streamflow_transfer_method to get name of method perform
   # different operation depending on name
   streamflow_transform_method_name <- streamflow_transform_method()[[1]]

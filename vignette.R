@@ -84,10 +84,10 @@ plot(example_catchment, type = "streamflow-time")
 
 numerical_optimiser <- example_catchment |>
   numerical_optimiser_setup_vary_inputs(
-    streamflow_model = streamflow_model_intercept_shifted_CO2_seasonal_ratio_auto,#streamflow_model_drought_slope_shifted_CO2_seasonal_ratio_auto,
+    streamflow_model = streamflow_model_intercept_shifted_CO2_seasonal_ratio_auto,
     objective_function = constant_sd_objective_function, 
     streamflow_transform_method = log_sinh_transform, # or boxcox_transform, 
-    bounds_and_transform_method = make_default_bounds_and_transform_methods(example_catchment),
+    bounds_and_transform_method = make_default_bounds_and_transform_methods(example_catchment), # requires catchment_data_set object to calculate bounds 
     minimise_likelihood = TRUE,
     streamflow_transform_method_offset = 300
   )
@@ -110,7 +110,8 @@ standardised_results <- results |> result_set()
 
 
 # 5. Examine results -----------------------------------------------------------
-### probably should add ... in plot method so the user can alter the ggplot object directly
+### probably should add ... in plot method so the user can alter the ggplot object directly i.e.,
+### plot(standardised_results, type = "streamflow-time, ...) add theme(axis...)
 plot(standardised_results, type = "streamflow-time")
 plot(standardised_results, type = "rainfall-runoff")
 

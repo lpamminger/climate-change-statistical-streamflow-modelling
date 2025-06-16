@@ -244,7 +244,7 @@ get_best_parameters_real_space <- function(cmaes_or_dream_result) {
   # If streamflow_transform_method is boxcox and lambda is less than machine tol
   # then set lambda to zero. This is what boxcox_transform() does. Reflect this
   # in result
-  if(results$numerical_optimiser_setup$streamflow_transform_method()$name == "boxcox_transform") {
+  if(cmaes_or_dream_result$numerical_optimiser_setup$streamflow_transform_method()$name == "boxcox_transform") {
     near_zero_lambda <- best_parameters[["lambda"]] <= .Machine$double.eps^0.5
     
     if(near_zero_lambda) {
