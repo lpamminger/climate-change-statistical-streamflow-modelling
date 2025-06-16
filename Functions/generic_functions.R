@@ -224,7 +224,6 @@ get_restart_count.default <- function(cmaes_result, ...) {
 ## uses coef
 get_best_parameters_real_space <- function(cmaes_or_dream_result) {
   
-  
   force(cmaes_or_dream_result)
 
   scaled_parameters <- coef(cmaes_or_dream_result)
@@ -239,9 +238,22 @@ get_best_parameters_real_space <- function(cmaes_or_dream_result) {
     .f = transform_parameter_method,
     parameter_set = as.matrix(scaled_parameters, ncol = 1),
     scale = cmaes_or_dream_result$numerical_optimiser_setup$scale
-  )
+  ) |> 
+    unlist()
+  
+  # If streamflow_transform_method is boxcox and lambda is less than machine tol
+  # then set lambda to zero. This is what boxcox_transform() does. Reflect this
+  # in result
+  if(results$numerical_optimiser_setup$streamflow_transform_method()$name == "boxcox_transform") {
+    near_zero_lambda <- best_parameters[["lambda"]] <= .Machine$double.eps^0.5
+    
+    if(near_zero_lambda) {
+      best_parameters[["lambda"]] <- 0
+    }
+  }
+  
 
-  return(unlist(best_parameters))
+  return(best_parameters)
 }
 
 
@@ -292,6 +304,7 @@ get_transformed_observed_streamflow <- function(cmaes_or_dream_result) {
 }
 
 get_transformed_optimised_streamflow <- function(cmaes_or_dream_result) {
+  
   # This should only show the streamflow used in calibration
   best_parameters <- get_best_parameters_real_space(cmaes_or_dream_result)
 
@@ -403,12 +416,18 @@ plot.result_set <- function(x, type) {
         colour = NULL
       ) +
       scale_colour_brewer(palette = "Set1") +
+      labs(
+        x = "Year",
+        y = "Streamflow (mm)"
+      ) +
       theme_bw() +
       theme(
         legend.position = "inside",
         legend.position.inside = c(0.9, 0.9),
         legend.background = element_rect(colour = "black")
       )
+    
+    
   } else if (type == "rainfall-runoff") {
     # Create tibble for plotting
     streamflow_results <- list(
