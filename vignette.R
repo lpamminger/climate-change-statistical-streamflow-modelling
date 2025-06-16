@@ -41,17 +41,18 @@ source("./Functions/cmaes_dream_summaries.R")
 source("./Functions/objective_functions.R")
 source("./Functions/numerical_optimiser_setup.R")
 source("./Functions/generic_functions.R")
-source("./Functions/my_cmaes.R")
+source("./Functions/CMAES.R")
 source("./Functions/objective_function_setup.R")
 source("./Functions/result_set.R")
 
 
 
 # 1. Select gauge to test from data --------------------------------------------
-gauge <- "003303A" # the offset does not look like it is working for this catchment?
+gauge <- "405240" 
 
 
 # ideally catchment_data_blueprint should have other methods of data entry such as giving vectors individually
+# See catchment_data_blue_print helper... must leave observed_data blank
 example_catchment <- gauge |> 
   catchment_data_blueprint(
     observed_data = data,
@@ -83,23 +84,24 @@ plot(example_catchment, type = "streamflow-time")
 
 numerical_optimiser <- example_catchment |>
   numerical_optimiser_setup_vary_inputs(
-    streamflow_model = streamflow_model_precip_seasonal_ratio,
-    objective_function = constant_sd_objective_function,
-    streamflow_transform_method = log_sinh_transform, 
+    streamflow_model = streamflow_model_intercept_shifted_CO2_seasonal_ratio_auto,#streamflow_model_drought_slope_shifted_CO2_seasonal_ratio_auto,
+    objective_function = constant_sd_objective_function, 
+    streamflow_transform_method = log_sinh_transform, # or boxcox_transform, 
     bounds_and_transform_method = make_default_bounds_and_transform_methods(example_catchment),
     minimise_likelihood = TRUE,
     streamflow_transform_method_offset = 300
   )
 
 
+
+
 # 3. Put numerical_optimiser object into a numerical optimiser -----------------
 
-# currently only works with my_cmaes and DREAM
-
-results <-  numerical_optimiser |>
-  my_cmaes(
+# currently only works with CMAES and DREAM functions
+results <- numerical_optimiser |>
+  CMAES(
     cmaes_control = list(), # can alter default cmaes controls here - see cmaesr package for options
-    print_monitor = TRUE # print optimiser ouputs
+    print_monitor = TRUE # print optimiser outputs in console while CMAES is running
   ) 
 
 
@@ -108,11 +110,14 @@ standardised_results <- results |> result_set()
 
 
 # 5. Examine results -----------------------------------------------------------
-### probably should add ... so the user can alter the ggplot object to there
-### desire
+### probably should add ... in plot method so the user can alter the ggplot object directly
 plot(standardised_results, type = "streamflow-time")
 plot(standardised_results, type = "rainfall-runoff")
 
+# The near_bound column does not functioning correctly
+# Ideally, it should scale with the parameters. It does not do this currently.
+parameter_table <- parameters_summary(standardised_results) 
 
-# add summary - make it work with broom::tidy()
-# add a way to save results in nice format
+result_table <- streamflow_timeseries_summary(standardised_results) 
+
+# DREAM is a bit more complex...

@@ -4,13 +4,13 @@ parameters_summary <- function(x) {
       "gauge" = x$numerical_optimiser_setup$catchment_data$gauge_ID,   
       "streamflow_model" = x$numerical_optimiser_setup$streamflow_model()[[1]],
       "objective_function" = x$numerical_optimiser_setup$objective_function()[[1]],
-      "optimiser" = s3_class(x$optimised_object)[1], # [1] needed to get child class
+      "optimiser" = s3_class(x$optimised_object)[1], 
       "parameter" = x$numerical_optimiser_setup$parameter_names, 
       "parameter_value" = x$best_parameter_set, 
       "loglikelihood" = x$LL_best_parameter_set,
       "AIC" = x$AIC_best_parameter_set,
       "exit_message" = x$exit_message,
-      "near_bounds" = (near(x$numerical_optimiser_setup$lower_bound, x$best_parameter_set)) | (near(x$numerical_optimiser_setup$upper_bound, x$best_parameter_set))
+      "near_bounds" = (near(x$numerical_optimiser_setup$lower_bound, x$best_parameter_set, tol = 1E-6)) | (near(x$numerical_optimiser_setup$upper_bound, x$best_parameter_set, tol = 1E-6))
     )
   )
 }
@@ -58,7 +58,10 @@ sequences_summary <- function(x) { # NOT IN USE
   
 }
 
+
+# DELETE -----------
 modelled_streamflow_summary <- function(x) {
+  stop("use other streamflow_timeseries_summary() instead")
   # The modelled_boxcox_streamflow is just the streamflow optimised
   # We must use data being optimised instead of the full_data_set
   calibrated_data <- x$numerical_optimiser_setup$catchment_data$stop_start_data_set |> 
@@ -81,6 +84,33 @@ modelled_streamflow_summary <- function(x) {
 
 
 
+
+
+streamflow_timeseries_summary <- function(x) {
+  # The modelled_boxcox_streamflow is just the streamflow optimised
+  # We must use data being optimised instead of the full_data_set
+  
+  # Only works with result_set objects - force?
+  calibrated_data <- x$numerical_optimiser_setup$catchment_data$stop_start_data_set |> 
+    list_rbind()
+  
+
+  
+  tibble::as_tibble(
+    list(
+      "gauge" = x$numerical_optimiser_setup$catchment_data$gauge_ID,
+      "year" = calibrated_data |> pull(year),
+      "precipitation" = calibrated_data |> pull(precipitation),
+      "realspace_observed_streamflow" = calibrated_data |> pull(observed_streamflow),
+      "realspace_modelled_streamflow" = x$optimised_modelled_streamflow_realspace,
+      "transformed_observed_streamflow" = x$transformed_observed_streamflow,
+      "transformed_modelled_streamflow" = x$optimised_modelled_streamflow_transformed_space,
+      "streamflow_model" = x$numerical_optimiser_setup$streamflow_model()$name,
+      "objective_function" = x$numerical_optimiser_setup$objective_function()$name,
+      "streamflow_transform_method" = x$numerical_optimiser_setup$streamflow_transform_method()$name
+    )
+  ) 
+}
 
 
 
