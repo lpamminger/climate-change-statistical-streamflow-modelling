@@ -54,7 +54,10 @@ make_default_cmaes_parameters <- function(SCALE, PARAMETER_NUMBER) {
 
 
 
-my_cmaes <- function(numerical_optimiser_setup, cmaes_control = list(), print_monitor = FALSE) {
+# Making this a method of the existing cmaes would work in package
+# Will not work in current set-up because furrr:map cannot identify
+# local methods/generics (saving in environment rather than package) 
+CMAES <- function(numerical_optimiser_setup, cmaes_control = list(), print_monitor = FALSE) {
   
   ## Check if numerical_optimiser_setup and its minimising the likelihood ==================
   stopifnot(sloop::s3_class(numerical_optimiser_setup)[1] == "numerical_optimiser_setup")
