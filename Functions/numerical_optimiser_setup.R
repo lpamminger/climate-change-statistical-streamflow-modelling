@@ -170,17 +170,17 @@ make_default_bounds_and_transform_methods <- function(catchment_data_set) {
   
   tibble::tribble(
     ~parameter,     ~lower_bound,   ~upper_bound,      ~transform_method,
-    "a0",           -2000,          200,               linear_parameter_transform, # intercept
-    "a0_d",         -2000,          200,               linear_parameter_transform, # intercept - no drought
-    "a0_n",         -2000,          200,               linear_parameter_transform, # intercept - drought
+    "a0",           -2000,          400,               linear_parameter_transform, # intercept
+    "a0_d",         -2000,          400,               linear_parameter_transform, # intercept - no drought
+    "a0_n",         -2000,          400,               linear_parameter_transform, # intercept - drought
     "a1",            1E-6 ,         2,                 logarithmic_parameter_transform, # slope
     "a2",           -1,             1,                 linear_parameter_transform, # autocorrelation
     "a3_intercept", -25,            50,                linear_parameter_transform, # CO2 coefficient for intercept 
     "a3_slope",     -1E-2,          5E-3,              linear_parameter_transform, # CO2 coefficent for slope
     "a4",           -600,           600,               linear_parameter_transform, # seasonal parameter
     "a5",            0,             upper_a5_bound,    linear_parameter_transform, # Changes depending on last CO2 value in calibration
-    "a",             1E-8,          10,                logarithmic_parameter_transform,
-    "b",             1E-3,          5,                 logarithmic_parameter_transform,
+    "a",             1E-6,          10,                logarithmic_parameter_transform, # Absolute minimum is 1E-6 otherwise transform breaks
+    "b",             1E-2,          5,                 logarithmic_parameter_transform, # Abosoltue minimum is 1E-2 otherwise transform breaks
     "lambda",        0,             2,                 linear_parameter_transform, # boxcox recommended range is -2 to 2(0-2 because we want to shift it from positive skew)
     "sd",            1E-8,          300,               logarithmic_parameter_transform # constant sd objective function 
 

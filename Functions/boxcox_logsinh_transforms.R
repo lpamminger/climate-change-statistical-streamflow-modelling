@@ -1,6 +1,6 @@
 # Boxcox transforms ------------------------------------------------------------
 
-boxcox_transform <- function(y, lambda = 0, lambda_2 = 1) {
+boxcox_transform <- function(y, lambda = 0, lambda_2) {
 
   # If no parameters are given return description of model
   if(is.null(names(as.list(match.call())[-1]))) {
@@ -20,6 +20,7 @@ boxcox_transform <- function(y, lambda = 0, lambda_2 = 1) {
   near_zero_lambda <- lambda <= .Machine$double.eps^0.5 #dplyr::near(lambda, y = 0, tol = .Machine$double.eps^0.5)
   
   transformed_result[near_zero_lambda] <- log(y[near_zero_lambda] + lambda_2)
+  
   return(transformed_result)
  
 
@@ -27,7 +28,7 @@ boxcox_transform <- function(y, lambda = 0, lambda_2 = 1) {
 
 
 
-inverse_boxcox_transform <- function(yt, lambda = 0, lambda_2 = 1) {
+inverse_boxcox_transform <- function(yt, lambda = 0, lambda_2) {
   
   # If no parameters are given return description of model
   if(is.null(names(as.list(match.call())[-1]))) {
@@ -56,7 +57,7 @@ inverse_boxcox_transform <- function(yt, lambda = 0, lambda_2 = 1) {
 
 
 # Log-sinh transform -----------------------------------------------------------
-log_sinh_transform <- function(a, b, y, offset = 300) {
+log_sinh_transform <- function(a, b, y, offset) {
   
   # If no parameters are given return description of model
   if(is.null(names(as.list(match.call())[-1]))) {
@@ -66,6 +67,13 @@ log_sinh_transform <- function(a, b, y, offset = 300) {
         "parameters" = c("a", "b")
       )
     )
+  }
+  
+  # Check minimum a and b bound - throw error
+  if(any(a < 1E-6)) {
+    stop("log_sinh_transform: `a` cannot be less than 1E-6")
+  } else if (any(b < 1E-2)) {
+    stop("log_sinh_transfom: `b cannot be less than 1E-2")
   }
   
   (1 / b) * log(sinh(a + (b * (y + offset))))
@@ -89,7 +97,7 @@ asinh_exp_approximation <- function(x) {
 
 
 
-inverse_log_sinh_transform <- function(a, b, z, offset = 300) {
+inverse_log_sinh_transform <- function(a, b, z, offset) {
   
   # If no parameters are given return description of model
   if(is.null(names(as.list(match.call())[-1]))) {
@@ -116,13 +124,12 @@ inverse_log_sinh_transform <- function(a, b, z, offset = 300) {
 # For objective_function_setup -------------------------------------------------
 # if you want to add more transform methods add them here
 
-select_streamflow_transform_method <- function(timeseries, parameter_set, streamflow_transform_method, offset = 0) {
+select_streamflow_transform_method <- function(timeseries, parameter_set, streamflow_transform_method, offset) {
   
   
   # call the streamflow_transfer_method to get name of method perform
   # different operation depending on name
   streamflow_transform_method_name <- streamflow_transform_method()[[1]]
-  
   
   # Transform observed_streamflow into log-sinh space
   if (streamflow_transform_method_name == "log_sinh_transform") {
