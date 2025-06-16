@@ -72,12 +72,12 @@ objective_function_setup <- function(streamflow_model, parameter_transform_metho
 
 
     # repeat - for discontinuous gauges
-    real_parameter_set <- rep(list(real_parameter_set), times = length(observed_streamflow))
+    repeat_real_parameter_set <- rep(list(real_parameter_set), times = length(observed_streamflow))
     
     
     transformed_observed_streamflow <- map2(
       .x = observed_streamflow,
-      .y = real_parameter_set,
+      .y = repeat_real_parameter_set,
       .f = select_streamflow_transform_method,
       streamflow_transform_method = streamflow_transform_method,
       offset = streamflow_transform_method_offset
@@ -91,14 +91,14 @@ objective_function_setup <- function(streamflow_model, parameter_transform_metho
     LL_scores <- pmap(
       .l = list(
         transformed_modelled_streamflow,
-        transformed_observed_streamflow,
-        real_parameter_set
+        transformed_observed_streamflow
       ),
-      .f = objective_function
+      .f = objective_function,
+      parameter_set = real_parameter_set
     )
 
 
-    LL_scores <- do.call("rbind", LL_scores) |> colMeans()
+    LL_scores <- do.call("rbind", LL_scores) |> colSums()
 
 
     if (!minimise_likelihood) {
