@@ -15,11 +15,18 @@ objective_function_setup <- function(streamflow_model, parameter_transform_metho
   objective_function <- noquote(objective_function)
   streamflow_transform_method <- noquote(streamflow_transform_method)
   stop_start_data_set <- catchment_data$stop_start_data_set # I am only using the stop start (BAD)
+  
+  # apply_truncnorm
+  if(streamflow_transform_method()$name == "boxcox_transform") {
+    apply_truncnorm <-  TRUE
+  } else {
+    apply_truncnorm <-  FALSE
+  }
+  
 
 
 
   function(parameter_set) {
-    #browser() #- undo browser to check matrix stuff
 
     # check if parameter is a matrix
     if (!is.matrix(parameter_set)) {
@@ -94,7 +101,8 @@ objective_function_setup <- function(streamflow_model, parameter_transform_metho
         transformed_observed_streamflow
       ),
       .f = objective_function,
-      parameter_set = real_parameter_set
+      parameter_set = real_parameter_set,
+      apply_truncnorm = apply_truncnorm
     )
 
 

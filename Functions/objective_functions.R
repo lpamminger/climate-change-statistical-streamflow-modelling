@@ -105,7 +105,7 @@ constant_sd_no_transform_objective_function <- function(modelled_streamflow, obs
 
 
 
-constant_sd_objective_function <- function(modelled_streamflow, observed_streamflow, parameter_set) {
+constant_sd_objective_function <- function(modelled_streamflow, observed_streamflow, parameter_set, apply_truncnorm) {
   if (is.null(names(as.list(match.call())[-1]))) { # if no arguments provided return description
     return(
       list(
@@ -126,29 +126,44 @@ constant_sd_objective_function <- function(modelled_streamflow, observed_streamf
     byrow = TRUE
   )
 
-  # Correct modelled streamflow and uncertainty
-  corrected_modelled_streamflow <- correct_mean_flow(
-    uncorrected_mean_flow = modelled_streamflow,
-    uncorrected_uncertainty = matrix_error_sd
-  )
+  if(apply_truncnorm) {
+    # Correct modelled streamflow and uncertainty for boxcox transform
+    corrected_modelled_streamflow <- correct_mean_flow( 
+      uncorrected_mean_flow = modelled_streamflow,
+      uncorrected_uncertainty = matrix_error_sd
+    )
+    
+    corrected_uncertainty <- correct_uncertainty_flow(
+      uncorrected_mean_flow = modelled_streamflow,
+      uncorrected_uncertainty = matrix_error_sd
+    )
+    
+    # Produce probabilities using trunnorm
+    # dtruncnorm only works with vectors (double)
+    # matrix is a subclass of double and gets coerced into a double (double atomic vector)
+    # when matrix is coerced into double convert it back into matrix
+    prob_observed <- truncnorm::dtruncnorm(
+      x = observed_streamflow,
+      a = 0,
+      b = Inf,
+      mean = corrected_modelled_streamflow,
+      sd = corrected_uncertainty
+    )
+    
+  } else {
+    # Log-sinh does not require correction
+    corrected_modelled_streamflow <- modelled_streamflow 
+  
+    corrected_uncertainty <- matrix_error_sd
+    
+    prob_observed <- dnorm(
+      x = observed_streamflow,
+      mean = corrected_modelled_streamflow,
+      sd = corrected_uncertainty
+    )
+    
+  }
 
-  corrected_uncertainty <- correct_uncertainty_flow(
-    uncorrected_mean_flow = modelled_streamflow,
-    uncorrected_uncertainty = matrix_error_sd
-  )
-
-
-  # Produce probabilities using trunnorm
-  # dtruncnorm only works with vectors (double)
-  # matrix is a subclass of double and gets coerced into a double (double atomic vector)
-  # when matrix is coerced into double convert it back into matrix
-  prob_observed <- truncnorm::dtruncnorm(
-    x = observed_streamflow,
-    a = 0,
-    b = Inf,
-    mean = corrected_modelled_streamflow,
-    sd = corrected_uncertainty
-  )
 
   # Convert vector back into a matrix
   prob_observed <- matrix(

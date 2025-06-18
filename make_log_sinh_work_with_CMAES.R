@@ -54,13 +54,13 @@ source("./Functions/result_set.R")
 # Get gauges and data from previous attempts - hard code -----------------------
 gauge_streamflow_model_combinations <- tribble(
   ~gauge, ~streamflow_model,
-   "207015",  streamflow_model_slope_shifted_CO2_seasonal_ratio_auto, # large peak in streamflow when CO2 turned off
-   "219001",  streamflow_model_intercept_shifted_CO2_seasonal_ratio_auto, # observed streamflow > precip
-   "112101B", streamflow_model_slope_shifted_CO2_seasonal_ratio_auto, # positive slope
-   "225213", streamflow_model_intercept_shifted_CO2_auto, # positive intercept
-   "G0050115", streamflow_model_intercept_shifted_CO2_seasonal_ratio, # very low flow
-   "603005", streamflow_model_drought_slope_shifted_CO2_seasonal_ratio_auto, # drought
-   "405240", streamflow_model_intercept_shifted_CO2_seasonal_ratio_auto # very high evidence ratio
+  "207015", streamflow_model_slope_shifted_CO2_seasonal_ratio_auto, # large peak in streamflow when CO2 turned off
+  "219001", streamflow_model_intercept_shifted_CO2_seasonal_ratio_auto, # observed streamflow > precip
+  "112101B", streamflow_model_slope_shifted_CO2_seasonal_ratio_auto, # positive slope
+  "225213", streamflow_model_intercept_shifted_CO2_auto, # positive intercept
+  "G0050115", streamflow_model_intercept_shifted_CO2_seasonal_ratio, # very low flow
+  "603005", streamflow_model_drought_slope_shifted_CO2_seasonal_ratio_auto, # drought
+  "405240", streamflow_model_intercept_shifted_CO2_seasonal_ratio_auto # very high evidence ratio
 )
 
 gauges <- gauge_streamflow_model_combinations |> pull(gauge)
@@ -77,8 +77,8 @@ catchment_data_per_gauge <- map(
 )
 
 
-#plot(catchment_data_per_gauge[[6]], type = "streamflow-time")
-#plot(catchment_data_per_gauge[[5]], type = "rainfall-runoff")
+# plot(catchment_data_per_gauge[[6]], type = "streamflow-time")
+# plot(catchment_data_per_gauge[[5]], type = "rainfall-runoff")
 
 
 
@@ -91,7 +91,7 @@ streamflow_transform_methods <- c(
   boxcox_transform
 )
 
-model_combinations <- expand_grid(catchment_data_per_gauge, streamflow_transform_methods) |> 
+model_combinations <- expand_grid(catchment_data_per_gauge, streamflow_transform_methods) |>
   add_column(
     "gauge" = rep(gauges, each = 2), # hard coded - only works if there are two objective functions
     .before = 1
@@ -108,19 +108,19 @@ bounds_and_transform_per_gauge <- map(
 )
 
 model_combinations <- model_combinations |>
-  add_column("objective_function" = list(constant_sd_objective_function)) |> 
-  add_column(bounds_and_transform_per_gauge) |> 
-  add_column("streamflow_transform_method_offset" = rep(c(300, 1), times = 7))
+  add_column("objective_function" = list(constant_sd_objective_function)) |>
+  add_column(bounds_and_transform_per_gauge) |>
+  add_column("streamflow_transform_method_offset" = rep(c(0, 1), times = 7))
 
 
 ## pmap out cmaes results ######################################################
 # order matters --> streamflow_model, objective_function, streamflow_transform_method, catchment_data, bounds_and_transform_method
 
 map_list <- list(
-  model_combinations |> pull(streamflow_model), 
-  model_combinations |> pull(objective_function), 
-  model_combinations |> pull(streamflow_transform_methods), 
-  model_combinations |> pull(catchment_data_per_gauge), 
+  model_combinations |> pull(streamflow_model),
+  model_combinations |> pull(objective_function),
+  model_combinations |> pull(streamflow_transform_methods),
+  model_combinations |> pull(catchment_data_per_gauge),
   model_combinations |> pull(bounds_and_transform_per_gauge),
   model_combinations |> pull(streamflow_transform_method_offset)
 )
@@ -154,8 +154,8 @@ check_bounds <- map(
   .x = summarise_cmaes_results,
   .f = parameters_summary
 ) |>
-  list_rbind()
-
+  list_rbind() |> 
+  filter(!is.na(near_bounds))
 
 
 
@@ -170,9 +170,8 @@ check_bounds <- map(
 # 3. re-run model to get transformed streamflow
 # 4. turn transformed streamflow into realspace
 turn_off_CO2_component <- function(result_set) {
-  
   stopifnot(s3_class(result_set)[1] == "result_set")
-  
+
   # Get best parameters
   best_parameters_CO2_on <- result_set$best_parameter_set
 
@@ -188,15 +187,15 @@ turn_off_CO2_component <- function(result_set) {
   ) |>
     pull(streamflow_results)
 
-  # Transform to realspace using select_streamflow_transform_method 
+  # Transform to realspace using select_streamflow_transform_method
   inverse_streamflow_transform_method_name <- paste0("inverse_", result_set$numerical_optimiser_setup$streamflow_transform_method()$name)
-  
+
   realspace_modelled_streamflow_CO2_off <- select_streamflow_transform_method(
     timeseries = as.matrix(transformed_CO2_off_modelled_streamflow, ncol = 1), # this function requires matrix input for timeseries and parameter_set
     parameter_set = as.matrix(best_parameters_CO2_off, ncol = 1),
     streamflow_transform_method = match.fun(FUN = inverse_streamflow_transform_method_name), # get the inverse from name then match the function
     offset = result_set$numerical_optimiser_setup$streamflow_transform_method_offset # get result set
-  ) |> 
+  ) |>
     as.numeric() # convert back into vector
 
   # Return a tibble of both results
@@ -255,9 +254,12 @@ plotting_data <- map2(
 
 # Compare boxcox and log-sinh AIC and residuals values -------------------------
 residuals_check <- plotting_data |>
-  mutate(obs_minus_mod_residual = transformed_obs_flow - transformed_mod_flow_CO2_on) |>
+  mutate(
+    obs_minus_mod_residual = transformed_obs_flow - transformed_mod_flow_CO2_on,
+    abs_obs_minus_mod_residual = abs(obs_minus_mod_residual)
+    ) |>
   summarise(
-    sum_residual = sum(obs_minus_mod_residual),
+    sum_abs_residual = sum(abs_obs_minus_mod_residual),
     .by = c(gauge, streamflow_transform_method)
   )
 
@@ -268,18 +270,18 @@ get_likelihood_information <- function(result_set) {
     "loglikelihood" = result_set$LL_best_parameter_set,
     "AIC" = result_set$AIC_best_parameter_set,
     "streamflow_transform_method" = result_set$numerical_optimiser_setup$streamflow_transform_method()$name
-  ) |> 
+  ) |>
     as_tibble()
 }
 
 loglikelihood_information <- map(
   .x = summarise_cmaes_results,
   .f = get_likelihood_information
-) |> 
+) |>
   list_rbind()
 
 
-numerical_comparison_boxcox_logsinh <- residuals_check |> 
+numerical_comparison_boxcox_logsinh <- residuals_check |>
   left_join(
     loglikelihood_information,
     by = join_by(gauge, streamflow_transform_method)
@@ -318,11 +320,11 @@ transformed_streamflow_time_plot <- plotting_data |>
   ggplot(aes(x = year, y = transformed_streamflow, colour = streamflow_type)) +
   geom_line(linewidth = 0.8) +
   geom_point(alpha = 0.9, size = 2) +
-  #geom_label(
+  # geom_label(
   #  aes(x = x_pos, y = y_pos, label = AIC),
   #  data = AIC_streamflow_transform_comparison,
   #  inherit.aes = FALSE
-  #) +
+  # ) +
   labs(
     x = "Year",
     y = "Transformed Streamflow",
@@ -334,7 +336,7 @@ transformed_streamflow_time_plot <- plotting_data |>
   ) +
   facet_wrap(~ gauge + streamflow_transform_method, ncol = 2, nrow = 7, scales = "free_y")
 
- ggsave(
+ggsave(
   filename = "offset_log_sinh_showing_tim_transform_issue_timeseries.pdf",
   plot = transformed_streamflow_time_plot,
   device = "pdf",
@@ -342,7 +344,7 @@ transformed_streamflow_time_plot <- plotting_data |>
   width = 320,
   height = 420,
   units = "mm"
- )
+)
 
 
 ## Streamflow time =============================================================
@@ -382,7 +384,7 @@ streamflow_time_plot <- plotting_data |>
   ) +
   facet_wrap(~ gauge + streamflow_transform_method, ncol = 2, nrow = 7, scales = "free_y")
 
- ggsave(
+ggsave(
   filename = "offset_log_sinh_testing_streamflow_transform_methods_timeseries.pdf",
   plot = streamflow_time_plot,
   device = "pdf",
@@ -390,7 +392,7 @@ streamflow_time_plot <- plotting_data |>
   width = 320,
   height = 420,
   units = "mm"
- )
+)
 
 
 ## Rainfall-runoff =============================================================
@@ -430,7 +432,7 @@ rainfall_runoff_plot <- plotting_data |>
   ) +
   facet_wrap(~ gauge + streamflow_transform_method, nrow = 7, ncol = 2, scales = "free")
 
- ggsave(
+ggsave(
   filename = "offset_log_sinh_testing_streamflow_transform_methods_rainfall_runoff.pdf",
   plot = rainfall_runoff_plot,
   device = "pdf",
@@ -438,15 +440,59 @@ rainfall_runoff_plot <- plotting_data |>
   width = 250,
   height = 594,
   units = "mm"
- )
+)
 
 
 
 # Why are the AIC so different? ------------------------------------------------
 
 # Does the different transform methods produce different LL?
- 
- # Try Tim's suggestion of qq and *2 sd here...
+
+# Try Tim's suggestion of qq and *2 sd here...
+
+# Tim thinks it might be related to sd
+only_sd <- check_bounds |>
+  filter(
+    parameter == "sd"
+  )
+
+compare_sd <- numerical_comparison_boxcox_logsinh |>
+  left_join(
+    only_sd,
+    by = join_by(gauge, AIC, loglikelihood)
+  ) |> 
+  select(-c(objective_function, optimiser, exit_message, near_bounds))
+
+
+# qq plot stuff - show Tim - I don't know what this means
+residual_plotting_data <- plotting_data |>
+  mutate(obs_minus_mod_residual = transformed_obs_flow - transformed_mod_flow_CO2_on) 
+
+
+qqplots <- residual_plotting_data |> 
+  ggplot(aes(sample = obs_minus_mod_residual)) +
+  geom_qq_line() +
+  geom_qq() +
+  labs(
+    x = "Theoretical",
+    y = "Sample (obs - mod streamflow residual)"
+  ) +
+  theme_bw() +
+  facet_wrap(~gauge + streamflow_transform_method, ncol = 2, scales = "free")
+  
+
+ggsave(
+  filename = "boxcox_logsinh_qqplot.pdf",
+  plot = qqplots,
+  device = "pdf",
+  path = "./Graphs/Supplementary_Figures",
+  width = 250,
+  height = 594,
+  units = "mm"
+)
+
+
+
 
 # 1. generate observed streamflow - realspace
 set.seed(1)
@@ -476,6 +522,3 @@ log_sinh_loglikelihood <- constant_sd_log_sinh_objective_function(
 )
 
 cat("boxcox LL =", boxcox_loglikelihood, "\nlog_sinh LL =", log_sinh_loglikelihood)
-
-
-

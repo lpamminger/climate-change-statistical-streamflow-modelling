@@ -69,12 +69,6 @@ log_sinh_transform <- function(a, b, y, offset) {
     )
   }
   
-  # Check minimum a and b bound - throw error
-  if(any(a < 1E-6)) {
-    stop("log_sinh_transform: `a` cannot be less than 1E-6")
-  } else if (any(b < 1E-2)) {
-    stop("log_sinh_transfom: `b cannot be less than 1E-2")
-  }
   
   (1 / b) * log(sinh(a + (b * (y + offset))))
 }

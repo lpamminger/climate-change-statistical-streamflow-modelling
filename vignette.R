@@ -16,7 +16,7 @@ start_stop_indexes <- readr::read_csv(
   show_col_types = FALSE
 )
 
-data <- readr::read_csv(
+data <- readr::read_csv( # data will be in the package
   "./Data/Tidy/with_NA_yearly_data_CAMELS.csv",
   show_col_types = FALSE
 ) |>
@@ -48,7 +48,7 @@ source("./Functions/result_set.R")
 
 
 # 1. Select gauge to test from data --------------------------------------------
-gauge <- "405240" 
+gauge <- "207015" 
 
 
 # ideally catchment_data_blueprint should have other methods of data entry such as giving vectors individually
@@ -84,12 +84,12 @@ plot(example_catchment, type = "streamflow-time")
 
 numerical_optimiser <- example_catchment |>
   numerical_optimiser_setup_vary_inputs(
-    streamflow_model = streamflow_model_intercept_shifted_CO2_seasonal_ratio_auto,
+    streamflow_model = streamflow_model_slope_shifted_CO2_seasonal_ratio_auto,
     objective_function = constant_sd_objective_function, 
     streamflow_transform_method = log_sinh_transform, # or boxcox_transform, 
     bounds_and_transform_method = make_default_bounds_and_transform_methods(example_catchment), # requires catchment_data_set object to calculate bounds 
     minimise_likelihood = TRUE,
-    streamflow_transform_method_offset = 300
+    streamflow_transform_method_offset = 0
   )
 
 
@@ -118,7 +118,6 @@ plot(standardised_results, type = "rainfall-runoff")
 # The near_bound column does not functioning correctly
 # Ideally, it should scale with the parameters. It does not do this currently.
 parameter_table <- parameters_summary(standardised_results) 
-
 result_table <- streamflow_timeseries_summary(standardised_results) 
 
 # DREAM is a bit more complex...
