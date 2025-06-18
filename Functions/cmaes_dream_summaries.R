@@ -1,3 +1,41 @@
+check_near_bounds <- function(result_set_object) {
+  
+  # Get information ------------------------------------------------------------
+  lower_bound <- result_set_object$numerical_optimiser_setup$lower_bound
+  upper_bound <- result_set_object$numerical_optimiser_setup$upper_bound
+  bound_range <- upper_bound - lower_bound
+  calibrated_parameters <- result_set_object$best_parameter_set
+  
+  # Use order of magnitude of bound range to calculate tolerance to bounds -----
+  order_of_magnitude_bound_range <- get_order_magnitude(bound_range)
+  
+  # Take 3 orders of magnitude off for near()
+  remove_orders_of_magnitude <- 4
+  new_exponent <- log10(order_of_magnitude_bound_range) - remove_orders_of_magnitude
+  near_tolerance_per_parameter <- 10^new_exponent
+  
+  
+  # Check lower_bound ----------------------------------------------------------
+  near_lower_bound <- near(calibrated_parameters, lower_bound, tol = near_tolerance_per_parameter)
+  
+  # Check upper_bound ----------------------------------------------------------
+  near_upper_bound <- near(calibrated_parameters, upper_bound, tol = near_tolerance_per_parameter)
+  
+  # Return string
+  output_message <- case_when(
+    # parameters can only be near either upper or lower bound
+    near_lower_bound ~ "near_lower_bound",
+    near_upper_bound ~ "near_upper_bound",
+    .default = NA
+  )
+  
+  return(output_message)
+}
+
+
+
+
+
 parameters_summary <- function(x) {
   tibble::as_tibble(
     list(
@@ -10,23 +48,7 @@ parameters_summary <- function(x) {
       "loglikelihood" = x$LL_best_parameter_set,
       "AIC" = x$AIC_best_parameter_set,
       "exit_message" = x$exit_message,
-      "near_bounds" = (near(x$numerical_optimiser_setup$lower_bound, x$best_parameter_set, tol = 1E-6)) | (near(x$numerical_optimiser_setup$upper_bound, x$best_parameter_set, tol = 1E-6))
-    )
-  )
-}
-
-
-restarts_summary <- function(x) {
-  tibble::as_tibble(
-    list(
-      "gauge" = x$numerical_optimiser_setup$catchment_data$gauge_ID,   
-      "streamflow_model" = x$numerical_optimiser_setup$streamflow_model()[[1]],
-      "objective_function" = x$numerical_optimiser_setup$objective_function()[[1]],
-      "optimiser" = sloop::s3_class(x$optimised_object)[1], # [1] needed to get child class
-      "loglikelihood" = x$LL_best_parameter_set,
-      "AIC" = x$AIC_best_parameter_set,
-      "restarts" = x$restart_count,
-      "exit_message" = x$exit_message
+      "near_bounds" = check_near_bounds(x)
     )
   )
 }
