@@ -150,11 +150,13 @@ summarise_cmaes_results <- map(
 plot(summarise_cmaes_results[[1]], type = "rainfall-runoff")
 plot(summarise_cmaes_results[[2]], type = "streamflow-time")
 
-check_bounds <- map(
+best_parameters <- map(
   .x = summarise_cmaes_results,
   .f = parameters_summary
 ) |>
-  list_rbind() |> 
+  list_rbind() 
+
+check_bounds <- best_parameters |> 
   filter(!is.na(near_bounds))
 
 
@@ -291,15 +293,7 @@ numerical_comparison_boxcox_logsinh <- residuals_check |>
 
 # What does the streamflow time plot look like when a3 is turned off? ----------
 
-
-## Transformed streamflow time graphs ==========================================
-
-### Look at uncertainty parameter
-uncertainty_parameter_comparison <- check_bounds |>
-  filter(parameter == "sd") |>
-  select(-c(streamflow_model, optimiser, exit_message, near_bounds))
-
-
+## Transformed streamflow time =================================================
 transformed_streamflow_time_plot <- plotting_data |>
   select(!contains("realspace")) |>
   pivot_longer(
@@ -320,11 +314,6 @@ transformed_streamflow_time_plot <- plotting_data |>
   ggplot(aes(x = year, y = transformed_streamflow, colour = streamflow_type)) +
   geom_line(linewidth = 0.8) +
   geom_point(alpha = 0.9, size = 2) +
-  # geom_label(
-  #  aes(x = x_pos, y = y_pos, label = AIC),
-  #  data = AIC_streamflow_transform_comparison,
-  #  inherit.aes = FALSE
-  # ) +
   labs(
     x = "Year",
     y = "Transformed Streamflow",
@@ -345,7 +334,6 @@ ggsave(
   height = 420,
   units = "mm"
 )
-
 
 ## Streamflow time =============================================================
 streamflow_time_plot <- plotting_data |>
@@ -446,25 +434,98 @@ ggsave(
 
 # Why are the AIC so different? ------------------------------------------------
 
-# Does the different transform methods produce different LL?
+# TODO:
+# - get sd for each gauge and streamflow_transform method
+# - join sd to plotting data
+# - created lower and upper bound around the calibrated terms using +/-2 sd
+# - plot
 
-# Try Tim's suggestion of qq and *2 sd here...
+# Check error bar using sd around transformed timeseries -----------------------
 
-# Tim thinks it might be related to sd
-only_sd <- check_bounds |>
+only_sd <- best_parameters |>
   filter(
     parameter == "sd"
-  )
+  ) |> 
+  select(-c(streamflow_model, objective_function, optimiser, exit_message))
 
 compare_sd <- numerical_comparison_boxcox_logsinh |>
   left_join(
     only_sd,
     by = join_by(gauge, AIC, loglikelihood)
+  ) 
+
+sd_plotting_data <- plotting_data |> 
+  left_join(
+    compare_sd,
+    by = join_by(gauge, streamflow_transform_method)
   ) |> 
-  select(-c(objective_function, optimiser, exit_message, near_bounds))
+  select(
+    c(year, 
+      precipitation, 
+      transformed_obs_flow, 
+      transformed_mod_flow_CO2_on, 
+      streamflow_transform_method, 
+      gauge, 
+      parameter_value
+      )
+    ) |> 
+  rename(
+    sd = parameter_value
+  ) |> 
+  # add lower and upper bound uncertainty for modelled streamflow
+  mutate(
+    lower_bound_mod_flow = transformed_mod_flow_CO2_on - (2 * sd),
+    upper_bound_mod_flow = transformed_mod_flow_CO2_on + (2 * sd)
+  )
+
+  
+sd_uncertainty_bars <- sd_plotting_data |> 
+  pivot_longer(
+    cols = starts_with("transformed"),
+    names_to = "observed_or_modelled",
+    values_to = "transformed_streamflow"
+  ) |> 
+  mutate(
+    lower_bound_mod_flow = if_else(observed_or_modelled == "transformed_obs_flow", NA, lower_bound_mod_flow),
+    upper_bound_mod_flow = if_else(observed_or_modelled == "transformed_obs_flow", NA, upper_bound_mod_flow)
+  ) |> 
+  # Make the names nice
+  mutate(
+    observed_or_modelled = if_else(observed_or_modelled == "transformed_obs_flow", "Observed Streamflow", "Modelled Streamflow") 
+  ) |> 
+  ggplot(aes(x = year, y = transformed_streamflow, colour = observed_or_modelled, fill = observed_or_modelled)) +
+  geom_ribbon(
+    aes(ymin = lower_bound_mod_flow, ymax = upper_bound_mod_flow),
+    na.rm = FALSE, # I have mannually set obs flow to NA
+    alpha = 0.25,
+    colour = NA
+  ) +
+  geom_line() +
+  scale_colour_brewer(palette = "Set1") +
+  labs(
+    x = "Year",
+    y = "Transformed Streamflow",
+    colour = NULL,
+    fill = NULL
+  ) +
+  theme_bw() +
+  facet_wrap(~gauge + streamflow_transform_method, scales = "free", ncol = 2) +
+  theme(
+    legend.position = "bottom"
+  )
+
+ggsave(
+  filename = "sd_uncertainty_transformed_streamflow_time.pdf",
+  plot = sd_uncertainty_bars,
+  device = "pdf",
+  path = "./Graphs/Supplementary_Figures",
+  width = 250,
+  height = 594,
+  units = "mm"
+)
 
 
-# qq plot stuff - show Tim - I don't know what this means
+# qq plots ---------------------------------------------------------------------
 residual_plotting_data <- plotting_data |>
   mutate(obs_minus_mod_residual = transformed_obs_flow - transformed_mod_flow_CO2_on) 
 
