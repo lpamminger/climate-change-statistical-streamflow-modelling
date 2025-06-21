@@ -81,28 +81,6 @@ sequences_summary <- function(x) { # NOT IN USE
 }
 
 
-# DELETE -----------
-modelled_streamflow_summary <- function(x) {
-  stop("use other streamflow_timeseries_summary() instead")
-  # The modelled_boxcox_streamflow is just the streamflow optimised
-  # We must use data being optimised instead of the full_data_set
-  calibrated_data <- x$numerical_optimiser_setup$catchment_data$stop_start_data_set |> 
-    list_rbind()
-  
-  tibble::as_tibble(
-    list(
-      "year" = calibrated_data |> pull(year),
-      "precipitation" = calibrated_data |> pull(precipitation),
-      "observed_boxcox_streamflow" = calibrated_data |> pull(observed_boxcox_streamflow),
-      "modelled_boxcox_streamflow" = c(x$optimised_boxcox_streamflow),
-      "gauge" = x$numerical_optimiser_setup$catchment_data$gauge_ID,
-      "streamflow_model" = x$numerical_optimiser_setup$streamflow_model()$name,
-      "objective_function" = x$numerical_optimiser_setup$objective_function()$name,
-      "optimiser" = sloop::s3_class(x$optimised_object)[1],
-      "loglikelihood" = x$LL_best_parameter_set
-    )
-  )
-}
 
 
 
