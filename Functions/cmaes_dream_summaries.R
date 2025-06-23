@@ -102,8 +102,8 @@ streamflow_timeseries_summary <- function(x) {
       "year" = calibrated_data |> pull(year),
       "precipitation" = calibrated_data |> pull(precipitation),
       "realspace_observed_streamflow" = calibrated_data |> pull(observed_streamflow),
-      "realspace_modelled_streamflow" = x$optimised_modelled_streamflow_realspace,
-      "transformed_observed_streamflow" = x$transformed_observed_streamflow,
+      "realspace_modelled_streamflow" = x$optimised_modelled_streamflow_realspace |> as.double(), # as.double converts from matrix column to vector
+      "transformed_observed_streamflow" = x$transformed_observed_streamflow |> as.double(), # as.double converts from matrix column to vector
       "transformed_modelled_streamflow" = x$optimised_modelled_streamflow_transformed_space,
       "streamflow_model" = x$numerical_optimiser_setup$streamflow_model()$name,
       "objective_function" = x$numerical_optimiser_setup$objective_function()$name,

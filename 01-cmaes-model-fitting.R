@@ -21,6 +21,9 @@ gauge_information <- readr::read_csv(
 )
 
 
+# Re-run with adjusted bounds
+# Then check bounds again
+# Run with 10L replicates overnight
 
 # Functions --------------------------------------------------------------------
 source("./Functions/utility.R")
@@ -36,74 +39,10 @@ source("./Functions/CMAES.R")
 source("./Functions/objective_function_setup.R")
 source("./Functions/result_set.R")
 
-# Game plan
-# - CMAES should be given chunks to run in parallel
-# - Each chunk is a single catchment. There will be 533 chunks.
-# - The function must run each replicate for a given model and select the 
-#   best performing.
-# - Parallel = each chunk in parallel. Each model/replicate for a given catchment
-#   in series.
-# - Find a way to combine drought and non-drought into a single chunk
-
-
-# TODO:
-# 1. generate catchment_data objects - I currently do everything all at once.
-#    
-# 2. generate numerical_optimiser objects
-#    The repeat/replicates should just repeat the numerical_optimiser objects
-#    How do I add drought_models to only drought catchments?
-#    Maybe I expand_grid everything (including drought models)
-#    add a temporary drought column for gauge with a drought then filter out
-#    non-drought gauges with drought models
-#
-# 3. create function to run through each chunk, select the best run from each 
-#    replicate - use parameter_summary |> rbind() to join everything up - 
-#    add a replicate identify and use slice_min for likelihood to ge the best 
-#    results
-#    Name each chunk after a gauge
-#    psuedo-code:
-#    chunk_and_run_cmaes <- function(chunk_of_numerical_optimisers) {
-#      map(.x = chunk_of_numerical_optimisers)
-#      parameter_summary() |> rbind() all results of the map
-#      slice_max() to get best *
-#      * I am not sure this will work by model - likely 
-#      * only return a single row
-#      * Instead add replicate column - not sure of method - may be a count angle
-#      Save filtered parameter_summary
-#      map() streamflow_timeseries summary
-#      save both as .csv's (easier eventhough .rda uses less space)
-#      Avoid saving variables to minimise RAM usage - gc() at end
-#      
-# 
-# }
-# There must not be catchments across chunks
-# For full utilisation of cores map() the chunk_run_cmaes and future_map
-# the cmaes results
-# Need to assign gauges to chunk. Name chunks by gauge? Does not work 
-# with multiple gauges
-# Cannot do it by gauge at a time. This will produce 533 .csv files.
-# Join multiple gauges together. 
-# Based on previous attempts 5000 was a good amount
-# Maximum cmaes per gauge 24 models * 10 replicates = 240
-# 5000 / 240 = 20 gauges per chunk - MAKE SURE ONLY ONE GAUGE PER CHUNK
-
-
-# Idea for adding replicate row
-# parameter_summary() will return gauge, streamflow_model, obj, parameter, parameter_value etc
-# I could add_column here - make wrapper around parameter_summary
-# using imap. Use index to add replicate
-# Then rind()
 
 # Constants --------------------------------------------------------------------
 # Number of times we want to repeat each catchment-optimiser-streamflow model combinations
-REPLICATES <- 2L
-
-# Split catchments for into X chunks (due to RAM limitations).
-# I am not convinced a larger chunk size is always better
-# The 4500 seemed to run faster than the 9000? Maybe try 4000?
-CHUNK_SIZE <- 5000 # items per batch
-
-# I would rather this be gauges_per_chunk
+REPLICATES <- 1L
 
 
 # Construct catchment_data objects ---------------------------------------------
@@ -257,7 +196,7 @@ run_length_gauges_from_combinations <- rle(gauges_from_combinations)
 
 # Change values in rle ($values) to 1, 2, 3 etc. to construct factor values for split
 # The rle $values must be split based on GAUGES_PER_CHUNK
-GAUGES_PER_CHUNK <- 1
+GAUGES_PER_CHUNK <- 100
 
 total_gauges <- gauges_from_combinations |> unique() |> length()
 
@@ -289,29 +228,74 @@ numerical_optimisers_by_chunk <- split(numerical_optimisers, f = factor_sequence
 
 
 
+
 # Run cmaes --------------------------------------------------------------------
 
-run_and_save_cmaes_chunks <- function(numerical_optimisers, chunk_index) {
+## Wrapper around cmaes to add replicates ======================================
+replicate_CMAES <- function(numerical_optimiser_setup, replicate_number, cmaes_control, print_monitor) {
+  cmaes_result <- CMAES(
+    numerical_optimiser_setup = numerical_optimiser_setup,
+    cmaes_control = cmaes_control,
+    print_monitor = print_monitor
+  )
   
-  # Run this in parallel - CMAES
-  # This will produce cmaes objects equal to the length of numerical optimisers
-  cmaes_results <- map(
+  cmaes_result$replicate_number <- replicate_number
+  return(cmaes_result)
+}
+
+
+result_set_replicates <- function(cmaes_or_dream_result) {
+  result <- result_set(cmaes_or_dream_result)
+  result$replicate_number <- cmaes_or_dream_result$replicate_number
+  return(result)
+}
+
+parameters_summary_replicates <- function(x) {
+  parameters_summary(x) |> 
+    add_column(
+      "replicate" = x$replicate_number,
+      .before = 1
+    )
+}
+
+streamflow_timeseries_summary_replicates <- function(x) {
+  streamflow_timeseries_summary(x) |> 
+    add_column(
+      "replicate" = x$replicate_number,
+      .before = 1
+    )
+}
+
+
+
+run_and_save_cmaes_chunks <- function(numerical_optimisers, chunk_index) {
+
+  tic()
+  
+  # Seq_along numerical optimisers to get replicate_numbers
+  replicate_number <- seq_along(numerical_optimisers)
+  
+  # Run in parallel
+  cmaes_results <- future_map2(
     .x = numerical_optimisers,
-    .f = CMAES,
+    .y = replicate_number,
+    .f = replicate_CMAES,
     cmaes_control = list(),
-    print_monitor = FALSE
+    print_monitor = FALSE,
+    .options = furrr_options(seed = 1L),
+    .progress = TRUE
   )
   
   # Convert cmaes objects into default format
   default_format_cmaes_results <- map(
     .x = cmaes_results,
-    .f = result_set
+    .f = result_set_replicates
   )
 
   # Get parameter_summary of cmaes_results
   cmaes_best_parameters <- map(
     .x = default_format_cmaes_results,
-    .f = parameters_summary
+    .f = parameters_summary_replicates
   ) |> 
     list_rbind()
   
@@ -322,33 +306,140 @@ run_and_save_cmaes_chunks <- function(numerical_optimisers, chunk_index) {
       AIC, # using AIC,
       by = c(gauge, streamflow_model)
     ) |> 
-    # if AIC is exactly the same between replicates slice_min will return both
-    # I only want a single replicate - use distinct to only present one
-    distinct()
+    # call slice_min again but on replicate
+    # if AIC and parameters are the same between replicates the previous slice
+    # min will take all replicates. We only want a single replicate to be 
+    # saved.
+    slice_min(
+      replicate,
+      by = c(gauge, streamflow_model)
+    )
   
+  
+  # Get streamflow_timeseries_summary of cmaes_results
+  cmaes_streamflow_timeseries <- map(
+    .x = default_format_cmaes_results,
+    .f = streamflow_timeseries_summary_replicates
+  ) |> 
+    list_rbind()
+  
+  # Use replicate number to get best streamflow
+  filter_replicate <- best_performing_replicates |> 
+    pull(replicate) |> 
+    unique()
+  
+  
+  best_cmaes_streamflow_timeseries <- cmaes_streamflow_timeseries |> 
+    filter(replicate %in% filter_replicate)
+  
+  # Save results
   write_csv(
     best_performing_replicates,
     file = paste0("Results/CMAES/chunk_", chunk_index, "_cmaes_results_parameter.csv")
   )
+  
+  write_csv(
+    best_cmaes_streamflow_timeseries,
+    file = paste0("Results/CMAES/chunk_", chunk_index, "_cmaes_results_timeseries.csv")
+  )
+  
+  cat("Chunk", chunk_index, "complete\n")
+  toc()
 }
 
 
+## Run in all chunks ===========================================================
+plan(multisession, workers = length(availableWorkers())) # parallel bit inside run_and_save_cmaes_chunks
+iwalk(
+  .x = numerical_optimisers_by_chunk, # after testing set to numerical_optimisers_by_chunk
+  .f = run_and_save_cmaes_chunks
+)
+
+
+# Combine chunks into a single file --------------------------------------------
+## parameter results ===========================================================
+combined_cmaes_parameters_file <- list.files(
+  path = "./Results/CMAES/",
+  recursive = FALSE, # I don't want it looking in other folders
+  pattern = "parameter",
+  full.names = TRUE
+) |>
+  readr::read_csv(show_col_types = FALSE)
+
+
+## streamflow results ==========================================================
+combined_cmaes_streamflow_file <- list.files(
+  path = "./Results/CMAES/",
+  recursive = FALSE, # I don't want it looking in other folders
+  pattern = "timeseries",
+  full.names = TRUE
+) |>
+  readr::read_csv(show_col_types = FALSE)
+
+
+## save big files ==============================================================
+write_csv(
+  x = combined_cmaes_parameters_file,
+  file = "Results/CMAES/cmaes_parameter_results.csv"
+)
+
+write_csv(
+  x = combined_cmaes_streamflow_file,
+  file = "Results/CMAES/cmaes_streamflow_results.csv"
+)
+
+## remove chunks ===============================================================
+# file.remove of file paths to remove them
+
+parameter_results <- read_csv(
+  "./Results/CMAES/cmaes_parameter_results.csv", 
+  show_col_types = FALSE
+) 
+
+# There are a lot of bound issues - FIX
+x <- parameter_results |>
+  filter(!is.na(near_bounds))
+
+bound_issues <- x |> 
+  summarise(
+    lower = min(parameter_value),
+    upper = max(parameter_value),
+    .by = parameter
+  )
+
+# Fixes required for bounds (get models later):
+# - a = increase upper - catchment test = G8150180 - doesn't hit when repeated - Leave
+# - a3_slope = increase both - catchment test = 136208A (upper) FIXED, 408200 (lower) FIXED
+# - a3_intercept = increase both - catchment test = 411003 (upper) FIXED, 422319B (lower) FIXED
+# - a4 = increase both - catchment test = 809321 (upper) FIXED, 405218 (lower) FIXED
+# - sd = increase upper - catchment test = 112002A FIXED
+# - b = increase upper - catchment test = A5070500 FIXED
+# - a1 = increase lower - catchment test = 225219 FIXED
+
+# Repeat once more using altered bounds
+
+
+
 # FROM HERE
-# RUN numerical_optimsers_by_chunk in parallel
-# Save results
 # do the list_file code below - join all chunks into cmaes_results_parameter 
 # and delete small chunk files
-
-# I either add AIC to streamflow_timeseries_summary and repeat what I have done for parameters
-# Or I can use the cmaes_results_parameter.csv to generate streamflow
-# Option 2 seems the safest
-
-x <- run_and_save_cmaes_chunks(numerical_optimisers_by_chunk[[2]], 1)
+# check bounds - do I need to increase them?
+# also while I have the data work on 02 file - plot results
+# are there any things that looks bad
 
 
+
+
+
+stop_here()
+
+# everything below here can be removed
+
+x <- run_and_save_cmaes_chunks(numerical_optimisers_by_chunk[[1]], 1)
 # test slice_max if same model
 # what happens if AIC is exactly the same
 # If AIC is exactly the same slice_min() takes both
+# What happens if AIC and parameters are the same?
 z <- x |> 
   filter(streamflow_model == "streamflow_model_precip_only")
 
@@ -361,7 +452,8 @@ z_prime <- z |>
 z_same <- z |> 
   mutate(
     AIC = 500,
-    parameter_value = 1
+    parameter_value = 1,
+    replicate = 2
   )
 
 z_other_model <- x |> 
@@ -370,22 +462,24 @@ z_other_model <- x |>
 test_zs <- rbind(z_same, z_prime) |> 
   slice_min(
     AIC,
-    by = c(gauge, streamflow_model),
-    with_ties = TRUE # this breaks everything if changed from TRUE
+    by = c(gauge, streamflow_model)
   ) |> 
-  distinct(gauge, streamflow_model) # this seems to work
+  slice_min(
+    replicate,
+    by = c(gauge, streamflow_model)
+  )
 
 
 # Join everything into a single file and save ----------------------------------
 ## Parameters ==================================================================
 ## Empty results folder before joining just in case
-parameters_list_of_files <- list.files(
-  path = "./Results/my_cmaes/",
+parameters_files <- list.files(
+  path = "./Results/CMAES/",
   recursive = FALSE, # I don't want it looking in other folders
   pattern = "parameter",
   full.names = TRUE
-)
-
+) |>
+  readr::read_csv(show_col_types = FALSE)
 
 
 # Issue: sometimes replicates produce >= 2 exact same results

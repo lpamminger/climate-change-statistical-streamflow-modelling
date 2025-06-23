@@ -553,6 +553,42 @@ ggsave(
 )
 
 
+# Look at objective_function ---------------------------------------------------
+
+test_catchment_data_log_sinh <- plotting_data |> 
+  filter(gauge == "207015") |> 
+  filter(streamflow_transform_method == "log_sinh_transform")
+
+test_catchment_data_boxcox <- plotting_data |> 
+  filter(gauge == "207015") |> 
+  filter(streamflow_transform_method == "boxcox_transform")
+
+# If the gauge has chunks I must do it by chunks - test gauge without chunks first
+# Gauge 207015 has a single chunk
+
+# Sticking results in get the same calibrated results
+
+# The log-likelihood is calculated using different observed streamflow values
+# Does this mean they can be compared?
+
+# AIC myths - https://robjhyndman.com/hyndsight/aic/
+
+# Log-sinh
+constant_sd_objective_function(
+  modelled_streamflow = test_catchment_data_log_sinh |> pull(transformed_mod_flow_CO2_on) |> as.matrix(ncol = 1), 
+  observed_streamflow = test_catchment_data_log_sinh |> pull(transformed_obs_flow) |> as.matrix(ncol = 1),
+  parameter_set = as.matrix(summarise_cmaes_results[[1]]$best_parameter_set, ncol = 1),
+  apply_truncnorm = FALSE
+)
+
+# Box-Cox
+constant_sd_objective_function(
+  modelled_streamflow = test_catchment_data_boxcox |> pull(transformed_mod_flow_CO2_on) |> as.matrix(ncol = 1), 
+  observed_streamflow = test_catchment_data_boxcox |> pull(transformed_obs_flow) |> as.matrix(ncol = 1),
+  parameter_set = as.matrix(summarise_cmaes_results[[2]]$best_parameter_set, ncol = 1),
+  apply_truncnorm = TRUE
+)
+
 
 
 # 1. generate observed streamflow - realspace
