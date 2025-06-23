@@ -398,7 +398,11 @@ parameter_results <- read_csv(
 
 # There are a lot of bound issues - FIX
 x <- parameter_results |>
-  filter(!is.na(near_bounds))
+  filter(!is.na(near_bounds)) |> 
+  filter(parameter != "a") |> 
+  filter(parameter != "a3_slope") |> 
+  filter(parameter != "a5") |> 
+  arrange(parameter)
 
 bound_issues <- x |> 
   summarise(
