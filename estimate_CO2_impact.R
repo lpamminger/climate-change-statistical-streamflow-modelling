@@ -16,9 +16,9 @@ start_stop_indexes <- readr::read_csv(
 
 data <- readr::read_csv(
   "./Data/Tidy/with_NA_yearly_data_CAMELS.csv",
-  col_types = "icdddddddll", # ensuring each column is a the correct type
   show_col_types = FALSE
-)
+) |> 
+  mutate(year = as.integer(year))
 
 gauge_information <- readr::read_csv(
   "./Data/Tidy/gauge_information_CAMELS.csv",
@@ -29,26 +29,26 @@ lat_lon_gauge_info <- gauge_information |>
   select(gauge, lat, lon, state)
 
 
-CMAES_results <- read_csv("./Results/my_cmaes/CMAES_parameter_results_20250331.csv",
+parameter_results <- read_csv(
+  "./Results/CMAES/cmaes_parameter_results.csv", 
   show_col_types = FALSE
 )
 
 best_CO2_non_CO2_per_gauge <- read_csv(
-  "./Results/my_cmaes/unmodified_best_CO2_non_CO2_per_catchment_CMAES_20250331.csv",
+  "./Results/CMAES/best_CO2_non_CO2_per_catchment.csv",
+  show_col_types = FALSE
+) 
+
+streamflow_results <- read_csv(
+  "./Results/CMAES/cmaes_streamflow_results.csv", 
   show_col_types = FALSE
 )
 
-streamflow_data <- read_csv(
-  "Results/my_cmaes/CMAES_streamflow_results_20250331.csv",
-  show_col_types = FALSE
-)
 
 
-## Utility functions ===========================================================
+
+## Import functions ============================================================
 source("./Functions/utility.R")
-
-
-## Import streamflow functions =================================================
 source("./Functions/streamflow_models.R")
 source("./Functions/parameter_transformations.R")
 source("./Functions/catchment_data_blueprint.R")
@@ -59,7 +59,7 @@ source("./Functions/generic_functions.R")
 source("./Functions/DREAM.R")
 source("./Functions/objective_function_setup.R")
 source("./Functions/result_set.R")
-source("./Functions/boxcox_transforms.R")
+source("./Functions/boxcox_logsinh_transforms.R")
 
 
 
@@ -78,7 +78,7 @@ only_gauge_model_best_CO2_non_CO2_per_gauge <- best_CO2_non_CO2_per_gauge |>
 
 
 
-streamflow_data_best_CO2_non_CO2 <- streamflow_data |>
+streamflow_data_best_CO2_non_CO2 <- streamflow_results |>
   semi_join(
     only_gauge_model_best_CO2_non_CO2_per_gauge,
     by = join_by(gauge, streamflow_model)
@@ -242,12 +242,21 @@ no_CO2_data_joining <- set_a3_zero_CO2_best_models |>
   select(gauge, streamflow_model) |> 
   distinct()
 
-only_CO2_streamflow_data <- streamflow_data |> 
+only_CO2_streamflow_data <- streamflow_results |> 
   semi_join(
     no_CO2_data_joining,
     by = join_by(gauge, streamflow_model)
   ) |> 
-  select(gauge, year, precipitation, modelled_boxcox_streamflow)
+  select(
+    gauge, 
+    year, 
+    precipitation, 
+    transformed_modelled_streamflow, 
+    realspace_modelled_streamflow, 
+    transformed_observed_streamflow, 
+    realspace_observed_streamflow
+    )
+# can add observed data here as well
 
 streamflow_data_a3_off <- altered_streamflow |> 
   left_join(
@@ -260,7 +269,7 @@ streamflow_data_a3_off <- altered_streamflow |>
   ) |> 
 # add the original streamflow on
 rename(
-  a3_off_modelled_boxcox_streamflow = streamflow_results
+  a3_off_modelled_transformed_streamflow = streamflow_results
 ) |> 
   left_join(
     only_CO2_streamflow_data,
@@ -269,134 +278,176 @@ rename(
 
 
 
-# Compare percentage difference in a3 on vs. a3 off ----------------------------
-## Convert boxcox streamflow to actual streamflow ==============================
-## this must be done so summing each decade does not result in negative flow
-boxcox_lambda_gauge <- gauge_information |>
-  select(gauge, bc_lambda)
+## Convert a3_off_transformed_modelled streamflow into realspace ===============
+### Pull a part streamflow_data_a3_off and put it back together
 
-realspace_streamflow_data_a3_off <- streamflow_data_a3_off |>
-  left_join(
-    boxcox_lambda_gauge,
-    by = join_by(gauge)
-  ) |>
-  mutate(
-    realspace_a3_on = boxcox_inverse_transform(yt = modelled_boxcox_streamflow, lambda = bc_lambda, lambda_2 = 1),
-    realspace_a3_off = boxcox_inverse_transform(yt = a3_off_modelled_boxcox_streamflow, lambda = bc_lambda, lambda_2 = 1),
-    .by = gauge
-  )
-
-
-## Check for strange streamflow values
-## - There are some streamflow values that are negative or NA
-observed_streamflow <- data |> 
-  select(gauge, p_mm, q_mm) |> 
-  rename(
-    precipitation = p_mm
-  )
-
-problem_flows <- realspace_streamflow_data_a3_off |> 
-  filter(is.na(realspace_a3_on) | is.na(realspace_a3_off) | (realspace_a3_on < 0) | (realspace_a3_off < 0)) |> 
-  left_join(
-    observed_streamflow,
-    by = join_by(gauge, precipitation)
-  )
-
-
-## Solution to problem flows
-## - All occur when annual streamflow is near zero.
-## - For simplicity set to zero
-## - Should there a lower bound for years in decade?
-altered_realspace_streamflow_data_a3_off <- realspace_streamflow_data_a3_off |>
-  mutate(
-    realspace_a3_off = case_when(
-      realspace_a3_off < 0 ~ 0,
-      is.na(realspace_a3_off) ~ 0,
-      .default = realspace_a3_off
-    ),
-    realspace_a3_on = case_when(
-      realspace_a3_on < 0 ~ 0,
-      is.na(realspace_a3_on) ~ 0,
-      .default = realspace_a3_on
+convert_a3_off_transformed_to_realspace <- function(gauge, streamflow_data_a3_off, best_model_per_gauge) {
+  
+  filtered_streamflow_data_a3_off <- streamflow_data_a3_off |> 
+    filter(gauge == {{ gauge }})
+  
+  a3_off_transformed_streamflow <- filtered_streamflow_data_a3_off |> 
+    pull(a3_off_modelled_transformed_streamflow)
+  
+  parameters <- best_model_per_gauge |> 
+    filter(contains_CO2) |> 
+    filter(gauge == {{ gauge }}) |> 
+    pull(parameter_value)
+  
+  a <- parameters[length(parameters) - 2]
+  b <- parameters[length(parameters) - 1]
+  
+  a3_off_realspace_streamflow <- inverse_log_sinh_transform(
+    a = a, 
+    b = b, 
+    a3_off_transformed_streamflow, 
+    offset = 0
     )
-  )
+  
+  # add it back to streamflow_data_a3_off
+  filtered_streamflow_data_a3_off <- filtered_streamflow_data_a3_off |> 
+    add_column(
+      "a3_off_modelled_realspace_streamflow" = a3_off_realspace_streamflow,
+      .before = 9
+    ) |> 
+    # realspace streamflow must be greater than zero
+    mutate(
+      a3_off_modelled_realspace_streamflow = if_else(a3_off_modelled_realspace_streamflow < 0, 0, a3_off_modelled_realspace_streamflow)
+    )
+  
+  
+  return(filtered_streamflow_data_a3_off)
+}
 
 
-sum_decade_rainfall <- data |> 
-  mutate(
-    decade = year - (year %% 10)
+
+streamflow_data_with_a3_off <- map(
+  .x = streamflow_data_a3_off |> pull(gauge) |> unique(),
+  .f = convert_a3_off_transformed_to_realspace,
+  streamflow_data_a3_off = streamflow_data_a3_off,
+  best_model_per_gauge = best_model_per_gauge
+) |> 
+  list_rbind()
+
+
+
+
+# Compare percentage difference in a3 on vs. a3 off ----------------------------
+# Aim: Compare the difference in a3_on vs a3_off for a specified decade
+# Method: 
+# 1. In realspace, sum streamflow for a given gauges with the a3 parameter on.
+#    Then repeat with the a3 parameter off. 
+# 2. Compare the difference (CO2_on - CO2_off) / number of years 
+
+a3_on_off_difference_data <- streamflow_data_with_a3_off |> 
+  select(
+    gauge, 
+    year, 
+    precipitation, 
+    a3_off_modelled_realspace_streamflow,
+    realspace_modelled_streamflow,
+    realspace_observed_streamflow
+    ) |> 
+  rename(
+    realspace_a3_off_streamflow = a3_off_modelled_realspace_streamflow,
+    realspace_a3_on_streamflow = realspace_modelled_streamflow
   ) |> 
-  summarise(
-    decade_rainfall = sum(p_mm),
-    .by = c(gauge, decade)
-  )
-
-average_percent_diff_by_decade <- altered_realspace_streamflow_data_a3_off |>
+  # add decade column
   mutate(
     decade = year - (year %% 10)
-  ) |>
+  )
+  
+
+decade_a3_on_off_difference_data <-  a3_on_off_difference_data |> 
   summarise(
-    sum_streamflow_a3_off = sum(realspace_a3_off),
-    sum_streamflow_a3_on = sum(realspace_a3_on),
+    sum_realspace_a3_off_streamflow = sum(realspace_a3_off_streamflow),
+    sum_realspace_a3_on_streamflow = sum(realspace_a3_on_streamflow),
+    sum_precipitation = sum(precipitation),
     n = n(),
     .by = c(gauge, decade)
-  ) |>
+  ) |> 
+  # average by year
   mutate(
-    average_percent_diff = ((sum_streamflow_a3_on - sum_streamflow_a3_off) / sum_streamflow_a3_on) * 100,
-    average_diff_mm = (sum_streamflow_a3_on - sum_streamflow_a3_off) / n
-  ) |>
-  arrange(average_diff_mm) |>
+    a3_on_off_difference = sum_realspace_a3_on_streamflow - sum_realspace_a3_off_streamflow,
+  ) |> 
+  mutate(
+    by_year_a3_on_off_difference = a3_on_off_difference / n
+  )
+
+
+
+# Get decade_a3_on_off_difference_data ready for plotting
+plot_ready_decade_a3_on_off_difference_data <- decade_a3_on_off_difference_data |> 
   left_join(
     lat_lon_gauge_info,
     by = join_by(gauge)
-  ) |>
-  # Add decade rainfall to sense check some values
-  left_join(
-    sum_decade_rainfall,
-    by = join_by(gauge, decade)
   ) |> 
-  relocate(
-    c("gauge", "decade", "decade_rainfall", "sum_streamflow_a3_off", "sum_streamflow_a3_on", "n", "average_percent_diff", "average_diff_mm", "lat", "lon", "state") 
-  ) 
-  # only include decades with 10 years - removes some weird behaving catchment
-  #filter(n == 10) |> 
-  # turning CO2 off makes streamflow go negative?
-  #filter(sum_streamflow_a3_off > 0) 
+  arrange(desc(by_year_a3_on_off_difference))
 
-apples_to_apples_gauges <- average_percent_diff_by_decade |> 
-  filter(decade %in% c(1990, 2020)) |> 
+
+# Hard code custom breaks
+plot_ready_decade_a3_on_off_difference_data |> 
+  pull(by_year_a3_on_off_difference) |> 
+  range()
+
+
+## Over entire observation period rather than decade ===========================
+year_a3_on_off_difference_data <-  a3_on_off_difference_data |> 
   summarise(
+    sum_realspace_a3_off_streamflow = sum(realspace_a3_off_streamflow),
+    sum_realspace_a3_on_streamflow = sum(realspace_a3_on_streamflow),
+    sum_precipitation = sum(precipitation),
     n = n(),
     .by = gauge
   ) |> 
-  filter(n == 2) |> 
-  pull(gauge)
-
-apples_to_apples_average_percent_diff_by_decade <- average_percent_diff_by_decade |> 
-  filter(gauge %in% apples_to_apples_gauges)
-
-average_percent_diff_by_decade <- apples_to_apples_average_percent_diff_by_decade # hard code remove later
-
-# Sense check the average_percent_diff_by_decade
-sense_check <- average_percent_diff_by_decade |> 
+  # average by year
   mutate(
-    problem_1_a3_off = sum_streamflow_a3_off > decade_rainfall,
-    problem_1_a3_on = sum_streamflow_a3_on > decade_rainfall
+    a3_on_off_difference = sum_realspace_a3_on_streamflow - sum_realspace_a3_off_streamflow,
   ) |> 
-  filter(problem_1_a3_off | problem_1_a3_on)
-# This is good
+  mutate(
+    by_year_a3_on_off_difference = a3_on_off_difference / n
+  ) |> 
+  # add location data
+  left_join(
+    lat_lon_gauge_info,
+    by = join_by(gauge)
+  ) 
 
 
-average_percent_diff_by_decade |> pull(average_diff_mm) |> range()
-average_percent_diff_by_decade |> pull(average_diff_mm) |> mean()
+# boxplot
 
-## Count gauges per decade
-average_percent_diff_by_decade |> 
+# add n = to boxplots
+state_count <- year_a3_on_off_difference_data |> 
   summarise(
     n = n(),
-    .by = decade
+    .by = state
+  ) |> 
+  add_column(
+    y_pos = 175
+  ) |> 
+  mutate(
+    label = paste0("n = ", n)
   )
 
+year_a3_on_off_difference_data |> 
+  ggplot(aes(x = state, y = by_year_a3_on_off_difference)) +
+  geom_boxplot(staplewidth = 0.5) +
+  geom_hline(yintercept = 0, colour = "red", linetype = "dashed") +
+  geom_label(
+    aes(x = state, y = y_pos, label = label),
+    data = state_count
+  ) +
+  theme_bw() +
+  labs(
+    x = "State",
+    y = "Average change in streamflow from CO2 per year (mm)"
+  )
+
+year_a3_on_off_difference_data |> 
+  summarise(
+    median = median(by_year_a3_on_off_difference),
+    .by = state
+  )
 
 
 # Get shapefiles for Australia ------------------------------------------------
@@ -457,30 +508,32 @@ decade_comparison_CO2_impact <- function(decade) {
   ## Generate Insets =============================================================
   ### Filter data by state #######################################################
   
-  QLD_data <- average_percent_diff_by_decade |>
+  QLD_data <- plot_ready_decade_a3_on_off_difference_data |>
     filter(state == "QLD") |> 
     filter(decade == {{ decade }})
   
-  NSW_data <- average_percent_diff_by_decade |>
+  NSW_data <- plot_ready_decade_a3_on_off_difference_data |>
     filter(state == "NSW") |> 
     filter(decade == {{ decade }})
   
-  VIC_data <- average_percent_diff_by_decade |>
+  VIC_data <- plot_ready_decade_a3_on_off_difference_data |>
     filter(state == "VIC") |> 
     filter(decade == {{ decade }})
   
-  WA_data <- average_percent_diff_by_decade |>
+  WA_data <- plot_ready_decade_a3_on_off_difference_data |>
     filter(state == "WA") |> 
     filter(decade == {{ decade }})
   
-  TAS_data <- average_percent_diff_by_decade |>
+  TAS_data <- plot_ready_decade_a3_on_off_difference_data |>
     filter(state == "TAS") |> 
     filter(decade == {{ decade }})
   
   
-  
-  custom_limits <- c(-2000, 600)
-  custom_breaks <- c(-500, -100, -50, -10, -1, 0, 1, 10, 50, 100, 500)
+  #plot_ready_decade_a3_on_off_difference_data |> 
+  # pull(by_year_a3_on_off_difference) |> 
+  # range()
+  custom_limits <- c(-800, 500)
+  custom_breaks <- c(-400, -100, -50, -10, -1, 0, 1, 10, 50, 100, 250)
   
   
   ### Generate inset plots #######################################################
@@ -491,7 +544,7 @@ decade_comparison_CO2_impact <- function(decade) {
     geom_sf() +
     geom_point(
       data = QLD_data,
-      aes(x = lon, y = lat, fill = average_diff_mm),
+      aes(x = lon, y = lat, fill = by_year_a3_on_off_difference),
       show.legend = FALSE,
       size = 2.5,
       colour = "black",
@@ -515,7 +568,7 @@ decade_comparison_CO2_impact <- function(decade) {
     geom_sf() +
     geom_point(
       data = NSW_data,
-      aes(x = lon, y = lat, fill = average_diff_mm),
+      aes(x = lon, y = lat, fill = by_year_a3_on_off_difference),
       show.legend = FALSE,
       size = 2.5,
       colour = "black",
@@ -540,7 +593,7 @@ decade_comparison_CO2_impact <- function(decade) {
     geom_sf() +
     geom_point(
       data = VIC_data,
-      aes(x = lon, y = lat, fill = average_diff_mm),
+      aes(x = lon, y = lat, fill = by_year_a3_on_off_difference),
       show.legend = FALSE,
       size = 2.5,
       colour = "black",
@@ -565,7 +618,7 @@ decade_comparison_CO2_impact <- function(decade) {
     geom_sf() +
     geom_point(
       data = WA_data,
-      aes(x = lon, y = lat, fill = average_diff_mm),
+      aes(x = lon, y = lat, fill = by_year_a3_on_off_difference),
       show.legend = FALSE,
       size = 2.5,
       colour = "black",
@@ -590,7 +643,7 @@ decade_comparison_CO2_impact <- function(decade) {
     geom_sf() +
     geom_point(
       data = TAS_data,
-      aes(x = lon, y = lat, fill = average_diff_mm),
+      aes(x = lon, y = lat, fill = by_year_a3_on_off_difference),
       show.legend = FALSE,
       size = 2.5,
       colour = "black",
@@ -615,8 +668,8 @@ decade_comparison_CO2_impact <- function(decade) {
     ggplot() +
     geom_sf() +
     geom_point(
-      data = average_percent_diff_by_decade |> filter(decade == {{ decade }}),
-      mapping = aes(x = lon, y = lat, fill = average_diff_mm),
+      data = plot_ready_decade_a3_on_off_difference_data |> filter(decade == {{ decade }}),
+      mapping = aes(x = lon, y = lat, fill = by_year_a3_on_off_difference),
       size = 3,
       colour = "black",
       shape = 21,
@@ -727,6 +780,38 @@ ggsave(
 
 
 
+# A time series plot of on/off of all gauges -----------------------------------
+timeseries_plotting_data <- a3_on_off_difference_data |>
+  pivot_longer(
+    cols = starts_with("realspace"),
+    names_to = "type",
+    values_to = "streamflow"
+  )
+
+mega_timeseries_plot <- timeseries_plotting_data |> 
+  ggplot(aes(x = year, y = streamflow, colour = type)) +
+  geom_line() +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  facet_wrap(~gauge, scales = "free_y")
+
+ggsave(
+  filename = "mega_timeseries_plot.pdf",
+  device = "pdf",
+  plot = mega_timeseries_plot,
+  width = 1189,
+  height = 841,
+  units = 'mm'
+)
+
+
+# Other ideas ------------------------------------------------------------------
+
+
+
+
+
+# Ignore this bit here ------------
 
 # Sanity check the rainfall-runoff and streamflow-time of large differences
 # from decade comparison

@@ -1,28 +1,13 @@
 # Script produces the four key figures of the second paper
 
-
-# TODO - transfer code/graphs from playing_with_graphs
-# Key graphs to transfer are:
-# 1. Time of emergence histogram
-# - account for the different types of CO2 models - slope vs. intercept
-# 2. graphically compare (colour gradient evidence ratio, shape pos/neg, outline
-#    or stroke colour can be slope or intercept)
-# 3. some sort of slope and intercept analysis. Like proportion of pos/neg slope,
-#    pos/neg intercept
-
-
-
 cat("\014") # clear console
 
 # Import libraries--------------------------------------------------------------
 pacman::p_load(tidyverse, ozmaps, sf, ggmagnify, furrr, parallel) 
 
 
-## Utility functions ===========================================================
+## Import functions ============================================================
 source("./Functions/utility.R")
-
-
-## Import streamflow functions =================================================
 source("./Functions/streamflow_models.R")
 source("./Functions/parameter_transformations.R")
 source("./Functions/catchment_data_blueprint.R")
@@ -33,35 +18,30 @@ source("./Functions/generic_functions.R")
 source("./Functions/DREAM.R")
 source("./Functions/objective_function_setup.R")
 source("./Functions/result_set.R")
-source("./Functions/boxcox_transforms.R")
+source("./Functions/boxcox_logsinh_transforms.R")
+
+
+
 
 
 # Import data ------------------------------------------------------------------
-CMAES_results <- read_csv(
-  "./Results/my_cmaes/CMAES_parameter_results_20250331.csv", 
-  show_col_types = FALSE
-) 
-
 data <- readr::read_csv(
   "./Data/Tidy/with_NA_yearly_data_CAMELS.csv",
-  col_types = "icdddddddll", # ensuring each column is a the correct type
+  show_col_types = FALSE
+) |> 
+  mutate(year = as.integer(year))
+
+streamflow_results <- read_csv(
+  "./Results/CMAES/cmaes_streamflow_results.csv", 
   show_col_types = FALSE
 )
 
-streamflow_results <- read_csv(
-  "Results/my_cmaes/CMAES_streamflow_results_20250331.csv",
-  show_col_types = FALSE,
-  col_select = !optimiser
-)
-
-gauge_information <- read_csv(
+gauge_information <- readr::read_csv(
   "./Data/Tidy/gauge_information_CAMELS.csv",
-  show_col_types = FALSE,
-  col_select = c(gauge, bc_lambda, state, lat, lon)
-) # CAMELS is Australia wide.
-
+  show_col_types = FALSE
+)
 best_CO2_non_CO2_per_gauge <- read_csv(
-  "./Results/my_cmaes/unmodified_best_CO2_non_CO2_per_catchment_CMAES_20250331.csv",
+  "./Results/CMAES/best_CO2_non_CO2_per_catchment.csv",
   show_col_types = FALSE
 ) 
   
@@ -237,6 +217,7 @@ model_components <- single_aus_map |>
 
 #model_components
 
+# Separate log-sinh work from boxcox graphs
 ggsave(
   filename = "./Graphs/CMAES_graphs/model_components_v2.pdf",
   plot = model_components,
@@ -596,7 +577,7 @@ single_map_aus <- aus_map |>
 
 
 ggsave(
-  filename = "./Graphs/CMAES_graphs/evidence_ratio_aus_with_zoom_v4.pdf",
+  filename = "./Graphs/CMAES_graphs/log_sinh_evidence_ratio_aus_with_zoom.pdf",
   plot = single_map_aus,
   device = "pdf",
   width = 232,
@@ -1060,7 +1041,7 @@ ToE_map_aus <- aus_map |>
 #ToE_map_aus
 
 ggsave(
-  filename = "./Graphs/CMAES_graphs/ToE_map_aus_uncertainty_v4.pdf",
+  filename = "./Graphs/CMAES_graphs/log_sinh_bad_uncertainty_ToE_map_aus.pdf",
   plot = ToE_map_aus,
   device = "pdf",
   width = 232,
@@ -1116,6 +1097,14 @@ ggsave(
 )
 
 
+# Figure 3 of paper is located in estimate_CO2_impact
+
+
+# I have no idea what I am doing beyond here ---
+
+
+
+
 
 
 # Figure 4. How has CO2 impacted streamflow map --------------------------------
@@ -1134,22 +1123,9 @@ best_streamflow_results <- streamflow_results |>
   )
 
 
-## Only include best streamflow that was calibrated on =========================
-## join the included_in_calibration column
-in_calibration <- data |> 
-  select(year, gauge, included_in_calibration)
-
-best_calibration_streamflow_results <- best_streamflow_results |> 
-  left_join(
-    in_calibration,
-    by = join_by(year, gauge)
-  ) |> 
-  filter(included_in_calibration)
-
-
 
 ## Summarise results into a tidy format ========================================
-tidy_boxcox_streamflow <- best_calibration_streamflow_results |>
+tidy_boxcox_streamflow <- best_streamflow_results |>
   drop_na() |>  # only include if observed streamflow is present
   pivot_longer(
     cols = c(observed_boxcox_streamflow, modelled_boxcox_streamflow),

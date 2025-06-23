@@ -80,36 +80,135 @@ source("./Functions/utility.R")
 
 
 # Import the calibrated .csv's -------------------------------------------------
-
 parameter_results <- read_csv(
-  "./Results/my_cmaes/CMAES_parameter_results_20250331.csv", 
-  # limited bounds 20250122
-  # turn-off bounds 20241130
+  "./Results/CMAES/cmaes_parameter_results.csv", 
   show_col_types = FALSE
 ) 
 
 
 streamflow_results <- read_csv(
-  "./Results/my_cmaes/CMAES_streamflow_results_20250331.csv", 
-  # limited bounds 20250122
-  # turn-off bounds 20241130
+  "./Results/CMAES/cmaes_streamflow_results.csv", 
   show_col_types = FALSE
   )
  
 
-data <- read_csv(
-  "Data/Tidy/with_NA_yearly_data_CAMELS.csv",
+data <- readr::read_csv(
+  "./Data/Tidy/with_NA_yearly_data_CAMELS.csv",
   show_col_types = FALSE
-)
+) |> 
+  mutate(year = as.integer(year))
 
 
-start_stop_indexes <- read_csv(
+start_stop_indexes <- readr::read_csv(
   "./Data/Tidy/start_end_index.csv",
   show_col_types = FALSE
 )
 
 
 # 1. Are there any major issues with CMAES fitting? - visual inspection --------
+## streamflow results only include data calibrated on 
+## page-per-gauge with unique models
+
+## rainfall-runoff comparison ==================================================
+y <- streamflow_results |> 
+  filter(gauge == "003303A") |> 
+  pivot_longer(
+    cols = starts_with("transformed"),
+    names_to = "observed_or_modelled",
+    values_to = "streamflow"
+  ) |> 
+  ggplot(aes(x = precipitation, y = streamflow, colour = observed_or_modelled)) +
+  geom_smooth(
+    method = lm,
+    formula = y ~ x,
+    se = FALSE
+  ) +
+  geom_point(size = 0.5) +
+  scale_color_brewer(palette = "Set1") +
+  theme_bw() +
+  labs(
+    x = "Precipitation (mm)",
+    y = "Log-sinh streamflow (mm)",
+    colour = NULL,
+    title = "Gauge: XXXXXXX"
+  ) +
+  theme(
+    legend.position = "bottom",
+    strip.text = element_text(size = 5),
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  facet_wrap(~streamflow_model, scales = "free_y")
+
+
+ggsave(
+  filename = "test.pdf",
+  plot = y,
+  device = "pdf",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
+
+## streamflow-time comparison ==================================================
+# function this and save to supp.
+x <- streamflow_results |> 
+  filter(gauge == "003303A") |> 
+  pivot_longer(
+    cols = starts_with("realspace"),
+    names_to = "observed_or_modelled",
+    values_to = "streamflow"
+  ) |> 
+  ggplot(aes(x = year, y = streamflow, colour = observed_or_modelled)) +
+  geom_line() +
+  geom_point(size = 0.4) +
+  scale_color_brewer(palette = "Set1") +
+  theme_bw() +
+  labs(
+    x = "Year",
+    y = "Streamflow (mm)",
+    colour = NULL,
+    title = "Gauge: XXXXXXX"
+  ) +
+  theme(
+    legend.position = "bottom",
+    strip.text = element_text(size = 5),
+    plot.title = element_text(hjust = 0.5)
+    ) +
+  facet_wrap(~streamflow_model, scales = "free_y")
+
+
+ggsave(
+  filename = "test.pdf",
+  device = "pdf",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
+
+
+
+# get best CO2 and non-CO2 results per gauge -----------------------------------
+best_CO2_and_non_CO2_per_catchment <- parameter_results |>
+  select(!c(optimiser, loglikelihood, exit_message, near_bounds, objective_function)) |>
+  mutate(
+    contains_CO2 = str_detect(streamflow_model, "CO2"),
+    .after = 2
+  ) |>
+  slice_min(
+    AIC,
+    by = c(gauge, contains_CO2)
+  ) 
+
+write_csv(
+  best_CO2_and_non_CO2_per_catchment,
+  file = "./Results/CMAES/best_CO2_non_CO2_per_catchment.csv"
+)
+
+
+
+
+
+
 
 ## Only include streamflow that was calibrated on ==============================
 
