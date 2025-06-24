@@ -109,85 +109,200 @@ start_stop_indexes <- readr::read_csv(
 ## streamflow results only include data calibrated on 
 ## page-per-gauge with unique models
 
+
+
 ## rainfall-runoff comparison ==================================================
-y <- streamflow_results |> 
-  filter(gauge == "003303A") |> 
-  pivot_longer(
-    cols = starts_with("transformed"),
-    names_to = "observed_or_modelled",
-    values_to = "streamflow"
-  ) |> 
-  ggplot(aes(x = precipitation, y = streamflow, colour = observed_or_modelled)) +
-  geom_smooth(
-    method = lm,
-    formula = y ~ x,
-    se = FALSE
-  ) +
-  geom_point(size = 0.5) +
-  scale_color_brewer(palette = "Set1") +
-  theme_bw() +
-  labs(
-    x = "Precipitation (mm)",
-    y = "Log-sinh streamflow (mm)",
-    colour = NULL,
-    title = "Gauge: XXXXXXX"
-  ) +
-  theme(
-    legend.position = "bottom",
-    strip.text = element_text(size = 5),
-    plot.title = element_text(hjust = 0.5)
-  ) +
-  facet_wrap(~streamflow_model, scales = "free_y")
+rainfall_runoff_plot <- function(gauge, streamflow_results, parameter_results) {
+  
+  gauge_streamflow_results <- streamflow_results |> 
+    filter(gauge == {{ gauge }}) |> 
+    pivot_longer(
+      cols = starts_with("transformed"),
+      names_to = "observed_or_modelled",
+      values_to = "streamflow"
+    ) 
+  
+  # Get AIC information
+  AIC_for_graphs <- parameter_results |> 
+    filter(gauge == {{ gauge }}) |> 
+    distinct(streamflow_model, .keep_all = TRUE) |> 
+    select(streamflow_model, AIC) |> 
+    add_column(
+      x_pos_rainfall_runoff = gauge_streamflow_results |> pull(precipitation) |> min(), # minimum observed rainfall
+      y_pos = gauge_streamflow_results |> pull(realspace_observed_streamflow) |> max(), # maximum observed streamflow
+      x_pos_streamflow_time = 1959 # first value
+    ) |> 
+    mutate(
+      label = paste0("AIC = ", round(AIC, digits = 2))
+    )
+  
+  
+  # Make plot
+  gauge_streamflow_results |> 
+    ggplot(aes(x = precipitation, y = streamflow, colour = observed_or_modelled)) +
+    geom_smooth(
+      method = lm,
+      formula = y ~ x,
+      se = FALSE
+    ) +
+    geom_point(size = 0.5) +
+    geom_label(
+      aes(x = x_pos_rainfall_runoff, y = y_pos, label = label),
+      data = AIC_for_graphs,
+      inherit.aes = FALSE,
+      size = 3,
+      vjust = 1,
+      hjust = -0.25
+    ) +
+    scale_color_brewer(palette = "Set1") +
+    theme_bw() +
+    labs(
+      x = "Precipitation (mm)",
+      y = "Log-sinh streamflow (mm)",
+      colour = NULL,
+      title = paste0("Gauge: ", gauge) 
+    ) +
+    theme(
+      legend.position = "bottom",
+      strip.text = element_text(size = 5),
+      plot.title = element_text(hjust = 0.5)
+    ) +
+    facet_wrap(~streamflow_model, scales = "free_y")
+}
+
+
+rainfall_runoff_plots <- map(
+  .x = parameter_results |> pull(gauge) |> unique(),
+  .f = rainfall_runoff_plot,
+  streamflow_results = streamflow_results,
+  parameter_results = parameter_results
+)
 
 
 ggsave(
-  filename = "test.pdf",
-  plot = y,
+  filename = "all_rainfall_runoff_plots.pdf", 
+  path = "./Graphs/CMAES_graphs",
+  # used to append all plots into a single pdf
+  plot = gridExtra::marrangeGrob(rainfall_runoff_plots, nrow = 1, ncol = 1), 
   device = "pdf",
+  units = "mm",
   width = 297,
-  height = 210,
-  units = "mm"
+  height = 210
 )
+
+
+# check streamflow of 318150
+# utilisation of a parameter? - remove?
+
 
 ## streamflow-time comparison ==================================================
-# function this and save to supp.
-x <- streamflow_results |> 
-  filter(gauge == "003303A") |> 
-  pivot_longer(
-    cols = starts_with("realspace"),
-    names_to = "observed_or_modelled",
-    values_to = "streamflow"
-  ) |> 
-  ggplot(aes(x = year, y = streamflow, colour = observed_or_modelled)) +
-  geom_line() +
-  geom_point(size = 0.4) +
-  scale_color_brewer(palette = "Set1") +
-  theme_bw() +
-  labs(
-    x = "Year",
-    y = "Streamflow (mm)",
-    colour = NULL,
-    title = "Gauge: XXXXXXX"
-  ) +
-  theme(
-    legend.position = "bottom",
-    strip.text = element_text(size = 5),
-    plot.title = element_text(hjust = 0.5)
+streamflow_time_plot <- function(gauge, streamflow_results, parameter_results) {
+  
+  gauge_streamflow_results <- streamflow_results |> 
+    filter(gauge == {{ gauge }}) |> 
+    pivot_longer(
+      cols = starts_with("realspace"),
+      names_to = "observed_or_modelled",
+      values_to = "streamflow"
+    ) 
+  
+  # Get AIC information
+  AIC_for_graphs <- parameter_results |> 
+    filter(gauge == {{ gauge }}) |> 
+    distinct(streamflow_model, .keep_all = TRUE) |> 
+    select(streamflow_model, AIC) |> 
+    add_column(
+      x_pos_rainfall_runoff = gauge_streamflow_results |> pull(precipitation) |> min(), # minimum observed rainfall
+      y_pos = gauge_streamflow_results |> filter(observed_or_modelled == "realspace_observed_streamflow") |> pull(streamflow) |> max(), # maximum observed streamflow
+      x_pos_streamflow_time = 1959 # first value
+    ) |> 
+    mutate(
+      label = paste0("AIC = ", round(AIC, digits = 2))
+    )
+  
+  
+  # Make plot
+  gauge_streamflow_results |> 
+    ggplot(aes(x = year, y = streamflow, colour = observed_or_modelled)) +
+    geom_line() +
+    geom_point(size = 0.5) +
+    geom_label(
+      aes(x = x_pos_streamflow_time, y = y_pos, label = label),
+      data = AIC_for_graphs,
+      inherit.aes = FALSE,
+      size = 3,
+      vjust = 1,
+      hjust = -0.25
     ) +
-  facet_wrap(~streamflow_model, scales = "free_y")
+    scale_color_brewer(palette = "Set1") +
+    theme_bw() +
+    labs(
+      x = "Year",
+      y = "Streamflow (mm)",
+      colour = NULL,
+      title = paste0("Gauge: ", gauge) 
+    ) +
+    theme(
+      legend.position = "bottom",
+      strip.text = element_text(size = 5),
+      plot.title = element_text(hjust = 0.5)
+    ) +
+    facet_wrap(~streamflow_model, scales = "free_y")
+}
+
+
+
+streamflow_time_plots <- map(
+  .x = parameter_results |> pull(gauge) |> unique(),
+  .f = streamflow_time_plot,
+  streamflow_results = streamflow_results,
+  parameter_results = parameter_results
+)
 
 
 ggsave(
-  filename = "test.pdf",
+  filename = "all_streamflow_time_plots.pdf", 
+  path = "./Graphs/CMAES_graphs",
+  # used to append all plots into a single pdf
+  plot = gridExtra::marrangeGrob(streamflow_time_plots, nrow = 1, ncol = 1), 
   device = "pdf",
+  units = "mm",
   width = 297,
-  height = 210,
-  units = "mm"
+  height = 210
 )
 
 
 
-# get best CO2 and non-CO2 results per gauge -----------------------------------
+# 2. Are the fitted parameters "acceptable"? -----------------------------------
+
+## Utilisation of parameters ===================================================
+# What parameters are being turned off that should not be turned off? ##########
+check_near_zero_parameter_values <- parameter_results |> 
+  mutate(
+    is_parameter_turned_off = near(parameter_value, 0, tol = .Machine$double.eps^0.5)
+  ) |> 
+  filter(is_parameter_turned_off)
+
+# The a parameter wants to be turned off for 512 catchment-model combinations (out of 9684)
+#parameter_results |> 
+#  filter(parameter == "a") |> 
+#  pull() |> 
+#  length()
+
+
+# Check the a5 parameter - how many catchment have a5 turn on in the last ######
+# year of observed data
+
+# I think this is only relevent for the best models...
+
+
+
+
+
+
+
+  
+# 3. Save best CO2 and non-CO2 results per gauge -------------------------------
 best_CO2_and_non_CO2_per_catchment <- parameter_results |>
   select(!c(optimiser, loglikelihood, exit_message, near_bounds, objective_function)) |>
   mutate(
@@ -201,7 +316,7 @@ best_CO2_and_non_CO2_per_catchment <- parameter_results |>
 
 write_csv(
   best_CO2_and_non_CO2_per_catchment,
-  file = "./Results/CMAES/best_CO2_non_CO2_per_catchment.csv"
+  file = "./Results/CMAES/best_CO2_non_CO2_per_catchment_CMAES.csv"
 )
 
 
@@ -210,107 +325,17 @@ write_csv(
 
 
 
-## Only include streamflow that was calibrated on ==============================
 
-in_calibration <- data |> 
-  select(year, gauge, included_in_calibration) # join the included_in_calibration column
-
-only_calibration_streamflow_results <-  streamflow_results |> 
-  left_join(
-    in_calibration,
-    by = join_by(year, gauge)
-  ) |> 
-  filter(included_in_calibration)
-  
+###### DELETE FROM HERE ##########
 
 
-## Tidy data for plotting ======================================================
-setup_streamflow_results_plotting <- only_calibration_streamflow_results |> 
-  pivot_longer(
-    cols = ends_with("streamflow"),
-    names_to = "modelled_or_observed",
-    values_to = "boxcox_streamflow"
-  ) 
-
-
-
-## Get unique model and objective function combinations ========================
-unique_streamflow_model_objective_combinations <- setup_streamflow_results_plotting |>
-  distinct(streamflow_model, objective_function) 
-
-
-## Plotting function ===========================================================
-check_results_plot <- function(streamflow_model, objective_function, streamflow_results) {
-  streamflow_results |>
-    filter(streamflow_model == {{ streamflow_model }}) |>
-    filter(objective_function == {{ objective_function }}) |>
-    ggplot(aes(x = year, y = boxcox_streamflow, colour = modelled_or_observed)) +
-    geom_line(na.rm = TRUE) +
-    geom_point(na.rm = TRUE) +
-    scale_colour_brewer(palette = "Set1") +
-    labs(
-      x = "Year",
-      y = "Boxcox Streamflow (mm)",
-      title = paste0("Streamflow Model: ", streamflow_model, "\nObjective Function: ", objective_function)
-    ) +
-    theme_bw() +
-    facet_wrap(~gauge, scales = "free_y") +
-    theme(
-      legend.position = "top"
-    )
-}
-
-
-
-
-
-## Run and Save plots ==========================================================
-many_plots <- map2(
-  .x = unique_streamflow_model_objective_combinations |> dplyr::pull(streamflow_model),
-  .y = unique_streamflow_model_objective_combinations |> dplyr::pull(objective_function),
-  .f = check_results_plot,
-  streamflow_results = setup_streamflow_results_plotting
-)
-
-
-ggsave(
-  filename = paste0("check_model_fit_", get_date(), ".pdf"), 
-  path = "./Graphs/CMAES_graphs",
-  plot = gridExtra::marrangeGrob(many_plots, nrow = 1, ncol = 1), 
-  # used to append all plots into a single pdf
-  device = "pdf",
-  units = "mm",
-  width = 1189,
-  height = 841
-)
+####### CAN REMOVE FROM HERE #########
 
 
 
 
 
 
-
-# 2. Are the fitted parameters "acceptable"? -----------------------------------
-
-## Only concerned with the best CO2 and non CO2 models - extract ===============
-best_CO2_and_non_CO2_per_catchment <- parameter_results |>
-  select(!c(optimiser, loglikelihood, exit_message, near_bounds)) |>
-  mutate(
-    contains_CO2 = str_detect(streamflow_model, "CO2"),
-    .after = 2
-  ) |>
-  slice_min(
-    AIC,
-    by = c(gauge, contains_CO2)
-  ) |> 
-  select(!objective_function) |> 
-  distinct()
-
-
-write_csv(
-  best_CO2_and_non_CO2_per_catchment,
-  file = paste0("./Results/my_cmaes/unmodified_best_CO2_non_CO2_per_catchment_CMAES_", get_date(), ".csv")
-)
 
 
 
@@ -331,6 +356,11 @@ near_zero_parameters <- best_CO2_and_non_CO2_per_catchment |>
 
 
 ## THIS MAY BE OMITTED ###
+
+
+
+
+
 
 ## Check if a5 parameter is only being utilised in the last year ===============
 ### This represents another way of parameters being "turned-off"

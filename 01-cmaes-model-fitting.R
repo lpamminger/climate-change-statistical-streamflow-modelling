@@ -21,10 +21,6 @@ gauge_information <- readr::read_csv(
 )
 
 
-# Re-run with adjusted bounds
-# Then check bounds again
-# Run with 10L replicates overnight
-
 # Functions --------------------------------------------------------------------
 source("./Functions/utility.R")
 source("./Functions/boxcox_logsinh_transforms.R") 
@@ -42,7 +38,7 @@ source("./Functions/result_set.R")
 
 # Constants --------------------------------------------------------------------
 # Number of times we want to repeat each catchment-optimiser-streamflow model combinations
-REPLICATES <- 1L
+REPLICATES <- 10L
 
 
 # Construct catchment_data objects ---------------------------------------------
@@ -196,7 +192,7 @@ run_length_gauges_from_combinations <- rle(gauges_from_combinations)
 
 # Change values in rle ($values) to 1, 2, 3 etc. to construct factor values for split
 # The rle $values must be split based on GAUGES_PER_CHUNK
-GAUGES_PER_CHUNK <- 100
+GAUGES_PER_CHUNK <- 24
 
 total_gauges <- gauges_from_combinations |> unique() |> length()
 
@@ -400,27 +396,21 @@ parameter_results <- read_csv(
 x <- parameter_results |>
   filter(!is.na(near_bounds)) |> 
   filter(parameter != "a") |> 
-  filter(parameter != "a3_slope") |> 
+  #filter(parameter != "a3_slope") |> 
   filter(parameter != "a5") |> 
   arrange(parameter)
 
-bound_issues <- x |> 
-  summarise(
-    lower = min(parameter_value),
-    upper = max(parameter_value),
-    .by = parameter
-  )
+bound_issues <- parameter_results |> 
+  filter(parameter == "a3_slope") |> 
+  arrange(desc(parameter_value))
 
-# Fixes required for bounds (get models later):
-# - a = increase upper - catchment test = G8150180 - doesn't hit when repeated - Leave
-# - a3_slope = increase both - catchment test = 136208A (upper) FIXED, 408200 (lower) FIXED
-# - a3_intercept = increase both - catchment test = 411003 (upper) FIXED, 422319B (lower) FIXED
-# - a4 = increase both - catchment test = 809321 (upper) FIXED, 405218 (lower) FIXED
-# - sd = increase upper - catchment test = 112002A FIXED
-# - b = increase upper - catchment test = A5070500 FIXED
-# - a1 = increase lower - catchment test = 225219 FIXED
+# Manually repeat some catchments with a3_slope near 1
+# Continue with plotting - vignette the a3_slope catchments
+# Worth bound issues all catchment
+# Run with new bounds overnight again
 
 # Repeat once more using altered bounds
+# Merge to main before changing figure file organisation
 
 
 

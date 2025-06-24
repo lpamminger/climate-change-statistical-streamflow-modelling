@@ -35,7 +35,7 @@ parameter_results <- read_csv(
 )
 
 best_CO2_non_CO2_per_gauge <- read_csv(
-  "./Results/CMAES/best_CO2_non_CO2_per_catchment.csv",
+  "./Results/CMAES/best_CO2_non_CO2_per_catchment_CMAES.csv",
   show_col_types = FALSE
 ) 
 
@@ -375,6 +375,74 @@ decade_a3_on_off_difference_data <-  a3_on_off_difference_data |>
   )
 
 
+## Calculate evidence ratio ====================================================
+evidence_ratio_calc <- best_CO2_non_CO2_per_gauge |>
+  select(gauge, contains_CO2, AIC) |>
+  distinct() |>
+  pivot_wider(
+    names_from = contains_CO2,
+    values_from = AIC
+  ) |>
+  mutate(
+    CO2_model = `TRUE`,
+    non_CO2_model = `FALSE`,
+    .keep = "unused"
+  ) |>
+  mutate(
+    AIC_difference = CO2_model - non_CO2_model # CO2 is smaller than non-CO2 then negative and CO2 is better
+  ) |>
+  mutate(
+    evidence_ratio = case_when(
+      AIC_difference < 0 ~ exp(0.5 * abs(AIC_difference)), # when CO2 model is better
+      AIC_difference > 0 ~ -exp(0.5 * abs(AIC_difference)) # when non-CO2 model is better
+    )
+  ) |>
+  arrange(evidence_ratio)
+
+
+## Tidy evidence ratio data for plotting =======================================
+lat_lon_gauge <- gauge_information |> 
+  select(gauge, lat, lon)
+
+lat_long_evidence_ratio <- evidence_ratio_calc |>
+  select(!c(AIC_difference)) |>
+  left_join(
+    lat_lon_gauge,
+    by = join_by(gauge)
+  )
+
+### Add qualitative labels instead of using numerical evidence ratio ###########
+state_gauge <- gauge_information |> 
+  select(gauge, state)
+
+binned_lat_lon_evidence_ratio <- lat_long_evidence_ratio |>
+  mutate(
+    binned_evidence_ratio = case_when(
+      between(evidence_ratio, -1E1, 1E1) ~ "Weak",
+      between(evidence_ratio, 1E1, 1E2) ~ "Moderate",
+      between(evidence_ratio, 1E2, 1E3) ~ "Moderately Strong",
+      between(evidence_ratio, 1E3, 1E4) ~ "Strong",
+      between(evidence_ratio, 1E4, 1E6) ~ "Very Strong",
+      between(evidence_ratio, 1E6, Inf) ~ "Extremely Strong",
+      .default = NA
+    )
+  ) |>
+  left_join(
+    state_gauge,
+    by = join_by(gauge)
+  ) |>
+  mutate(
+    binned_evidence_ratio = factor(
+      binned_evidence_ratio,
+      levels = c("Weak", "Moderate", "Moderately Strong", "Strong", "Very Strong", "Extremely Strong")
+    )
+  )
+
+gauges_with_evi_greater_than_moderate <- binned_lat_lon_evidence_ratio |> 
+  #filter(!binned_evidence_ratio %in% c("Weak", "Moderate")) |> 
+  pull(gauge) |> 
+  unique()
+
 
 # Get decade_a3_on_off_difference_data ready for plotting
 plot_ready_decade_a3_on_off_difference_data <- decade_a3_on_off_difference_data |> 
@@ -382,6 +450,7 @@ plot_ready_decade_a3_on_off_difference_data <- decade_a3_on_off_difference_data 
     lat_lon_gauge_info,
     by = join_by(gauge)
   ) |> 
+  filter(gauge %in% gauges_with_evi_greater_than_moderate) |> 
   arrange(desc(by_year_a3_on_off_difference))
 
 
@@ -411,7 +480,9 @@ year_a3_on_off_difference_data <-  a3_on_off_difference_data |>
   left_join(
     lat_lon_gauge_info,
     by = join_by(gauge)
-  ) 
+  ) |> 
+  filter(gauge %in% gauges_with_evi_greater_than_moderate) |> 
+  arrange(desc(by_year_a3_on_off_difference))
 
 
 # boxplot
@@ -735,7 +806,7 @@ decade_comparison_CO2_impact <- function(decade) {
     labs(
       x = NULL,#"Latitude",
       y = NULL,#"Longitude",
-      fill = "[CO2_on - CO2_off] / n",
+      fill = "Average impact of CO2 on streamflow per year (mm/year)",
       title = paste0(decade)
     ) +
     theme(
@@ -766,10 +837,10 @@ decade_comparison_CO2_impact <- function(decade) {
 
 # Patchwork together
 patchwork_CO2_impact_decade <- (decade_comparison_CO2_impact(1990) | decade_comparison_CO2_impact(2020)) + plot_layout(guides = "collect") & theme(legend.position='bottom')
-#patchwork_CO2_impact_decade
+patchwork_CO2_impact_decade
 
 ggsave(
-  filename = "./Graphs/Figures/CO2_on_off_mm_1990_vs_2020.pdf",
+  filename = "./Graphs/Figures/log_sinh_CO2_on_off_mm_1990_vs_2020.pdf",
   plot = patchwork_CO2_impact_decade,
   device = "pdf",
   width = 297,
@@ -791,6 +862,12 @@ timeseries_plotting_data <- a3_on_off_difference_data |>
 mega_timeseries_plot <- timeseries_plotting_data |> 
   ggplot(aes(x = year, y = streamflow, colour = type)) +
   geom_line() +
+  #geom_line(
+  #  aes(x = year, y = precipitation), 
+  #  colour = "black", 
+  #  linetype = "dashed",
+  #  inherit.aes = FALSE
+  #  ) +
   theme_bw() +
   theme(legend.position = "bottom") +
   facet_wrap(~gauge, scales = "free_y")
@@ -806,8 +883,7 @@ ggsave(
 
 
 # Other ideas ------------------------------------------------------------------
-
-
+# Average not by decade?
 
 
 
