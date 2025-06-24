@@ -881,6 +881,7 @@ scale_size_limits <- custom_bins_time_of_emergence_data |>
 
 
 transparent_dots_constant <- 0.75
+size <- 4 # remove when adding DREAM_ToE_IQR
 
 inset_plot_QLD <- aus_map |>
   filter(state == "QLD") |>
@@ -893,7 +894,8 @@ inset_plot_QLD <- aus_map |>
     stroke = 0.1,
     alpha = transparent_dots_constant,
     shape = 21, # remove this with size
-    colour = "black"
+    colour = "black",
+    size = size
   ) +
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
   #scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
@@ -913,7 +915,8 @@ inset_plot_NSW <- aus_map |>
     stroke = 0.1,
     alpha = transparent_dots_constant,
     shape = 21,
-    colour = "black"
+    colour = "black",
+    size = size
   ) +
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
   #scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
@@ -933,7 +936,8 @@ inset_plot_VIC <- aus_map |>
     alpha = transparent_dots_constant,
     stroke = 0.1,
     shape = 21,
-    colour = "black"
+    colour = "black",
+    size = size
   ) +
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
   #scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
@@ -953,7 +957,8 @@ inset_plot_WA <- aus_map |>
     stroke = 0.1,
     alpha = transparent_dots_constant,
     shape = 21,
-    colour = "black"
+    colour = "black",
+    size = size
   ) +
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
   #scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
@@ -974,6 +979,7 @@ inset_plot_TAS <- aus_map |>
     alpha = transparent_dots_constant,
     shape = 21,
     colour = "black",
+    size = size
   ) +
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
   #scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
@@ -992,7 +998,8 @@ ToE_map_aus <- aus_map |>
     mapping = aes(x = lon, y = lat, fill = custom_bins), #size = DREAM_ToE_IQR),
     stroke = 0.1,
     shape = 21,
-    colour = "black"
+    colour = "black",
+    size = size
   ) +
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
   #scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
@@ -1072,7 +1079,7 @@ ToE_map_aus <- aus_map |>
 ToE_map_aus
 
 ggsave(
-  filename = "./Graphs/CMAES_graphs/log_sinh_no_uncertainty_ToE_map_aus.pdf",
+  filename = "log_sinh_no_uncertainty_ToE_map_aus.pdf", #"./Graphs/CMAES_graphs/log_sinh_no_uncertainty_ToE_map_aus.pdf",
   plot = ToE_map_aus,
   device = "pdf",
   width = 232,
@@ -1102,12 +1109,28 @@ compare_ToE_and_evi_ratio <- custom_bins_time_of_emergence_data |>
   )
 
 ToE_against_evi_ratio <- compare_ToE_and_evi_ratio |> 
-  ggplot(aes(x = year_time_of_emergence, y = evidence_ratio)) +
+  ggplot(aes(x = year_time_of_emergence, y = evidence_ratio.x)) +
   geom_point() +
   scale_y_log10() +
   labs(
     x = "Time of Activation",
     y = "Evidence Ratio (Log Scale)"
+  ) +
+  theme_bw()
+
+
+# histogram
+custom_bins_time_of_emergence_data |> 
+  summarise(
+    n = n(),
+    .by = custom_bins
+  ) |> 
+  ggplot(aes(x = custom_bins, y = n)) +
+  geom_col() +
+  labs(
+    x = "Time of Emergence",
+    y = "Count",
+    title = "Time of Emergence of CO2 models with an evidence ratio of moderately strong or greater"
   ) +
   theme_bw()
 
@@ -1126,6 +1149,8 @@ ggsave(
   height = 210,
   units = "mm"
 )
+
+
 
 
 # Figure 3 of paper is located in estimate_CO2_impact
