@@ -63,12 +63,6 @@ source("./Functions/boxcox_logsinh_transforms.R")
 
 
 
-# TODO:
-# Methods of comparison
-# - streamflow timeseries 
-# - rainfall-runoff relationship
-# - average yearly percentage difference
-
 
 # Compare best CO2 and non-CO2 models ------------------------------------------
 ## Summarise modelled streamflow data ==========================================
@@ -346,11 +340,16 @@ a3_on_off_difference_data <- streamflow_data_with_a3_off |>
     precipitation, 
     a3_off_modelled_realspace_streamflow,
     realspace_modelled_streamflow,
-    realspace_observed_streamflow
+    realspace_observed_streamflow,
+    a3_off_modelled_transformed_streamflow,
+    transformed_modelled_streamflow,
+    transformed_observed_streamflow
     ) |> 
   rename(
     realspace_a3_off_streamflow = a3_off_modelled_realspace_streamflow,
-    realspace_a3_on_streamflow = realspace_modelled_streamflow
+    realspace_a3_on_streamflow = realspace_modelled_streamflow,
+    transformed_a3_off_streamflow = a3_off_modelled_transformed_streamflow,
+    transformed_a3_on_streamflow = transformed_modelled_streamflow 
   ) |> 
   # add decade column
   mutate(
@@ -859,6 +858,13 @@ timeseries_plotting_data <- a3_on_off_difference_data |>
     values_to = "streamflow"
   )
 
+rainfall_runoff_plotting_data <- a3_on_off_difference_data |>
+  pivot_longer(
+    cols = starts_with("transformed"),
+    names_to = "type",
+    values_to = "streamflow"
+  )
+
 mega_timeseries_plot <- timeseries_plotting_data |> 
   ggplot(aes(x = year, y = streamflow, colour = type)) +
   geom_line() +
@@ -876,6 +882,30 @@ ggsave(
   filename = "mega_timeseries_plot.pdf",
   device = "pdf",
   plot = mega_timeseries_plot,
+  width = 1189,
+  height = 841,
+  units = 'mm'
+)
+
+
+
+mega_rainfall_runoff_plot <- rainfall_runoff_plotting_data |> 
+  ggplot(aes(x = precipitation, y = streamflow, colour = type)) +
+  geom_smooth(
+    method = lm,
+    formula = y ~ x,
+    se = FALSE,
+    linewidth = 0.5
+  ) +
+  geom_point(size = 0.75) +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  facet_wrap(~gauge, scales = "free")
+
+ggsave(
+  filename = "mega_rainfall_runoff_plot.pdf",
+  device = "pdf",
+  plot = mega_rainfall_runoff_plot,
   width = 1189,
   height = 841,
   units = 'mm'
