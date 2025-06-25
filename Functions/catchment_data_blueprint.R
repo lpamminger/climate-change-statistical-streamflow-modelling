@@ -1,14 +1,13 @@
-# catchment_data_blueprint S3 class --------------------------------------------------
-# probably put this into another file and call it in the main file
+# catchment_data_blueprint S3 class --------------------------------------------
 
 ## constructor =================================================================
-new_catchment_data_blueprint <- function(gauge_ID, year, precipitation, observed_boxcox_streamflow, is_drought_year, CO2, seasonal_ratio, start_stop_indexes) {
-  
+new_catchment_data_blueprint <- function(gauge_ID, year, precipitation, observed_streamflow, is_drought_year, CO2, seasonal_ratio, start_stop_indexes) {
+
   ## Check types ===============================================================
   stopifnot(is.character(gauge_ID))
   stopifnot(is.integer(year))
   stopifnot(is.double(precipitation))
-  stopifnot(is.double(observed_boxcox_streamflow))
+  stopifnot(is.double(observed_streamflow))
   stopifnot(is.logical(is_drought_year))
   stopifnot(is.double(CO2))
   stopifnot(is.double(seasonal_ratio))
@@ -19,7 +18,7 @@ new_catchment_data_blueprint <- function(gauge_ID, year, precipitation, observed
   full_data_set <- cbind(
     year, 
     precipitation, 
-    observed_boxcox_streamflow, 
+    observed_streamflow, 
     is_drought_year, 
     CO2, 
     seasonal_ratio) |>
@@ -27,11 +26,11 @@ new_catchment_data_blueprint <- function(gauge_ID, year, precipitation, observed
   
   
   split_data_set <- purrr::map2(
-  .x = start_stop_indexes[, "start_index"],
-  .y = start_stop_indexes[, "end_index"],
-  .f = split_full_data_set,
-  full_data_set = full_data_set
-)
+    .x = start_stop_indexes[, "start_index"],
+    .y = start_stop_indexes[, "end_index"],
+    .f = split_full_data_set,
+    full_data_set = full_data_set
+  )
   
   
   ## Make class ================================================================
@@ -57,7 +56,7 @@ validate_catchment_data_blueprint <- function(catchment_data_blueprint) {
   
   if (length(unique(check_length_values)) > 1) {
     stop(
-      "precipitation, observed_boxcox_streamflow, is_drought_year, CO2, seasonal_ratio all must be the same length",
+      "precipitation, observed_streamflow, is_drought_year, CO2, seasonal_ratio all must be the same length",
       call. = FALSE
     )
   }
@@ -72,7 +71,7 @@ validate_catchment_data_blueprint <- function(catchment_data_blueprint) {
       "The tibble containing data is empty. Maybe the gauge_ID is not in the observed data."
     )
   }
-
+  
   # stop return message
   
   # Invisibly return input
@@ -97,7 +96,7 @@ catchment_data_blueprint <- function(gauge_ID, observed_data, start_stop_indexes
       gauge_ID = gauge_ID,
       year = year,
       precipitation = precipitation,
-      observed_boxcox_streamflow = boxcox_streamflow,
+      observed_streamflow = observed_streamflow,
       is_drought_year = is_drought_year,
       CO2 = CO2,
       seasonal_ratio = standardised_warm_season_to_annual_rainfall_ratio,
@@ -122,7 +121,7 @@ catchment_data_blueprint <- function(gauge_ID, observed_data, start_stop_indexes
     gauge_ID = {{ gauge_ID }},
     year = single_gauge_observed_data$year,
     precipitation = single_gauge_observed_data$p_mm,
-    observed_boxcox_streamflow = single_gauge_observed_data$bc_q,
+    observed_streamflow = single_gauge_observed_data$q_mm,
     is_drought_year = single_gauge_observed_data$drought,
     CO2 = single_gauge_observed_data$CO2,
     seasonal_ratio = single_gauge_observed_data$standardised_warm_season_to_annual_rainfall_ratio,

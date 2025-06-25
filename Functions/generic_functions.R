@@ -45,7 +45,7 @@ get_exit_message.dream <- function(dream) {
 
 
 ## dream only - get the range of values tested =================================
-# future does not like local generics. If I want to make this work 
+# future does not like local generics. If I want to make this work
 # I need to turn it into a package
 # Solution copy each function
 
@@ -55,74 +55,67 @@ transform_to_realspace <- function(x, ...) { # generic ... allows extra argument
 
 
 single_col_mcmc_transform_to_realspace <- function(single_col_mcmc_result, transform_function, lower_bound, upper_bound, scale) {
-  
   transform_function <- noquote(transform_function)
-  
+
   transform_function(
     parameter_set = single_col_mcmc_result,
     lower_bound = lower_bound,
     upper_bound = upper_bound,
     scale = 100
   )
-  
 }
 
 
 # DELETE when package is made
 transform_to_realspace_mcmc <- function(mcmc_result, transform_functions, lower_bounds, upper_bounds, scale) {
-  
   # Convert mcmc_result into list for pmap
-  mcmc_as_list <- mcmc_result |> 
-    unclass() |> 
-    as_tibble() |> 
+  mcmc_as_list <- mcmc_result |>
+    unclass() |>
+    as_tibble() |>
     as.list()
-  
-  
+
+
   # Map over each column
   real_space_as_list <- pmap(
     .l = list(mcmc_as_list, transform_functions, lower_bounds, upper_bounds),
     .f = single_col_mcmc_transform_to_realspace,
     scale = scale
-  ) 
-  
+  )
+
   # convert back to mcmc
   real_space_as_matrix <- do.call(cbind, real_space_as_list)
   colnames(real_space_as_matrix) <- paste0("par", seq_len(ncol(real_space_as_matrix)))
-  
+
   return(as.mcmc(real_space_as_matrix))
-  
 }
 
 
 
 
 transform_to_realspace.mcmc <- function(mcmc_result, transform_functions, lower_bounds, upper_bounds, scale) {
-  
   # Convert mcmc_result into list for pmap
-  mcmc_as_list <- mcmc_result |> 
-    unclass() |> 
-    as_tibble() |> 
+  mcmc_as_list <- mcmc_result |>
+    unclass() |>
+    as_tibble() |>
     as.list()
-  
-  
+
+
   # Map over each column
   real_space_as_list <- pmap(
     .l = list(mcmc_as_list, transform_functions, lower_bounds, upper_bounds),
     .f = single_col_mcmc_transform_to_realspace,
     scale = scale
-  ) 
-  
+  )
+
   # convert back to mcmc
   real_space_as_matrix <- do.call(cbind, real_space_as_list)
   colnames(real_space_as_matrix) <- paste0("par", seq_len(ncol(real_space_as_matrix)))
-  
+
   return(as.mcmc(real_space_as_matrix))
-  
 }
 
 # DELETE with package
 transform_to_realspace_mcmc_list <- function(mcmc_result, transform_functions, lower_bounds, upper_bounds, scale) {
-  
   # repeat based on the length of mcmc.list
   real_space_as_list <- map(
     .x = mcmc_result,
@@ -132,13 +125,11 @@ transform_to_realspace_mcmc_list <- function(mcmc_result, transform_functions, l
     upper_bounds = upper_bounds,
     scale = scale
   )
-  
+
   return(as.mcmc.list(real_space_as_list))
-  
 }
 
 transform_to_realspace.mcmc.list <- function(mcmc_result, transform_functions, lower_bounds, upper_bounds, scale) {
-  
   # repeat based on the length of mcmc.list
   real_space_as_list <- map(
     .x = mcmc_result,
@@ -148,14 +139,12 @@ transform_to_realspace.mcmc.list <- function(mcmc_result, transform_functions, l
     upper_bounds = upper_bounds,
     scale = scale
   )
-  
+
   return(as.mcmc.list(real_space_as_list))
-  
 }
 
 
 transform_to_realspace_dream <- function(mcmc_result, transform_functions, lower_bounds, upper_bounds, scale) {
-  
   Sequences <- transform_to_realspace_mcmc_list(
     mcmc_result = mcmc_result[["Sequences"]],
     transform_functions = transform_functions,
@@ -163,14 +152,13 @@ transform_to_realspace_dream <- function(mcmc_result, transform_functions, lower
     upper_bounds = upper_bounds,
     scale = scale
   )
-  
+
   mcmc_result$Sequences <- Sequences
   return(mcmc_result)
 }
 
 
 transform_to_realspace.dream <- function(mcmc_result, transform_functions, lower_bounds, upper_bounds, scale) {
-  
   Sequences <- transform_to_realspace(
     mcmc_result = mcmc_result[["Sequences"]],
     transform_functions = transform_functions,
@@ -178,7 +166,7 @@ transform_to_realspace.dream <- function(mcmc_result, transform_functions, lower
     upper_bounds = upper_bounds,
     scale = scale
   )
-  
+
   mcmc_result$Sequences <- Sequences
   return(mcmc_result)
 }
@@ -189,28 +177,28 @@ transform_to_realspace.dream <- function(mcmc_result, transform_functions, lower
 
 
 
-#get_sequences <- function(x, ...) { # generic ... allows extra arguments
+# get_sequences <- function(x, ...) { # generic ... allows extra arguments
 #  UseMethod("get_sequences")
-#}
+# }
 
 
-#get_sequences.dream <- function(dream) {
-  # This is an mcmc object
- # transform_to_realspace(
-  #  mcmc_result = dream$Sequences,
-   # transform_functions = dream$numerical_optimiser_setup$transform_parameter_methods, 
-    #lower_bounds = dream$numerical_optimiser_setup$lower_bound, 
-    #upper_bounds = dream$numerical_optimiser_setup$upper_bound, 
-    #scale = dream$numerical_optimiser_setup$scale
-  #)
+# get_sequences.dream <- function(dream) {
+# This is an mcmc object
+# transform_to_realspace(
+#  mcmc_result = dream$Sequences,
+# transform_functions = dream$numerical_optimiser_setup$transform_parameter_methods,
+# lower_bounds = dream$numerical_optimiser_setup$lower_bound,
+# upper_bounds = dream$numerical_optimiser_setup$upper_bound,
+# scale = dream$numerical_optimiser_setup$scale
+# )
 
-#}
+# }
 
 
 
-#get_sequences.default <- function(x, ...) {
- # NULL
-#}
+# get_sequences.default <- function(x, ...) {
+# NULL
+# }
 
 
 ## AIC =========================================================================
@@ -237,23 +225,35 @@ get_restart_count.default <- function(cmaes_result, ...) {
 get_best_parameters_real_space <- function(cmaes_or_dream_result) {
   
   force(cmaes_or_dream_result)
-  
+
   scaled_parameters <- coef(cmaes_or_dream_result)
-  
-  best_parameters <- purrr::pmap( 
+
+  best_parameters <- purrr::pmap(
     .l = list(
-      cmaes_or_dream_result$numerical_optimiser_setup$transform_parameter_methods, 
-      seq(from = 1, to = length(cmaes_or_dream_result$numerical_optimiser_setup$parameter_names)), 
-      cmaes_or_dream_result$numerical_optimiser_setup$lower_bound, 
+      cmaes_or_dream_result$numerical_optimiser_setup$parameter_transform_method,
+      seq(from = 1, to = length(cmaes_or_dream_result$numerical_optimiser_setup$parameter_names)),
+      cmaes_or_dream_result$numerical_optimiser_setup$lower_bound,
       cmaes_or_dream_result$numerical_optimiser_setup$upper_bound
     ),
     .f = transform_parameter_method,
     parameter_set = as.matrix(scaled_parameters, ncol = 1),
     scale = cmaes_or_dream_result$numerical_optimiser_setup$scale
-  )
+  ) |> 
+    unlist()
   
-  return(unlist(best_parameters))
+  # If streamflow_transform_method is boxcox and lambda is less than machine tol
+  # then set lambda to zero. This is what boxcox_transform() does. Reflect this
+  # in result
+  if(cmaes_or_dream_result$numerical_optimiser_setup$streamflow_transform_method()$name == "boxcox_transform") {
+    near_zero_lambda <- best_parameters[["lambda"]] <= .Machine$double.eps^0.5
+    
+    if(near_zero_lambda) {
+      best_parameters[["lambda"]] <- 0
+    }
+  }
   
+
+  return(best_parameters)
 }
 
 
@@ -263,23 +263,211 @@ get_boxcox_streamflow <- function(cmaes_or_dream_result) {
   # This should only show the streamflow used in calibration
 
   best_parameters <- get_best_parameters_real_space(cmaes_or_dream_result)
-  
+
   # Apply to start_stop_data_set (list of tibbles)
   start_stop_data_set <- cmaes_or_dream_result$numerical_optimiser_setup$catchment_data$stop_start_data_set
-  
+
   # Streamflow model
   streamflow_model <- cmaes_or_dream_result$numerical_optimiser_setup$streamflow_model
-  
+
   # Make streamflow using best parameters and start_stop_data_set
   streamflow_results <- map(
     .x = start_stop_data_set,
     .f = streamflow_model,
     parameter_set = best_parameters
-  ) |> 
-    unname() |> 
+  ) |>
+    unname() |>
     unlist()
-  
+
   return(streamflow_results)
+}
+
+
+get_transformed_observed_streamflow <- function(cmaes_or_dream_result) {
+  
+  # get realspace streamflow
+  realspace_streamflow <- cmaes_or_dream_result$numerical_optimiser_setup$catchment_data$stop_start_data_set |>
+    list_rbind() |> 
+    pull(observed_streamflow)
+  
+  # get transform function
+  # get parameters for transform
+  # apply transform
+  
+  select_streamflow_transform_method(
+    streamflow_transform_method = cmaes_or_dream_result$numerical_optimiser_setup$streamflow_transform_method,
+    parameter_set = as.matrix(get_best_parameters_real_space(cmaes_or_dream_result), ncol = 1), # function relies on matrices as inputs
+    timeseries = as.matrix(realspace_streamflow, ncol = 1),
+    offset = cmaes_or_dream_result$numerical_optimiser_setup$streamflow_transform_method_offset
+  )
+  
+}
+
+get_transformed_optimised_streamflow <- function(cmaes_or_dream_result) {
+  
+  # This should only show the streamflow used in calibration
+  best_parameters <- get_best_parameters_real_space(cmaes_or_dream_result)
+
+  # Apply to start_stop_data_set (list of tibbles)
+  start_stop_data_set <- cmaes_or_dream_result$numerical_optimiser_setup$catchment_data$stop_start_data_set
+
+  # Streamflow model
+  streamflow_model <- cmaes_or_dream_result$numerical_optimiser_setup$streamflow_model
+
+  # Make streamflow using best parameters and start_stop_data_set
+  streamflow_results <- map(
+    .x = start_stop_data_set,
+    .f = streamflow_model,
+    parameter_set = best_parameters
+  ) |>
+    unname() |>
+    unlist()
+
+  return(streamflow_results)
+}
+
+get_realspace_optimised_streamflow <- function(cmaes_or_dream_result) {
+  
+  # Requires and inverse transform on modelled streamflow
+  transformed_modelled_streamflow <- get_transformed_optimised_streamflow(cmaes_or_dream_result)
+  
+
+  # Get inverse transform - add inverse to front of function
+  # this requires all streamflow_transform methods to have inverse_function_name style
+  inverse_streamflow_transform_method_name <- paste0("inverse_", cmaes_or_dream_result$numerical_optimiser_setup$streamflow_transform_method()$name)
+  
+  realspace_modelled_streamflow <- select_streamflow_transform_method(
+    streamflow_transform_method = match.fun(FUN = inverse_streamflow_transform_method_name),
+    parameter_set = as.matrix(get_best_parameters_real_space(cmaes_or_dream_result), ncol = 1), # function relies on matrices as inputs
+    timeseries = as.matrix(transformed_modelled_streamflow, ncol = 1),
+    offset = cmaes_or_dream_result$numerical_optimiser_setup$streamflow_transform_method_offset
+  )
+  
+  
+  # realspace_modelled_streamflow cannot be less than zero
+  # if less than zero set to zero
+  # modify the results
+  
+  realspace_modelled_streamflow[realspace_modelled_streamflow < 0] <- 0
+
+
+  return(realspace_modelled_streamflow)
+}
+
+
+
+
+
+# is empty tibble
+is_empty_tibble <- function(x) {
+  if_else(nrow(x) * ncol(x) == 0, TRUE, FALSE)
+}
+
+
+
+
+
+plot.result_set <- function(x, type) {
+  
+  stopifnot(type %in% c("streamflow-time", "rainfall-runoff"))
+  # This should only show the streamflow used in calibration
+
+  # Get precipitation and observed streamfow from stop_start_index
+  observed_data <- x$numerical_optimiser_setup$catchment_data$stop_start_data_set |>
+    list_rbind()
+  
+  # Identify streamflow transformation method in objective function
+  streamflow_transformation_method <- x$numerical_optimiser_setup$streamflow_transform_method()[[1]]
+  
+
+
+
+  # Plotting
+  if (type == "streamflow-time") {
+  
+    
+    # Create tibble for plotting
+    streamflow_results <- list(
+      year = observed_data |> pull(year),
+      precipitation = observed_data |> pull(precipitation),
+      observed_streamflow = observed_data |> pull(observed_streamflow),
+      modelled_streamflow = x$optimised_modelled_streamflow_realspace
+    ) |>
+      as_tibble() |>
+      pivot_longer(
+        cols = contains("streamflow"),
+        names_to = "observed_or_modelled",
+        values_to = "streamflow"
+      ) |>
+      mutate(
+        observed_or_modelled = if_else(observed_or_modelled == "modelled_streamflow", "Modelled Streamflow", "Observed Streamflow")
+      )
+
+
+
+
+    streamflow_results |>
+      ggplot(aes(x = year, y = streamflow, colour = observed_or_modelled)) +
+      geom_line() +
+      geom_point() +
+      labs(
+        x = "Year",
+        y = "Streamflow",
+        colour = NULL
+      ) +
+      scale_colour_brewer(palette = "Set1") +
+      labs(
+        x = "Year",
+        y = "Streamflow (mm)"
+      ) +
+      theme_bw() +
+      theme(
+        legend.position = "inside",
+        legend.position.inside = c(0.9, 0.9),
+        legend.background = element_rect(colour = "black")
+      )
+    
+    
+  } else if (type == "rainfall-runoff") {
+    # Create tibble for plotting
+    streamflow_results <- list(
+      year = observed_data |> pull(year),
+      precipitation = observed_data |> pull(precipitation),
+      observed_streamflow = x$transformed_observed_streamflow,
+      modelled_streamflow = x$optimised_modelled_streamflow_transformed_space
+    ) |>
+      as_tibble() |>
+      pivot_longer(
+        cols = contains("streamflow"),
+        names_to = "observed_or_modelled",
+        values_to = "streamflow"
+      ) |>
+      mutate(
+        observed_or_modelled = if_else(observed_or_modelled == "modelled_streamflow", "Modelled Streamflow", "Observed Streamflow")
+      )
+
+
+    streamflow_results |>
+      ggplot(aes(x = precipitation, y = streamflow, colour = observed_or_modelled)) +
+      geom_smooth(
+        formula = y ~ x,
+        method = lm,
+        se = FALSE
+      ) +
+      geom_point() +
+      labs(
+        x = "Precipitation (mm)",
+        y = paste0("Streamflow (", streamflow_transformation_method, ")"),
+        colour = NULL
+      ) +
+      scale_colour_brewer(palette = "Set1") +
+      theme_bw() +
+      theme(
+        legend.position = "inside",
+        legend.position.inside = c(0.1, 0.9),
+        legend.background = element_rect(colour = "black")
+      )
+  }
 }
 
 
@@ -290,119 +478,30 @@ plot.catchment_data <- function(x, type) {
   # This should be the entire dataset
 
   stopifnot(type %in% c("streamflow-time", "rainfall-runoff"))
-  
-  if(type == "streamflow-time") {
-    x$full_data_set |> 
-      ggplot(aes(x = year, y = observed_boxcox_streamflow)) +
-      geom_line() +
-      geom_point() +
+
+  if (any(is.na(x$full_data_set$observed_streamflow))) {
+    message("NA's in observed_streamflow. Removed from plot.")
+  }
+
+
+  if (type == "streamflow-time") {
+    x$full_data_set |>
+      ggplot(aes(x = year, y = observed_streamflow)) +
+      geom_line(na.rm = TRUE) +
+      geom_point(na.rm = TRUE) +
       labs(
         x = "Year",
-        y = "Observed Box-Cox Streamflow"
+        y = "Observed Streamflow (mm)"
       ) +
       theme_bw()
-    
-  } else if(type == "rainfall-runoff"){
-    x$full_data_set |> 
-      ggplot(aes(x = precipitation, y = observed_boxcox_streamflow)) +
-      geom_smooth(
-        formula = y ~ x,
-        method = lm,
-        se = FALSE,
-        colour = "black"
-      ) +
+  } else if (type == "rainfall-runoff") {
+    x$full_data_set |>
+      ggplot(aes(x = precipitation, y = observed_streamflow)) +
       labs(
         x = "Precipitation (mm)",
-        y = "Observed Box-Cox Streamflow"
+        y = "Observed Streamflow (mm)"
       ) +
-      geom_point() +
+      geom_point(na.rm = TRUE) +
       theme_bw()
   }
-}
-
-
-
-plot.result_set <- function(x, type) {
-  
-  stopifnot(type %in% c("streamflow-time", "rainfall-runoff"))
-  # This should only show the streamflow used in calibration
-
-  # Get precipitation and observed streamfow from stop_start_index
-  observed_data <- x$numerical_optimiser_setup$catchment_data$stop_start_data_set |> 
-    list_rbind() 
-  
-  # Create tibble for plotting
-  streamflow_results <- list(
-    year = observed_data |> pull(year),
-    precipitation = observed_data |> pull(precipitation),
-    observed_bc_streamflow = observed_data |> pull(observed_boxcox_streamflow),
-    modelled_bc_streamflow = x$optimised_boxcox_streamflow
-  ) |> 
-    as_tibble() |> 
-    pivot_longer(
-      cols = ends_with("streamflow"),
-      names_to = "observed_or_modelled",
-      values_to = "streamflow"
-    ) |> 
-    mutate(
-      observed_or_modelled = if_else(observed_or_modelled == "modelled_bc_streamflow", "Modelled Box-Cox Streamflow", "Observed Box-Cox Streamflow")
-    )
-
-  # Plotting
-  if(type == "streamflow-time"){
-    streamflow_results |> 
-      ggplot(aes(x = year, y = streamflow, colour = observed_or_modelled)) +
-      geom_line() +
-      geom_point() +
-      labs(
-        x = "Year",
-        y = "Streamflow",
-        colour = NULL
-      ) +
-      scale_colour_brewer(palette = "Set1") +
-      theme_bw() +
-      theme(
-        legend.position = "inside",
-        legend.position.inside = c(0.9, 0.9)
-      )
-  } else if(type == "rainfall-runoff") {
-    streamflow_results |> 
-      ggplot(aes(x = precipitation, y = streamflow, colour = observed_or_modelled)) +
-      geom_smooth(
-        formula = y ~ x,
-        method = lm,
-        se = FALSE
-      ) +
-      geom_point() +
-      labs(
-        x = "Year",
-        y = "Streamflow",
-        colour = NULL
-      ) +
-      scale_colour_brewer(palette = "Set1") +
-      theme_bw() +
-      theme(
-        legend.position = "inside",
-        legend.position.inside = c(0.9, 0.9)
-      )
-  }
-
-}
-
-
-summary.result_set <- function(x) {
-  
-  #summary() # print a summary
-  #should show the the exit_message, best AIC and fitted parameters. List the models used and gauge
-  cat("Best fitnesss (AIC):", x$AIC_best_parameter_set)
-  cat("\nBest Parameters:", paste(names(dream_example$best_parameter_set), signif(dream_example$best_parameter_set, 3), sep = ":", collapse = " "))
-  
-}
-
-
-
-
-# is empty tibble
-is_empty_tibble <- function(x) {
-  if_else(nrow(x) * ncol(x) == 0, TRUE, FALSE)
 }

@@ -221,3 +221,10 @@ binwidth_bins <- function(n){
 convert_object_variable_to_character <- function(variable) {
   as.character(substitute(variable))
 }
+
+
+# find the order of magnitude of a number
+get_order_magnitude <- function(x) {
+  get_sign <- sign(x)
+  get_sign * 10^(floor(log10(abs(x))))
+}

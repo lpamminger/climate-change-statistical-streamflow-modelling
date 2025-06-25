@@ -1,32 +1,54 @@
+check_near_bounds <- function(result_set_object) {
+  
+  # Get information ------------------------------------------------------------
+  lower_bound <- result_set_object$numerical_optimiser_setup$lower_bound
+  upper_bound <- result_set_object$numerical_optimiser_setup$upper_bound
+  bound_range <- upper_bound - lower_bound
+  calibrated_parameters <- result_set_object$best_parameter_set
+  
+  # Use order of magnitude of bound range to calculate tolerance to bounds -----
+  order_of_magnitude_bound_range <- get_order_magnitude(bound_range)
+  
+  # Take 3 orders of magnitude off for near()
+  remove_orders_of_magnitude <- 4
+  new_exponent <- log10(order_of_magnitude_bound_range) - remove_orders_of_magnitude
+  near_tolerance_per_parameter <- 10^new_exponent
+  
+  
+  # Check lower_bound ----------------------------------------------------------
+  near_lower_bound <- near(calibrated_parameters, lower_bound, tol = near_tolerance_per_parameter)
+  
+  # Check upper_bound ----------------------------------------------------------
+  near_upper_bound <- near(calibrated_parameters, upper_bound, tol = near_tolerance_per_parameter)
+  
+  # Return string
+  output_message <- case_when(
+    # parameters can only be near either upper or lower bound
+    near_lower_bound ~ "near_lower_bound",
+    near_upper_bound ~ "near_upper_bound",
+    .default = NA
+  )
+  
+  return(output_message)
+}
+
+
+
+
+
 parameters_summary <- function(x) {
   tibble::as_tibble(
     list(
       "gauge" = x$numerical_optimiser_setup$catchment_data$gauge_ID,   
       "streamflow_model" = x$numerical_optimiser_setup$streamflow_model()[[1]],
       "objective_function" = x$numerical_optimiser_setup$objective_function()[[1]],
-      "optimiser" = s3_class(x$optimised_object)[1], # [1] needed to get child class
+      "optimiser" = s3_class(x$optimised_object)[1], 
       "parameter" = x$numerical_optimiser_setup$parameter_names, 
       "parameter_value" = x$best_parameter_set, 
       "loglikelihood" = x$LL_best_parameter_set,
       "AIC" = x$AIC_best_parameter_set,
       "exit_message" = x$exit_message,
-      "near_bounds" = (near(x$numerical_optimiser_setup$lower_bound, x$best_parameter_set)) | (near(x$numerical_optimiser_setup$upper_bound, x$best_parameter_set))
-    )
-  )
-}
-
-
-restarts_summary <- function(x) {
-  tibble::as_tibble(
-    list(
-      "gauge" = x$numerical_optimiser_setup$catchment_data$gauge_ID,   
-      "streamflow_model" = x$numerical_optimiser_setup$streamflow_model()[[1]],
-      "objective_function" = x$numerical_optimiser_setup$objective_function()[[1]],
-      "optimiser" = sloop::s3_class(x$optimised_object)[1], # [1] needed to get child class
-      "loglikelihood" = x$LL_best_parameter_set,
-      "AIC" = x$AIC_best_parameter_set,
-      "restarts" = x$restart_count,
-      "exit_message" = x$exit_message
+      "near_bounds" = check_near_bounds(x)
     )
   )
 }
@@ -58,29 +80,37 @@ sequences_summary <- function(x) { # NOT IN USE
   
 }
 
-modelled_streamflow_summary <- function(x) {
+
+
+
+
+
+
+streamflow_timeseries_summary <- function(x) {
   # The modelled_boxcox_streamflow is just the streamflow optimised
   # We must use data being optimised instead of the full_data_set
+  
+  # Only works with result_set objects - force?
   calibrated_data <- x$numerical_optimiser_setup$catchment_data$stop_start_data_set |> 
     list_rbind()
   
+
+  
   tibble::as_tibble(
     list(
+      "gauge" = x$numerical_optimiser_setup$catchment_data$gauge_ID,
       "year" = calibrated_data |> pull(year),
       "precipitation" = calibrated_data |> pull(precipitation),
-      "observed_boxcox_streamflow" = calibrated_data |> pull(observed_boxcox_streamflow),
-      "modelled_boxcox_streamflow" = c(x$optimised_boxcox_streamflow),
-      "gauge" = x$numerical_optimiser_setup$catchment_data$gauge_ID,
+      "realspace_observed_streamflow" = calibrated_data |> pull(observed_streamflow),
+      "realspace_modelled_streamflow" = x$optimised_modelled_streamflow_realspace |> as.double(), # as.double converts from matrix column to vector
+      "transformed_observed_streamflow" = x$transformed_observed_streamflow |> as.double(), # as.double converts from matrix column to vector
+      "transformed_modelled_streamflow" = x$optimised_modelled_streamflow_transformed_space,
       "streamflow_model" = x$numerical_optimiser_setup$streamflow_model()$name,
       "objective_function" = x$numerical_optimiser_setup$objective_function()$name,
-      "optimiser" = sloop::s3_class(x$optimised_object)[1],
-      "loglikelihood" = x$LL_best_parameter_set
+      "streamflow_transform_method" = x$numerical_optimiser_setup$streamflow_transform_method()$name
     )
-  )
+  ) 
 }
-
-
-
 
 
 

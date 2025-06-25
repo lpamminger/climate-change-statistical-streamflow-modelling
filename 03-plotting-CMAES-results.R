@@ -6,11 +6,8 @@ cat("\014") # clear console
 pacman::p_load(tidyverse, ozmaps, sf, ggmagnify, furrr, parallel, patchwork)
 
 
-## Utility functions ===========================================================
+## Import functions ============================================================
 source("./Functions/utility.R")
-
-
-## Import streamflow functions =================================================
 source("./Functions/streamflow_models.R")
 source("./Functions/parameter_transformations.R")
 source("./Functions/catchment_data_blueprint.R")
@@ -21,35 +18,32 @@ source("./Functions/generic_functions.R")
 source("./Functions/DREAM.R")
 source("./Functions/objective_function_setup.R")
 source("./Functions/result_set.R")
-source("./Functions/boxcox_transforms.R")
+source("./Functions/boxcox_logsinh_transforms.R")
+
+
+
 
 
 # Import data ------------------------------------------------------------------
-CMAES_results <- read_csv(
-  "./Results/my_cmaes/CMAES_parameter_results_20250331.csv",
-  show_col_types = FALSE
-)
-
 data <- readr::read_csv(
   "./Data/Tidy/with_NA_yearly_data_CAMELS.csv",
-  col_types = "icdddddddll", # ensuring each column is a the correct type
+  show_col_types = FALSE
+) |> 
+  mutate(year = as.integer(year))
+
+streamflow_results <- read_csv(
+  "./Results/CMAES/cmaes_streamflow_results.csv", 
   show_col_types = FALSE
 )
 
-streamflow_results <- read_csv(
-  "Results/my_cmaes/CMAES_streamflow_results_20250331.csv",
-  show_col_types = FALSE,
-  col_select = !optimiser
+gauge_information <- readr::read_csv(
+  "./Data/Tidy/gauge_information_CAMELS.csv",
+  show_col_types = FALSE
 )
 
-gauge_information <- read_csv(
-  "./Data/Tidy/gauge_information_CAMELS.csv",
-  show_col_types = FALSE,
-  col_select = c(gauge, bc_lambda, state, lat, lon)
-) # CAMELS is Australia wide.
 
 best_CO2_non_CO2_per_gauge <- read_csv(
-  "./Results/my_cmaes/unmodified_best_CO2_non_CO2_per_catchment_CMAES_20250331.csv",
+  "./Results/CMAES/best_CO2_non_CO2_per_catchment_CMAES.csv",
   show_col_types = FALSE
 )
 
@@ -234,8 +228,9 @@ model_components <- single_aus_map |>
 
 # model_components
 
+# Separate log-sinh work from boxcox graphs
 ggsave(
-  filename = "./Graphs/Supplementary_Figures/model_components_v2.pdf",
+  filename = "./Graphs/CMAES_graphs/log_sinh_model_components.pdf",
   plot = model_components,
   device = "pdf",
   width = 297,
@@ -615,7 +610,7 @@ single_map_aus <- aus_map |>
   ) +
   # magnify QLD
   geom_magnify(
-    from = c(145, 155, -29.2, -16),
+    from = c(145, 155, -29.2, -15),
     to = c(157, 178, -29.5, 1.5),
     shadow = FALSE,
     expand = 0,
@@ -666,7 +661,7 @@ single_map_aus <- aus_map |>
 
 
 ggsave(
-  filename = "./Graphs/Figures/evidence_ratio_aus_with_zoom_v4.pdf",
+  filename = "./Graphs/CMAES_graphs/log_sinh_evidence_ratio_aus_with_zoom.pdf",
   plot = single_map_aus,
   device = "pdf",
   width = 232,
@@ -677,6 +672,7 @@ ggsave(
 
 
 # Figure 3. Time of emergence map ----------------------------------------------
+
 
 # Time of emergence calculation ------------------------------------------------
 best_model_per_gauge <- best_CO2_non_CO2_per_gauge |>
@@ -751,6 +747,25 @@ time_of_emergence_data <- CO2_time_of_emergence |>
     gauge_state,
     by = join_by(gauge)
   )
+
+
+# Does the time of emergence kick in at the last couple of years 
+best_gauges_time_of_emergence <- time_of_emergence_data |> 
+  pull(gauge) |> 
+  unique()
+
+final_observed_year <- streamflow_results |> 
+  filter(gauge %in% best_gauges_time_of_emergence) |> 
+  select(gauge, year) |> 
+  distinct() |> 
+  slice_max(year)
+# All the years end during 2021
+
+check_late_ToE <- time_of_emergence_data |> 
+  filter(year_time_of_emergence >= 2021)
+
+# 21 out of the 253 catchments where CO2 is the best model have a CO2
+# ToE in the last year
 
 
 
@@ -853,6 +868,9 @@ summarised_sequences_ToE <- read_csv(
 
 
 
+
+
+
 ## Create my own bins ==========================================================
 min_CO2 <- data |>
   pull(CO2) |>
@@ -913,7 +931,6 @@ custom_bins_time_of_emergence_data <- time_of_emergence_data |>
   # Points are plotted based on the order they appear in the tibble
   # Order the tibble from largest IQR to smalleest before plotting.
   arrange(desc(DREAM_ToE_IQR))
-
 
 
 
@@ -995,6 +1012,16 @@ ggsave(
 
 
 
+# Sort by evidence ratio
+custom_bins_time_of_emergence_data <- custom_bins_time_of_emergence_data |> 
+  left_join(
+    a3_direction_binned_lat_lon_evidence_ratio,
+    by = join_by(gauge, lat, lon, state)
+  ) |> 
+  # Only include moderately strong or above
+  filter(!binned_evidence_ratio %in% c("Weak", "Moderate")) 
+
+
 
 ## Time of emergence plotting ==================================================
 
@@ -1068,6 +1095,7 @@ scale_size_limits <- custom_bins_time_of_emergence_data |>
 
 
 transparent_dots_constant <- 0.75
+size <- 4 # remove when adding DREAM_ToE_IQR
 
 inset_plot_QLD <- aus_map |>
   filter(state == "QLD") |>
@@ -1075,12 +1103,13 @@ inset_plot_QLD <- aus_map |>
   geom_sf() +
   geom_point(
     data = QLD_data,
-    aes(x = lon, y = lat, fill = custom_bins, size = DREAM_ToE_IQR),
+    aes(x = lon, y = lat, fill = custom_bins),#, size = DREAM_ToE_IQR),
     show.legend = FALSE,
     stroke = 0.1,
     alpha = transparent_dots_constant,
-    shape = 21,
-    colour = "black"
+    shape = 21, # remove this with size
+    colour = "black",
+    size = size
   ) +
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
   scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
@@ -1095,6 +1124,10 @@ inset_plot_QLD <- aus_map |>
 # It must be a single plot (i.e., a list of length 1) - inset_element does not work
 
 
+  #scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
+  #guides(size = guide_bins(show.limits = TRUE)) +
+
+
 
 
 inset_plot_NSW <- aus_map |>
@@ -1103,16 +1136,17 @@ inset_plot_NSW <- aus_map |>
   geom_sf() +
   geom_point(
     data = NSW_data,
-    aes(x = lon, y = lat, fill = custom_bins, size = DREAM_ToE_IQR),
+    aes(x = lon, y = lat, fill = custom_bins),#, size = DREAM_ToE_IQR),
     show.legend = FALSE,
     stroke = 0.1,
     alpha = transparent_dots_constant,
     shape = 21,
-    colour = "black"
+    colour = "black",
+    size = size
   ) +
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
-  scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
-  guides(size = guide_bins(show.limits = TRUE)) +
+  #scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
+  #guides(size = guide_bins(show.limits = TRUE)) +
   theme_void()
 
 
@@ -1123,16 +1157,17 @@ inset_plot_VIC <- aus_map |>
   geom_sf() +
   geom_point(
     data = VIC_data,
-    aes(x = lon, y = lat, fill = custom_bins, size = DREAM_ToE_IQR),
+    aes(x = lon, y = lat, fill = custom_bins),#, size = DREAM_ToE_IQR),
     show.legend = FALSE,
     alpha = transparent_dots_constant,
     stroke = 0.1,
     shape = 21,
-    colour = "black"
+    colour = "black",
+    size = size
   ) +
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
-  scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
-  guides(size = guide_bins(show.limits = TRUE)) +
+  #scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
+  #guides(size = guide_bins(show.limits = TRUE)) +
   theme_void()
 
 
@@ -1143,16 +1178,17 @@ inset_plot_WA <- aus_map |>
   geom_sf() +
   geom_point(
     data = WA_data,
-    aes(x = lon, y = lat, fill = custom_bins, size = DREAM_ToE_IQR),
+    aes(x = lon, y = lat, fill = custom_bins),#, size = DREAM_ToE_IQR),
     show.legend = FALSE,
     stroke = 0.1,
     alpha = transparent_dots_constant,
     shape = 21,
-    colour = "black"
+    colour = "black",
+    size = size
   ) +
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
-  scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
-  guides(size = guide_bins(show.limits = TRUE)) +
+  #scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
+  #guides(size = guide_bins(show.limits = TRUE)) +
   theme_void()
 
 
@@ -1163,16 +1199,17 @@ inset_plot_TAS <- aus_map |>
   geom_sf() +
   geom_point(
     data = TAS_data,
-    aes(x = lon, y = lat, fill = custom_bins, size = DREAM_ToE_IQR),
+    aes(x = lon, y = lat, fill = custom_bins),#, size = DREAM_ToE_IQR),
     show.legend = FALSE,
     stroke = 0.1,
     alpha = transparent_dots_constant,
     shape = 21,
     colour = "black",
+    size = size
   ) +
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
-  scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
-  guides(size = guide_bins(show.limits = TRUE)) +
+  #scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
+  #guides(size = guide_bins(show.limits = TRUE)) +
   theme_void()
 
 
@@ -1184,13 +1221,14 @@ ToE_map_aus <- aus_map |>
   geom_sf() +
   geom_point(
     data = custom_bins_time_of_emergence_data,
-    mapping = aes(x = lon, y = lat, fill = custom_bins, size = DREAM_ToE_IQR),
+    mapping = aes(x = lon, y = lat, fill = custom_bins), #size = DREAM_ToE_IQR),
     stroke = 0.1,
     shape = 21,
-    colour = "black"
+    colour = "black",
+    size = size
   ) +
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
-  scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
+  #scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
   theme_bw() +
   # expand map
   coord_sf(xlim = c(95, 176), ylim = c(-60, 0)) +
@@ -1259,15 +1297,15 @@ ToE_map_aus <- aus_map |>
     legend.box = "horizontal" # , # side-by-side legends
   ) +
   guides(
-    fill = guide_legend(override.aes = list(size = 5, shape = 21), nrow = 3), # Wrap legend with nrow
-    size = guide_bins(show.limits = TRUE, direction = "horizontal")
+    fill = guide_legend(override.aes = list(size = 5, shape = 21), nrow = 3)#, # Wrap legend with nrow
+    #size = guide_bins(show.limits = TRUE, direction = "horizontal")
   )
 
 
 ToE_map_aus
 
 ggsave(
-  filename = "./Graphs/Figures/ToE_map_aus_uncertainty_v8_moderate_strong_above_hist_inset.pdf",
+  filename = "log_sinh_no_uncertainty_ToE_map_aus.pdf", #"./Graphs/CMAES_graphs/log_sinh_no_uncertainty_ToE_map_aus.pdf",
   plot = ToE_map_aus,
   device = "pdf",
   width = 232,
@@ -1321,8 +1359,9 @@ compare_ToE_and_evi_ratio <- custom_bins_time_of_emergence_data |>
     by = join_by(gauge, lat, lon)
   )
 
-ToE_against_evi_ratio <- compare_ToE_and_evi_ratio |>
-  ggplot(aes(x = year_time_of_emergence, y = evidence_ratio)) +
+
+ToE_against_evi_ratio <- compare_ToE_and_evi_ratio |> 
+  ggplot(aes(x = year_time_of_emergence, y = evidence_ratio.x)) +
   geom_point() +
   scale_y_log10() +
   labs(
@@ -1331,6 +1370,22 @@ ToE_against_evi_ratio <- compare_ToE_and_evi_ratio |>
   ) +
   theme_bw()
 
+
+
+# histogram
+custom_bins_time_of_emergence_data |> 
+  summarise(
+    n = n(),
+    .by = custom_bins
+  ) |> 
+  ggplot(aes(x = custom_bins, y = n)) +
+  geom_col() +
+  labs(
+    x = "Time of Emergence",
+    y = "Count",
+    title = "Time of Emergence of CO2 models with an evidence ratio of moderately strong or greater"
+  ) +
+  theme_bw()
 
 
 ggsave(
@@ -1351,6 +1406,16 @@ ggsave(
 
 
 
+# Figure 3 of paper is located in estimate_CO2_impact
+
+
+# I have no idea what I am doing beyond here ---
+
+
+
+
+
+
 # Figure 4. How has CO2 impacted streamflow map --------------------------------
 stop_here <- tactical_typo()
 
@@ -1365,6 +1430,7 @@ best_streamflow_results <- streamflow_results |>
     best_CO2_non_CO2_per_gauge,
     by = join_by(gauge, streamflow_model)
   )
+
 
 
 ## Only include best streamflow that was calibrated on =========================
@@ -1384,6 +1450,11 @@ best_calibration_streamflow_results <- best_streamflow_results |>
 ## Summarise results into a tidy format ========================================
 tidy_boxcox_streamflow <- best_calibration_streamflow_results |>
   drop_na() |> # only include if observed streamflow is present
+
+
+## Summarise results into a tidy format ========================================
+tidy_boxcox_streamflow <- best_streamflow_results |>
+  drop_na() |>  # only include if observed streamflow is present
   pivot_longer(
     cols = c(observed_boxcox_streamflow, modelled_boxcox_streamflow),
     names_to = "name",
