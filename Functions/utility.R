@@ -228,3 +228,42 @@ get_order_magnitude <- function(x) {
   get_sign <- sign(x)
   get_sign * 10^(floor(log10(abs(x))))
 }
+
+
+
+
+# generate map of australia shapefile
+generate_aus_map_sf <- function() {
+  
+  # Requires ozmaps package
+  
+  aus_map <- ozmaps::ozmap(x = "states", add = FALSE) |>
+    filter(!NAME %in% c("Other Territories")) |>
+    rename(state = NAME) |>
+    mutate(
+      state = case_when(
+        state == "New South Wales" ~ "NSW",
+        state == "Victoria" ~ "VIC",
+        state == "Queensland" ~ "QLD",
+        state == "South Australia" ~ "SA",
+        state == "Western Australia" ~ "WA",
+        state == "Tasmania" ~ "TAS",
+        state == "Northern Territory" ~ "NT",
+        state == "Australian Capital Territory" ~ "ACT",
+      )
+    )
+  
+  
+  combine_NSW_ACT <- aus_map |>
+    filter(state %in% c("NSW", "ACT")) |>
+    st_union()
+  
+  
+  aus_map[1, 2] <- list(combine_NSW_ACT)
+  
+  
+  aus_map <- aus_map |>
+    filter(state != "ACT")
+  
+  return(aus_map)
+}
