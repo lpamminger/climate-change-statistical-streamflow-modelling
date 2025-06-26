@@ -1,3 +1,15 @@
+# This no longer works with the new numerical optimisers
+
+
+
+# The outcome of this test was a single calibration of CMAES was unable to 
+# consitently find the global optima. When run 10 times and taking the lowest
+# logliklihood it would get the global optima.
+
+
+
+
+
 # Explanatory analysis of restarts ---------------------------------------------
 ## Reasoning in Peterson and Western 2014 - Non-linear ...
 cat("\014") # clear console

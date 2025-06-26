@@ -1,3 +1,13 @@
+# Comparing box-cox and log-sinh streamflow transformation
+
+
+# Outcome: log-sinh performs better
+# Figures:
+
+
+
+
+
 # Fitting streamflow models to catchments
 
 # Import libraries--------------------------------------------------------------
@@ -326,10 +336,10 @@ transformed_streamflow_time_plot <- plotting_data |>
   facet_wrap(~ gauge + streamflow_transform_method, ncol = 2, nrow = 7, scales = "free_y")
 
 ggsave(
-  filename = "offset_log_sinh_showing_tim_transform_issue_timeseries.pdf",
+  filename = "boxcox_logsinh_transformed_timeseries_comparison.pdf",
   plot = transformed_streamflow_time_plot,
   device = "pdf",
-  path = "./Graphs/Supplementary_Figures",
+  path = "Modelling/Other",
   width = 320,
   height = 420,
   units = "mm"
@@ -373,10 +383,10 @@ streamflow_time_plot <- plotting_data |>
   facet_wrap(~ gauge + streamflow_transform_method, ncol = 2, nrow = 7, scales = "free_y")
 
 ggsave(
-  filename = "offset_log_sinh_testing_streamflow_transform_methods_timeseries.pdf",
+  filename = "boxcox_logsinh_realspace_timeseries_comparison.pdf",
   plot = streamflow_time_plot,
   device = "pdf",
-  path = "./Graphs/Supplementary_Figures",
+  path = "Modelling/Other",
   width = 320,
   height = 420,
   units = "mm"
@@ -421,10 +431,10 @@ rainfall_runoff_plot <- plotting_data |>
   facet_wrap(~ gauge + streamflow_transform_method, nrow = 7, ncol = 2, scales = "free")
 
 ggsave(
-  filename = "offset_log_sinh_testing_streamflow_transform_methods_rainfall_runoff.pdf",
+  filename = "boxcox_logsinh_rainfall_runoff_comparison.pdf",
   plot = rainfall_runoff_plot,
   device = "pdf",
-  path = "./Graphs/Supplementary_Figures",
+  path = "Modelling/Other",
   width = 250,
   height = 594,
   units = "mm"
@@ -518,7 +528,7 @@ ggsave(
   filename = "sd_uncertainty_transformed_streamflow_time.pdf",
   plot = sd_uncertainty_bars,
   device = "pdf",
-  path = "./Graphs/Supplementary_Figures",
+  path = "Modelling/Other",
   width = 250,
   height = 594,
   units = "mm"
@@ -546,7 +556,7 @@ ggsave(
   filename = "boxcox_logsinh_qqplot.pdf",
   plot = qqplots,
   device = "pdf",
-  path = "./Graphs/Supplementary_Figures",
+  path = "Modelling/Other",
   width = 250,
   height = 594,
   units = "mm"
