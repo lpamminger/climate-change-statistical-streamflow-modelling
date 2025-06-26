@@ -1,0 +1,4 @@
+04-fix up DREAM to work with the new numerical optimiser. Try to utilise existing code.
+05- plots and analysis - change to assess_fit_DREAM.R
+add an assess_fit for DREAM to show distribution
+add a file that condenses the results into something I can use in the Figure Files

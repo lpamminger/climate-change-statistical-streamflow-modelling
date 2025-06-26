@@ -8,7 +8,6 @@ pacman::p_load(tidyverse, cmaesr, smoof, truncnorm, sloop)
 
 
 
-
 # Import and prepare data-------------------------------------------------------
 # If this is a package this step is not required
 start_stop_indexes <- readr::read_csv(
