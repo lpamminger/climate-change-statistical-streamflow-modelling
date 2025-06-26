@@ -47,7 +47,7 @@ source("./Functions/result_set.R")
 
 
 # 1. Select gauge to test from data --------------------------------------------
-gauge <- "G8150098" 
+gauge <- "617002" 
 
 
 # ideally catchment_data_blueprint should have other methods of data entry such as giving vectors individually
@@ -83,7 +83,7 @@ plot(example_catchment, type = "streamflow-time")
 
 numerical_optimiser <- example_catchment |>
   numerical_optimiser_setup_vary_inputs(
-    streamflow_model = streamflow_model_drought_intercept_shifted_CO2_seasonal_ratio,
+    streamflow_model = streamflow_model_slope_shifted_CO2_seasonal_ratio,
     objective_function = constant_sd_objective_function, 
     streamflow_transform_method = log_sinh_transform, # or boxcox_transform, 
     bounds_and_transform_method = make_default_bounds_and_transform_methods(example_catchment), # requires catchment_data_set object to calculate bounds 

@@ -394,15 +394,17 @@ percentage_difference_a3_on_off_data <- a3_on_off_difference_data |>
   ) |> 
   # sum streamflow for each decade
   summarise(
-    sum_realspace_CO2_off_streamflow = sum(realspace_a3_off_streamflow),
-    sum_realspace_CO2_on_streamflow = sum(realspace_a3_on_streamflow),
+    sum_decade_realspace_CO2_off_streamflow = sum(realspace_a3_off_streamflow),
+    sum_decade_realspace_CO2_on_streamflow = sum(realspace_a3_on_streamflow),
     years_of_data = n(),
     .by = c(gauge, decade)
   ) |> 
   # find the absolution and percentage difference
   mutate(
-    CO2_impact_on_streamflow_mm_per_year = (sum_realspace_CO2_on_streamflow - sum_realspace_CO2_off_streamflow) / years_of_data,
-    CO2_impact_on_streamflow_percent = (CO2_impact_on_streamflow_mm_per_year / (sum_realspace_CO2_off_streamflow / years_of_data)) * 100
+    realspace_CO2_off_streamflow_per_year = sum_decade_realspace_CO2_off_streamflow / years_of_data,
+    realspace_a3_on_streamflow_per_year = sum_decade_realspace_CO2_on_streamflow / years_of_data,
+    CO2_impact_on_streamflow_mm_per_year = (realspace_a3_on_streamflow_per_year - realspace_CO2_off_streamflow_per_year),
+    CO2_impact_on_streamflow_percent = (CO2_impact_on_streamflow_mm_per_year / realspace_CO2_off_streamflow_per_year) * 100
   ) |> 
   arrange(desc(CO2_impact_on_streamflow_percent)) # Large percentage changes are not tied to years_of_data
   
@@ -410,9 +412,41 @@ percentage_difference_a3_on_off_data <- a3_on_off_difference_data |>
 
 
 ## Percentage difference plot ==================================================
+
+### Calculate evidence ratio for possible filtering ############################
+evidence_ratio_calc <- best_CO2_non_CO2_per_gauge |>
+  select(gauge, contains_CO2, AIC) |>
+  distinct() |>
+  pivot_wider(
+    names_from = contains_CO2,
+    values_from = AIC
+  ) |>
+  mutate(
+    CO2_model = `TRUE`,
+    non_CO2_model = `FALSE`,
+    .keep = "unused"
+  ) |>
+  mutate(
+    AIC_difference = CO2_model - non_CO2_model # CO2 is smaller than non-CO2 then negative and CO2 is better
+  ) |>
+  mutate(
+    evidence_ratio = case_when(
+      AIC_difference < 0 ~ exp(0.5 * abs(AIC_difference)), # when CO2 model is better
+      AIC_difference > 0 ~ -exp(0.5 * abs(AIC_difference)) # when non-CO2 model is better
+    )
+  ) |>
+  select(gauge, evidence_ratio) |> 
+  arrange(evidence_ratio)
+
+
+
 plot_ready_percentage_difference_a3_on_off_data <- percentage_difference_a3_on_off_data |> 
   left_join(
     lat_lon_gauge,
+    by = join_by(gauge)
+  ) |> 
+  left_join(
+    evidence_ratio_calc,
     by = join_by(gauge)
   )
 
@@ -435,7 +469,7 @@ CO2_impact_on_streamflow_percent_limits <- plot_ready_percentage_difference_a3_o
   make_limits() |> 
   as.double()
 
-hard_coded_breaks_CO2_impact_of_streamflow <- c(-25, -10, -5, -2.5, -1, 0, 1, 2.5, 5, 10, 25)
+hard_coded_breaks_CO2_impact_of_streamflow <- c(-75, -50, -25, -10, -1, 0, 1, 10, 25, 50, 75)
 
 
 
@@ -714,10 +748,12 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
 
 # Patchwork results
 plot_ready_percentage_difference_a3_on_off_1990s <- plot_ready_percentage_difference_a3_on_off_data |> 
-  filter(decade == 1)
+  filter(decade == 1) |> 
+  filter(evidence_ratio > 100) # 100 is moderately strong
 
 plot_ready_percentage_difference_a3_on_off_2010s <- plot_ready_percentage_difference_a3_on_off_data |> 
-  filter(decade == 2)
+  filter(decade == 2) |> 
+  filter(evidence_ratio > 100) # 100 is moderately strong
   
 patchwork_percentage_differences <- (make_CO2_streamflow_percentage_change_map(plot_ready_percentage_difference_a3_on_off_1990s, "1990-1999") | make_CO2_streamflow_percentage_change_map(plot_ready_percentage_difference_a3_on_off_2010s, "2012-2021")) + 
   plot_layout(guides = "collect") & theme(legend.position = "bottom")

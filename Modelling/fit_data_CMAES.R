@@ -389,7 +389,7 @@ write_csv(
 # file.remove of file paths to remove them
 
 parameter_results <- read_csv(
-  "./Results/CMAES/cmaes_parameter_results.csv",
+  "./Modelling/Results/CMAES/cmaes_parameter_results.csv",
   show_col_types = FALSE
 )
 
@@ -402,7 +402,7 @@ x <- parameter_results |>
   arrange(parameter)
 
 bound_issues <- parameter_results |>
-  filter(parameter == "a3_slope") |>
+  filter(parameter == "sd") |>
   arrange(desc(parameter_value))
 
 # Manually repeat some catchments with a3_slope near 1
