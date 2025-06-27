@@ -3,8 +3,9 @@
 # Figures produced in this R file ----------------------------------------------
 
 # 1. Main --> evidence_ratio_aus_map.pdf
-
-
+# 2. Supplementary --> evidence_ratio_vs_catchment_area.pdf
+# 3. Supplementary --> evidence_ratio_vs_record_length.pdf
+# 4. Supplementary --> evidence_ratio_vs_prop_forested.pdf
 
 
 
@@ -422,5 +423,88 @@ ggsave(
   device = "pdf",
   width = 232,
   height = 200, # 210,
+  units = "mm"
+)
+
+
+
+
+
+
+# Relationship between evidence ratio and catchment area -----------------------
+## Get catchment area and record length from gauge data
+gauge_area_and_record_length <- gauge_information |> 
+  select(gauge, catchment_area_sq_km, record_length, prop_forested)
+
+
+## Add gauge information to a3_direction_binned_lat_lon_evidence_ratio
+additional_info_a3_direction_binned_evidence_ratio <- a3_direction_binned_lat_lon_evidence_ratio |> 
+  left_join(
+    gauge_area_and_record_length,
+    by = join_by(gauge)
+  )
+
+
+evidence_ratio_vs_catchment_area <- additional_info_a3_direction_binned_evidence_ratio |>
+  filter(evidence_ratio > 0) |> 
+  ggplot(aes(x = catchment_area_sq_km, evidence_ratio)) +
+  geom_point() +
+  scale_y_log10() +
+  scale_x_log10() +
+  labs(x = "Catchment Area (km2)", y = "Evidence Ratio") +
+  theme_bw()
+
+
+ggsave(
+  filename = "evidence_ratio_vs_catchment_area.pdf",
+  plot = evidence_ratio_vs_catchment_area,
+  path = "Figures/Supplementary",
+  device = "pdf",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
+
+
+
+
+# Relationship between evidence ratio and record length ------------------------
+evidence_ratio_vs_record_length <- additional_info_a3_direction_binned_evidence_ratio |>
+  filter(evidence_ratio > 0) |> 
+  ggplot(aes(x = record_length, evidence_ratio)) +
+  geom_jitter() + # stop dots overlapping
+  scale_y_log10() +
+  labs(x = "Record Length (Years)", y = "Evidence Ratio") +
+  theme_bw()
+
+
+ggsave(
+  filename = "evidence_ratio_vs_record_length.pdf",
+  plot = evidence_ratio_vs_record_length,
+  path = "Figures/Supplementary",
+  device = "pdf",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
+
+
+# Relationship between evidence ratio and forested catchment -------------------
+evidence_ratio_vs_prop_forested <- additional_info_a3_direction_binned_evidence_ratio |>
+  filter(evidence_ratio > 0) |> 
+  ggplot(aes(x = prop_forested, evidence_ratio)) +
+  geom_point() +
+  scale_y_log10() +
+  labs(x = "Proportion of forested", y = "Evidence Ratio") +
+  theme_bw()
+
+
+ggsave(
+  filename = "evidence_ratio_vs_prop_forested.pdf",
+  plot = evidence_ratio_vs_prop_forested,
+  path = "Figures/Supplementary",
+  device = "pdf",
+  width = 297,
+  height = 210,
   units = "mm"
 )
