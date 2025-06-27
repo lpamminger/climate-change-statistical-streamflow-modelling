@@ -41,18 +41,38 @@ catchment_information <- readr::read_csv(
     "station_name",
     "state_outlet",
     "lat_outlet",
-    "long_outlet"
+    "long_outlet",
+    "catchment_area"
   ),
   show_col_types = FALSE
-) |> 
+) |>
   rename(
     gauge = station_id,
     lat = lat_outlet,
     lon = long_outlet,
-    state = state_outlet
+    state = state_outlet,
+    catchment_area_sq_km = catchment_area
   )
 
 
+catchment_vegetation <- readr::read_csv(
+  "./Data/Raw/CatchmentAttributes_03_LandCover&Vegetation.csv",
+  col_select = c(
+    "station_id",
+    "prop_forested"
+  ),
+  show_col_types = FALSE
+) |>
+  rename(
+    gauge = station_id
+  )
+
+
+catchment_information <- catchment_information |> 
+  left_join(
+    catchment_vegetation,
+    by = join_by(gauge)
+  )
 
 
 # Tidying data -----------------------------------------------------------------
@@ -203,25 +223,25 @@ yearly_data <- yearly_precip |>
 is_streamflow_greater_than_rainfall <- yearly_data |>
   mutate(
     q_greater_than_p = q_mm > p_mm,
-  ) |> 
-  filter(q_greater_than_p) |> 
+  ) |>
+  filter(q_greater_than_p) |>
   # how much greater?
   mutate(
     magnitude_q_greater_than_p = q_mm - p_mm
-  ) |> 
+  ) |>
   arrange(desc(magnitude_q_greater_than_p))
 
 
-count_gauge_is_streamflow_greater_than_rainfall <- is_streamflow_greater_than_rainfall |> 
+count_gauge_is_streamflow_greater_than_rainfall <- is_streamflow_greater_than_rainfall |>
   summarise(
     n = n(),
     .by = gauge
-  ) |> 
+  ) |>
   arrange(desc(n))
 
 
 # Remove from data
-yearly_data <- yearly_data |> 
+yearly_data <- yearly_data |>
   anti_join(
     is_streamflow_greater_than_rainfall,
     by = join_by(gauge, year, p_mm)
@@ -250,8 +270,8 @@ list_start_end_index <- map(
   .x = unique(yearly_data$gauge),
   .f = gauge_continous_start_end,
   data = yearly_data,
-  min_run_length = min_run_length 
-) 
+  min_run_length = min_run_length
+)
 
 names(list_start_end_index) <- paste0("gauge_", unique(yearly_data$gauge))
 
@@ -298,39 +318,39 @@ gauge_data <- yearly_data |>
   ) |>
   filter(record_length >= min_record_length_years) |>
   left_join( # Add chunks to gauge_data i.e., continuous runs
-    catchment_information, 
+    catchment_information,
     by = join_by(gauge)
-  ) |> 
+  ) |>
   # remove chunk and run length stuff
   select(!c(max_run_start, max_run_end, chunks, max_run))
 
 
 
 # Add climate type to gauge data -----------------------------------------------
-# Assign gauge a climate type using kgc 
+# Assign gauge a climate type using kgc
 
-## `LookupCZ` function provides the climate zone based on lon and lat 
+## `LookupCZ` function provides the climate zone based on lon and lat
 ## Relies on the climatezone dataframe
 climatezones <- kgc::climatezones
 
 ## To use LookupCZ the data must be in |site_ID|lon|lat| format ================
-formatted_gauge_data <- gauge_data |> 
-  select(gauge, lon, lat) |> # mass overwrites dplyr select 
+formatted_gauge_data <- gauge_data |>
+  select(gauge, lon, lat) |> # mass overwrites dplyr select
   mutate(
     rndCoord.lon = kgc::RoundCoordinates(lon),
     rndCoord.lat = kgc::RoundCoordinates(lat)
-  ) 
+  )
 
 
 ## Gauge information with climate type =========================================
 climate_type_gauge_data <- cbind(
-  formatted_gauge_data, 
+  formatted_gauge_data,
   "climate_type" = kgc::LookupCZ(data = formatted_gauge_data)
-) |> 
-  as_tibble() |> 
+) |>
+  as_tibble() |>
   mutate(
     major_climate_type = str_sub(climate_type, start = 1L, end = 1L)
-  ) |> 
+  ) |>
   # Nice names for plotting
   mutate(
     major_climate_type = case_when(
@@ -339,12 +359,12 @@ climate_type_gauge_data <- cbind(
       major_climate_type == "C" ~ "Temperate (C)",
       .default = major_climate_type
     )
-  ) |> 
+  ) |>
   select(gauge, lat, lon, climate_type, major_climate_type)
 
 
 ## Add to gauge data ===========================================================
-gauge_data <- gauge_data |> 
+gauge_data <- gauge_data |>
   left_join(
     climate_type_gauge_data,
     by = join_by(gauge, lat, lon)
@@ -353,16 +373,16 @@ gauge_data <- gauge_data |>
 
 # gauge_data filtered out gauges that do not meet record length requirements ---
 # remove these gauges from start_stop and yearly data
-yearly_data <- yearly_data |> 
+yearly_data <- yearly_data |>
   filter(gauge %in% gauge_data$gauge)
 
-start_end_index <- start_end_index |> 
+start_end_index <- start_end_index |>
   filter(gauge %in% gauge_data$gauge)
 
 
 # Account for pre-industrial-CO2 -----------------------------------------------
 with_NA_yearly_data <- yearly_data |>
-  mutate(CO2 = CO2 - pre_ind_CO2_ppm) |> 
+  mutate(CO2 = CO2 - pre_ind_CO2_ppm) |>
   # I am currently not using standardised_warm_to_cool_ratio - remove
   select(!standardised_warm_to_cool_season_rainfall_ratio)
 
@@ -373,9 +393,3 @@ with_NA_yearly_data <- yearly_data |>
 write_csv(gauge_data, paste0("./Data/Tidy/gauge_information_CAMELS.csv"))
 write_csv(start_end_index, paste0("./Data/Tidy/start_end_index.csv"))
 write_csv(with_NA_yearly_data, paste0("./Data/Tidy/with_NA_yearly_data_CAMELS.csv"))
-
-
-
-
-
-
