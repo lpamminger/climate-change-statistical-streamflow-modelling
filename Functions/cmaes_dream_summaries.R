@@ -3,15 +3,15 @@ check_near_bounds <- function(result_set_object) {
   # Get information ------------------------------------------------------------
   lower_bound <- result_set_object$numerical_optimiser_setup$lower_bound
   upper_bound <- result_set_object$numerical_optimiser_setup$upper_bound
-  bound_range <- upper_bound - lower_bound
-  calibrated_parameters <- result_set_object$best_parameter_set
+  calibrated_parameters <- result_set_object$best_parameter_set |> 
+    abs()
   
   # Use order of magnitude of bound range to calculate tolerance to bounds -----
-  order_of_magnitude_bound_range <- get_order_magnitude(bound_range)
+  order_of_magnitude <- get_order_magnitude(calibrated_parameters)
   
   # Take 3 orders of magnitude off for near()
-  remove_orders_of_magnitude <- 4
-  new_exponent <- log10(order_of_magnitude_bound_range) - remove_orders_of_magnitude
+  remove_orders_of_magnitude <- 1
+  new_exponent <- log10(order_of_magnitude) - remove_orders_of_magnitude
   near_tolerance_per_parameter <- 10^new_exponent
   
   
