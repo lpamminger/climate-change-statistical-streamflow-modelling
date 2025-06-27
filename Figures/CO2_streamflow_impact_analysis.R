@@ -3,9 +3,10 @@
 # Figures produced in this R file ----------------------------------------------
 
 # 1. Main --> CO2_streamflow_on_off_decade_comparison.pdf 
-# 2. Supplementary --> CO2_on_off_rainfall_runoff_comparison.pdf (mega)
-# 3. Supplementary --> CO2_on_off_streamflow_time_comparison.pdf (mega)
-# 4. Supplementary --> CO2_on_off_streamflow_time_comparison_with_rainfall.pdf (mega)
+# 2. Supplementary --> CO2_on_off_decade_histogram.pdf
+# 3. Supplementary --> CO2_on_off_rainfall_runoff_comparison.pdf (mega)
+# 4. Supplementary --> CO2_on_off_streamflow_time_comparison.pdf (mega)
+# 5. Supplementary --> CO2_on_off_streamflow_time_comparison_with_rainfall.pdf (mega)
 
 
 
@@ -759,6 +760,8 @@ patchwork_percentage_differences <- (make_CO2_streamflow_percentage_change_map(p
   plot_layout(guides = "collect") & theme(legend.position = "bottom")
 
 
+
+
 ggsave(
   filename = "./Figures/Main/streamflow_percentage_difference_CO2_on_off.pdf",
   plot = patchwork_percentage_differences,
@@ -770,6 +773,47 @@ ggsave(
 
 
 
+# Compare percentage changes using a histogram ---------------------------------
+CO2_on_off_decade_histogram <- plot_ready_percentage_difference_a3_on_off_data |> 
+  mutate(
+    decade = if_else(decade == 1, "1990-1999", "2012-2021")
+  ) |> 
+  ggplot(aes(x = CO2_impact_on_streamflow_percent, fill = decade, colour = decade)) +
+  geom_histogram(
+    alpha = 0.25, 
+    position = "identity",
+    bins = 40
+    ) +
+  labs(
+    x = "Average Impact of CO2 on Streamflow (%)",
+    y = "Frequency",
+    colour = "Period",
+    fill = "Period"
+  ) +
+  theme_bw() +
+  theme(
+    legend.position = "inside",
+    legend.position.inside = c(0.8, 0.8),
+    legend.background = element_rect(colour = "black")
+  )
+
+
+plot_ready_percentage_difference_a3_on_off_data |>
+  summarise(
+    mean = mean(CO2_impact_on_streamflow_percent),
+    median = median(CO2_impact_on_streamflow_percent),
+    .by = decade
+  )
+
+ggsave(
+  filename = "CO2_on_off_decade_histogram.pdf",
+  plot = CO2_on_off_decade_histogram,
+  device = "pdf",
+  path = "Figures/Supplementary",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
 
 
 
