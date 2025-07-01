@@ -3,9 +3,11 @@
 # Figures produced in this R file ----------------------------------------------
 
 # 1. Main --> CO2_streamflow_on_off_decade_comparison.pdf 
-# 2. Supplementary --> CO2_on_off_rainfall_runoff_comparison.pdf (mega)
-# 3. Supplementary --> CO2_on_off_streamflow_time_comparison.pdf (mega)
-# 4. Supplementary --> CO2_on_off_streamflow_time_comparison_with_rainfall.pdf (mega)
+# 2. Supplementary --> CO2_on_off_decade_histogram.pdf
+# 3. Supplementary --> CO2_on_off_rainfall_runoff_comparison.pdf (mega)
+# 4. Supplementary --> CO2_on_off_streamflow_time_comparison.pdf (mega)
+# 5. Supplementary --> CO2_on_off_streamflow_time_comparison_with_rainfall.pdf (mega)
+# 6. Supplementary --> streamflow_CO2_percentage_change_vs_prop_forested.pdf
 
 
 
@@ -396,6 +398,7 @@ percentage_difference_a3_on_off_data <- a3_on_off_difference_data |>
   summarise(
     sum_decade_realspace_CO2_off_streamflow = sum(realspace_a3_off_streamflow),
     sum_decade_realspace_CO2_on_streamflow = sum(realspace_a3_on_streamflow),
+    sum_decade_realspace_observed_streamflow = sum(realspace_observed_streamflow),
     years_of_data = n(),
     .by = c(gauge, decade)
   ) |> 
@@ -759,6 +762,8 @@ patchwork_percentage_differences <- (make_CO2_streamflow_percentage_change_map(p
   plot_layout(guides = "collect") & theme(legend.position = "bottom")
 
 
+
+
 ggsave(
   filename = "./Figures/Main/streamflow_percentage_difference_CO2_on_off.pdf",
   plot = patchwork_percentage_differences,
@@ -770,6 +775,47 @@ ggsave(
 
 
 
+# Compare percentage changes using a histogram ---------------------------------
+CO2_on_off_decade_histogram <- plot_ready_percentage_difference_a3_on_off_data |> 
+  mutate(
+    decade = if_else(decade == 1, "1990-1999", "2012-2021")
+  ) |> 
+  ggplot(aes(x = CO2_impact_on_streamflow_percent, fill = decade, colour = decade)) +
+  geom_histogram(
+    alpha = 0.25, 
+    position = "identity",
+    bins = 40
+    ) +
+  labs(
+    x = "Average Impact of CO2 on Streamflow (%)",
+    y = "Frequency",
+    colour = "Period",
+    fill = "Period"
+  ) +
+  theme_bw() +
+  theme(
+    legend.position = "inside",
+    legend.position.inside = c(0.8, 0.8),
+    legend.background = element_rect(colour = "black")
+  )
+
+
+plot_ready_percentage_difference_a3_on_off_data |>
+  summarise(
+    mean = mean(CO2_impact_on_streamflow_percent),
+    median = median(CO2_impact_on_streamflow_percent),
+    .by = decade
+  )
+
+ggsave(
+  filename = "CO2_on_off_decade_histogram.pdf",
+  plot = CO2_on_off_decade_histogram,
+  device = "pdf",
+  path = "Figures/Supplementary",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
 
 
 
@@ -844,6 +890,52 @@ ggsave(
 
 
 
+# Are non-forested catchments more vulnerable to change? -----------------------
+# percentage change in Co2 vs prop forest 
+gauge_prop_forest_info <- gauge_information |> 
+  select(gauge, prop_forested)
+
+all_years_percentage_difference_a3_on_off_data <- a3_on_off_difference_data |> 
+  filter(year %in% years_of_intrest) |> 
+  # sum streamflow for each decade
+  summarise(
+    sum_decade_realspace_CO2_off_streamflow = sum(realspace_a3_off_streamflow),
+    sum_decade_realspace_CO2_on_streamflow = sum(realspace_a3_on_streamflow),
+    .by = c(gauge)
+  ) |> 
+  # find the absolution and percentage difference
+  mutate(
+    CO2_impact_on_streamflow_mm_per_year = (sum_decade_realspace_CO2_on_streamflow - sum_decade_realspace_CO2_off_streamflow),
+    CO2_impact_on_streamflow_percent = (CO2_impact_on_streamflow_mm_per_year / sum_decade_realspace_CO2_off_streamflow) * 100
+  ) |> 
+  arrange(desc(CO2_impact_on_streamflow_percent)) |>  # Large percentage changes are not tied to years_of_data
+  # add prop forested
+  left_join(
+    gauge_prop_forest_info,
+    by = join_by(gauge)
+  )
+
+
+streamflow_CO2_percentage_change_vs_prop_forested <- all_years_percentage_difference_a3_on_off_data |> 
+  ggplot(aes(x = prop_forested, y = CO2_impact_on_streamflow_percent)) +
+  geom_point() +
+  geom_hline(yintercept = 0, colour = "red", linetype = "dashed") +
+  labs(
+    x = "Proportion of Catchment Forested",
+    y = "Impact of CO2 on streamflow for entire gauge record (%)",
+  ) +
+  theme_bw()
+
+
+ggsave(
+  filename = "streamflow_CO2_percentage_change_vs_prop_forested.pdf",
+  path = "Figures/Supplementary",
+  device = "pdf",
+  plot = streamflow_CO2_percentage_change_vs_prop_forested,
+  width = 297,
+  height = 210,
+  units = "mm"
+)
 
 
 
