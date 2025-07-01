@@ -170,19 +170,19 @@ make_default_bounds_and_transform_methods <- function(catchment_data_set) {
   
   tibble::tribble(
     ~parameter,     ~lower_bound,   ~upper_bound,      ~transform_method,
-    "a0",           -3000,          3000,              linear_parameter_transform, # intercept
+    "a0",           -3000,          4000,              linear_parameter_transform, # intercept
     "a0_d",         -3000,          3000,              linear_parameter_transform, # intercept - no drought
     "a0_n",         -3000,          3000,              linear_parameter_transform, # intercept - drought
     "a1",            1E-8,          2,                 logarithmic_parameter_transform, # slope
     "a2",           -1,             1,                 linear_parameter_transform, # autocorrelation
-    "a3_intercept", -1000,          1500,              linear_parameter_transform, # CO2 coefficient for intercept 
-    "a3_slope",     -2,             2,                 linear_parameter_transform, # CO2 coefficent for slope
-    "a4",           -2E3,           3E3,               linear_parameter_transform, # seasonal parameter
+    "a3_intercept", -2000,          3000,              linear_parameter_transform, # CO2 coefficient for intercept 
+    "a3_slope",     -25,            25,                linear_parameter_transform, # CO2 coefficent for slope
+    "a4",           -2500,          3500,               linear_parameter_transform, # seasonal parameter
     "a5",            0,             upper_a5_bound,    linear_parameter_transform, # Changes depending on last CO2 value in calibration
-    "a",             1E-8,          15,                logarithmic_parameter_transform, # Absolute minimum is 1E-6 otherwise transform breaks
-    "b",             1E-8,          75,                logarithmic_parameter_transform, # Abosoltue minimum is 1E-2 otherwise transform breaks
+    "a",             1E-8,          150,               logarithmic_parameter_transform, # Absolute minimum is 1E-6 otherwise transform breaks
+    "b",             1E-8,          80,                logarithmic_parameter_transform, # Abosoltue minimum is 1E-2 otherwise transform breaks
     "lambda",        0,             2,                 linear_parameter_transform, # boxcox recommended range is -2 to 2(0-2 because we want to shift it from positive skew)
-    "sd",            1E-8,          1500,              logarithmic_parameter_transform # constant sd objective function 
+    "sd",            1E-8,          2000,              logarithmic_parameter_transform # constant sd objective function 
 
   )
   
