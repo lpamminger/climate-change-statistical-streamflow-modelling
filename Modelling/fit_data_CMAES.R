@@ -1,5 +1,26 @@
 # Fitting streamflow models to catchments
 
+
+# THERE IS SOMETHING WRONG WITH THE a parameter being equal to 150
+# The models components are wildly different
+# READ THE LAST PARAGRAPH OF QJ'S PAPER
+# This tells you the possible range and says that a and b should use a 
+# log-transform - we are using a log-transform :)
+# https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2011WR010973
+# In article QJ cautions the use of high values as they start to 
+# cause linear shifts - I think
+# instead of chasing the "perfect bounds" we stick with the recommended
+
+# bounds are [-15, 0] in realspace exp(-15) = 3E-7 to 1
+
+# In this paper https://agupubs.onlinelibrary.wiley.com/doi/full/10.1002/wrcr.20445
+# Range of parameters is different - b is adjusted based on mean streamflow
+# I could try the b_hat angle? Why?
+
+# from this paper: https://hess.copernicus.org/articles/24/2017/2020/
+# a << y << b
+# see what values they used
+
 # Import libraries--------------------------------------------------------------
 pacman::p_load(tidyverse, cmaesr, smoof, tictoc, furrr, parallel, truncnorm, sloop)
 
