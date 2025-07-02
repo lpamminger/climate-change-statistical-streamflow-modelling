@@ -369,7 +369,7 @@ is_empty_tibble <- function(x) {
 
 plot.result_set <- function(x, type) {
   
-  stopifnot(type %in% c("streamflow-time", "rainfall-runoff"))
+  stopifnot(type %in% c("streamflow-time", "rainfall-runoff", "examine_transform"))
   # This should only show the streamflow used in calibration
 
   # Get precipitation and observed streamfow from stop_start_index
@@ -467,6 +467,25 @@ plot.result_set <- function(x, type) {
         legend.position.inside = c(0.1, 0.9),
         legend.background = element_rect(colour = "black")
       )
+    
+    
+    
+  } else if (type == "examine_transform") {
+    # observed streamflow - x-axis and transformed streamflow on y-axis
+    modelled_streamflow_data <- list(
+      realspace_modelled_streamflow = x$optimised_modelled_streamflow_realspace,#observed_data |> pull(observed_streamflow),
+      transformed_modelled_streamflow = x$optimised_modelled_streamflow_transformed_space#x$transformed_observed_streamflow
+    ) |> 
+      as_tibble() |> 
+      arrange(realspace_modelled_streamflow)
+      
+    
+    modelled_streamflow_data |> 
+      ggplot(aes(x = realspace_modelled_streamflow, y = transformed_modelled_streamflow)) +
+      geom_point() +
+      geom_line() +
+      theme_bw()
+    
   }
 }
 

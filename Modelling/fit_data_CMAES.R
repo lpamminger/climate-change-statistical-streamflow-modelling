@@ -36,9 +36,12 @@ source("./Functions/objective_function_setup.R")
 source("./Functions/result_set.R")
 
 
+# Try using reformulated log-sinh model - adjust parameters afterwards
+# change line 44 and 198
+
 # Constants --------------------------------------------------------------------
 # Number of times we want to repeat each catchment-optimiser-streamflow model combinations
-REPLICATES <- 10L 
+REPLICATES <- 1L 
 
 
 # Construct catchment_data objects ---------------------------------------------
@@ -192,7 +195,7 @@ run_length_gauges_from_combinations <- rle(gauges_from_combinations)
 
 # Change values in rle ($values) to 1, 2, 3 etc. to construct factor values for split
 # The rle $values must be split based on GAUGES_PER_CHUNK
-GAUGES_PER_CHUNK <- 24L
+GAUGES_PER_CHUNK <- 100 #24L
 
 total_gauges <- gauges_from_combinations |>
   unique() |>

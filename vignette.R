@@ -48,7 +48,7 @@ source("./Functions/result_set.R")
 
 # 1. Select gauge to test from data --------------------------------------------
 
-gauge <- "422202B" 
+gauge <- "003303A"
 
 
 # ideally catchment_data_blueprint should have other methods of data entry such as giving vectors individually
@@ -114,10 +114,18 @@ standardised_results <- results |> result_set()
 ### plot(standardised_results, type = "streamflow-time, ...) add theme(axis...)
 plot(standardised_results, type = "streamflow-time")
 plot(standardised_results, type = "rainfall-runoff")
+plot(standardised_results, type = "examine_transform") 
+
+# The modelled streamflow produces normal-ish distributions
+hist(standardised_results$optimised_modelled_streamflow_transformed_space, breaks = 9)
+hist(standardised_results$optimised_modelled_streamflow_realspace, breaks = 9)
+
+test_data <- example_catchment$stop_start_data_set |> list_rbind()
 
 # The near_bound column does not functioning correctly
 # Ideally, it should scale with the parameters. It does not do this currently.
-parameter_table <- parameters_summary(standardised_results) 
+parameter_table <- parameters_summary(standardised_results)
+tail(parameter_table)
 result_table <- streamflow_timeseries_summary(standardised_results) 
 
 # DREAM is a bit more complex...
