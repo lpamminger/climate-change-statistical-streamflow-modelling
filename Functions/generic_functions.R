@@ -472,6 +472,7 @@ plot.result_set <- function(x, type) {
     
   } else if (type == "examine_transform") {
     # observed streamflow - x-axis and transformed streamflow on y-axis
+    
     modelled_streamflow_data <- list(
       realspace_modelled_streamflow = x$optimised_modelled_streamflow_realspace,#observed_data |> pull(observed_streamflow),
       transformed_modelled_streamflow = x$optimised_modelled_streamflow_transformed_space#x$transformed_observed_streamflow
@@ -480,10 +481,41 @@ plot.result_set <- function(x, type) {
       arrange(realspace_modelled_streamflow)
       
     
+    # Plot the curve using calibrated values
+    transform_name <- x$numerical_optimiser_setup$streamflow_transform_method()$name
+    
+    if(transform_name == "log_sinh_transform") {
+      a <- x$best_parameter_set[length(x$best_parameter_set) - 2]
+      b <- x$best_parameter_set[length(x$best_parameter_set) - 1]
+      
+      range_of_values <- modelled_streamflow_data |> 
+        pull(realspace_modelled_streamflow) |> 
+        range()
+      
+      realspace_modelled_axis <- seq(from = range_of_values[1], to = range_of_values[2], by = 0.01)
+      
+      transformed_modelled_axis <- log_sinh_transform(a = a, b = b, y = realspace_modelled_axis)
+
+    } else if(transform_name == "boxcox_transform") {
+      stop("Not implemented yet")
+    }
+    
+    # Get curve data into tibble
+    curve_data <- list(
+      "realspace_modelled_streamflow" = realspace_modelled_axis,
+      "transformed_modelled_streamflow" = transformed_modelled_axis
+    ) |> 
+      as_tibble()
+    
+    
+    
+    
     modelled_streamflow_data |> 
       ggplot(aes(x = realspace_modelled_streamflow, y = transformed_modelled_streamflow)) +
+      geom_line(data = curve_data, colour = "red") +
       geom_point() +
-      geom_line() +
+      geom_vline(xintercept = 0, linetype = "dashed") +
+      geom_hline(yintercept = 0, linetype = "dashed") +
       theme_bw()
     
   }

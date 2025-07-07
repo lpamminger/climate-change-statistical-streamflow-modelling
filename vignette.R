@@ -84,7 +84,7 @@ plot(example_catchment, type = "streamflow-time")
 
 numerical_optimiser <- example_catchment |>
   numerical_optimiser_setup_vary_inputs(
-    streamflow_model = streamflow_model_precip_seasonal_ratio_auto,
+    streamflow_model = streamflow_model_slope_shifted_CO2_seasonal_ratio_auto,
     objective_function = constant_sd_objective_function, 
     streamflow_transform_method = log_sinh_transform, # or boxcox_transform, 
     bounds_and_transform_method = make_default_bounds_and_transform_methods(example_catchment), # requires catchment_data_set object to calculate bounds 
@@ -116,6 +116,8 @@ plot(standardised_results, type = "streamflow-time")
 plot(standardised_results, type = "rainfall-runoff")
 plot(standardised_results, type = "examine_transform") 
 
+# Move findings to another location
+
 # The modelled streamflow produces normal-ish distributions
 hist(standardised_results$optimised_modelled_streamflow_transformed_space, breaks = 9)
 hist(standardised_results$optimised_modelled_streamflow_realspace, breaks = 9)
@@ -129,3 +131,61 @@ tail(parameter_table)
 result_table <- streamflow_timeseries_summary(standardised_results) 
 
 # DREAM is a bit more complex...
+# Is the reverse transform no good? No working correctly.
+#xx <- seq(from = -20, to = 150, by = 0.1)
+#yy <- log_sinh_transform(alpha = 76.1, beta = 9.89, y = xx)
+#plot(xx, yy, type = "l")
+#z <- inverse_log_sinh_transform(alpha = 76.1, beta = 9.89, z = yy)
+
+
+# Is it something related to standardised results? Yes
+x <- standardised_results$numerical_optimiser_setup$catchment_data$stop_start_data_set |> 
+  list_rbind() |> 
+  pull(observed_streamflow) # realspace
+
+x <- standardised_results$optimised_modelled_streamflow_realspace
+y <- standardised_results$optimised_modelled_streamflow_transformed_space # what the model spits out
+
+
+plot(x, y, xlab = "realspace modelled streamflow", ylab = "transformed modelled streamflow")
+
+
+# I am not sure why the points are not on the line
+# Points below the line indicate a negative streamflow value - YES
+# I don't think this is good for the transform
+# The realspace values do not have negative streamflow values
+# This is a problem --> modelled streamflow cannot be negative in the realspace
+# Solutions:
+## 1. check inverse_log_sinh if less than zero for every iterations - if true set to NA/Inf
+## 2. calc the minimum value log_sinh_transform(alpha = 76.1, beta = 9.89, y = 0)
+##    transformed streamflow cannot be less than this - If true set to zero
+## 3. allow negative values - but set to zero flow after calibration
+## 4. offset angle?
+
+
+
+# Get response surface for possible range of values of a and b
+a_test <- rev(10^-seq(from = 0, to = 8, by = 1))
+b_test <- a_test
+transform_result <- log_sinh_transform(a = a_test, b = b_test, y = 0)
+
+ggplot_tibble <- expand_grid(a_test, b_test) |> 
+  mutate(
+    result = log_sinh_transform(a = a_test, b = b_test, y = 0)
+  ) |> 
+  mutate(
+    greater_than_zero = if_else(result > 0, TRUE, FALSE)
+  )
+
+
+
+ggplot_tibble |> 
+  ggplot(aes(x = a_test, y = b_test, fill = greater_than_zero)) +
+  geom_tile() +
+  scale_y_log10(n.breaks = 20) +
+  scale_x_log10(n.breaks = 20) +
+  theme_bw()
+
+# based off this graph the a and b bounds are:
+# a = 1E-8 to 0.3 log-trans
+# b = 1E-8 to 1 log-trans
