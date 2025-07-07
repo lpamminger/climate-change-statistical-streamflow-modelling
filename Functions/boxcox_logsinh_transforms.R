@@ -57,20 +57,20 @@ inverse_boxcox_transform <- function(yt, lambda = 0, lambda_2) {
 
 
 # Log-sinh transform -----------------------------------------------------------
-log_sinh_transform <- function(alpha, beta, y, offset) {
+log_sinh_transform <- function(a, b, y, offset) {
   
   # If no parameters are given return description of model
   if(is.null(names(as.list(match.call())[-1]))) {
     return(
       list(
         "name" = "log_sinh_transform",
-        "parameters" = c("alpha", "beta")
+        "parameters" = c("a", "b")
       )
     )
   }
   
   
-  beta * log(sinh((alpha + y) / beta)) # offset not required
+  (1 / b) * log(sinh(a + (b * y)))
 }
 
 
@@ -91,22 +91,21 @@ asinh_exp_approximation <- function(x) {
 
 
 
-inverse_log_sinh_transform <- function(alpha, beta, z, offset) {
+inverse_log_sinh_transform <- function(a, b, z, offset) {
   
   # If no parameters are given return description of model
   if(is.null(names(as.list(match.call())[-1]))) {
     return(
       list(
         "name" = "inverse_log_sinh_transform",
-        "parameters" = c("alpha", "beta")
+        "parameters" = c("a", "b")
       )
     )
   }
   
   
-  beta * (asinh(exp(z / beta)) - (alpha / beta))
   
-  
+  # Changing bounds may address this issue...
   # If any streamflow value is infinite the approximation is done for everything
   #if (any(is.infinite(exp(b * z)))) {
   #  asinh_component <- asinh_exp_approximation(b * z)
@@ -114,7 +113,7 @@ inverse_log_sinh_transform <- function(alpha, beta, z, offset) {
   #  asinh_component <- asinh(exp(b * z))
   #}
   
-  #(asinh_component / b) - (a / b) - offset
+  (asinh(exp(b * z)) / b) - (a / b) - offset
 }
 
 
