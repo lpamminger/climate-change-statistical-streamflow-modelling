@@ -481,6 +481,13 @@ plot.result_set <- function(x, type) {
       arrange(realspace_modelled_streamflow)
       
     
+    # This is for the plot only using model parameters
+    range_of_values <- modelled_streamflow_data |> 
+      pull(realspace_modelled_streamflow) |> 
+      range()
+    
+    realspace_modelled_axis <- seq(from = range_of_values[1], to = range_of_values[2], by = 0.01)
+    
     # Plot the curve using calibrated values
     transform_name <- x$numerical_optimiser_setup$streamflow_transform_method()$name
     
@@ -488,16 +495,17 @@ plot.result_set <- function(x, type) {
       a <- x$best_parameter_set[length(x$best_parameter_set) - 2]
       b <- x$best_parameter_set[length(x$best_parameter_set) - 1]
       
-      range_of_values <- modelled_streamflow_data |> 
-        pull(realspace_modelled_streamflow) |> 
-        range()
-      
-      realspace_modelled_axis <- seq(from = range_of_values[1], to = range_of_values[2], by = 0.01)
-      
-      transformed_modelled_axis <- log_sinh_transform(a = a, b = b, y = realspace_modelled_axis)
+      transformed_modelled_axis <- x$numerical_optimiser_setup$streamflow_transform_method(a, b, realspace_modelled_axis)
 
     } else if(transform_name == "boxcox_transform") {
-      stop("Not implemented yet")
+      lambda <- x$best_parameter_set[length(x$best_parameter_set) - 1]
+      
+      lambda_2 <- standardised_results$numerical_optimiser_setup$streamflow_transform_method_offset
+      
+      transformed_modelled_axis <- x$numerical_optimiser_setup$streamflow_transform_method(realspace_modelled_axis, lambda, lambda_2)
+      
+    } else {
+      stop("Unrecognised transform")
     }
     
     # Get curve data into tibble

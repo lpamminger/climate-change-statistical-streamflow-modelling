@@ -129,6 +129,11 @@ numerical_optimiser_setup <- function(streamflow_model, objective_function, stre
   selected_defaults <- bounds_and_transform_method |> 
     dplyr::filter(parameter %in% parameter_names)
   
+  # Let user know offset does not do anything for log-sinh yet
+  streamflow_transform_method <- noquote(streamflow_transform_method)
+  if((streamflow_transform_method()$name == "log_sinh_transform") & (streamflow_transform_method_offset != 0)) {
+    message("streamflow_transform_method_offset have not effect on log_sinh_transform\n Set to zero to remove message.")
+  }
   
   ## Override defaults if NULL is replaced =====================================
   ### Add later...
