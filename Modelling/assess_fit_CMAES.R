@@ -71,6 +71,7 @@ rainfall_runoff_plot <- function(gauge, streamflow_results, parameter_results) {
       se = FALSE
     ) +
     geom_point(size = 0.5) +
+    # The aic y position is not correct - fix
     geom_label(
       aes(x = x_pos_rainfall_runoff, y = y_pos, label = label),
       data = AIC_for_graphs,
@@ -117,18 +118,14 @@ ggsave(
 
 
 ## Visual inspection of rainfall-runoff graphs =================================
+# REDO this
+
 # line-of-best fit not perfectly overlapping with observed
-# - 238231
-# - 603005
-# - 613002
-# - 613146
-# - 616041
-# - 617003
-# - A5090503
-# Comment: wobbly models tend to have worse AICs which is good
-# Comment: This seems more than the previous run with smaller bounds
-# Check if these catchments have strange bounds
-wobbly_catchments <- c("238231", "603005", "613002", "613146", "616041", "617003", "A5090503")
+# - 234203 (check bounds)
+# - 234209 - all wonky probably something related to the bounds
+# - 609002
+# - G8150098
+# There are more than mentioned above
 
 
 ## streamflow-time comparison ==================================================
@@ -211,6 +208,9 @@ ggsave(
 ## Nothing seems obviously wrong
 
 
+# Maybe transforms here?
+
+
 # 2. Are the fitted parameters "acceptable"? -----------------------------------
 
 ## Utilisation of parameters ===================================================
@@ -225,7 +225,37 @@ check_near_zero_parameter_values |> pull(parameter) |> unique()
 # Only the `a` parameter want to be turned-off
 
 check_near_zero_parameter_values |> pull(parameter) |> length()
-# The `a` parameter wants to be turned off for 412 catchment-model combinations (out of 9684)
+# The `a` parameter wants to be turned off for x catchment-model combinations (out of 9684)
+
+
+# Results from latest batch:
+parameter_results |> filter(parameter == "a") |> pull(parameter_value) |> range(na.rm = T)
+
+# New results in progress
+
+# - range of a values is a = -9.99E-7 to 1E-1
+# - lower range of a0 needs increasing (do the same for drought terms) maybe x3 max_Q
+# - leave slope terms
+# - sd and b parameters are good
+# - a parameter is not good. Because set a to lower 1E-8 and upper larger?
+# --> I think a is a log-transform angle set the lower to 1E-8 since most
+#     catchments do not want to be shifted
+# change a so lower is 1E-8 and upper is calculated - can use log-trans
+# change intercept to x3
+
+
+# Results
+# - a3_intercept needs to be larger 
+# - a3_slope and a1 are hitting the bounds for some catchment
+# - 327 `a` values have hit upper bound and 204 near lower - for 9684 its fine
+# What do I do with the slope terms? make them bigger? Leave them?
+# Talk with Murray
+# do i even need an `a` variable?
+# Do a = 1E-8 or a = 0.1 correspond to catchments with zero flow? Would an offset = 1 fix this?
+# A lot of them are - maybe try an offset?
+
+# QJ cautions against large values as it turn into linear with no normalisation stabilitation
+# Recommended range is -15 to 0
 
 
 
@@ -234,22 +264,65 @@ bound_issues <- parameter_results |>
   filter(!is.na(near_bounds)) |> 
   arrange(parameter_value)
 
+
 ## Only issues for a and a5 = good
 ## a can be near zero and a5 can be near the upper/lower bound
 bound_issues |> pull(parameter) |> unique()
 
+# Look like everything hit the bounds 
 
 ## Mannually check if values are okay
 manual_check_bounds <- parameter_results |>
-  filter(parameter == "a0") |> # change parameter here
-  arrange(desc(parameter_value)) 
+  filter(parameter == "a") |> # change parameter here
+  arrange(desc(parameter_value)) |> 
+  filter(!is.na(parameter_value))
 
 head(manual_check_bounds)
 tail(manual_check_bounds)
 
-# a is very close to upper limit for some catchments (within 1) 
-# I think this is okay
-# I think this issue will keep persisting if I keep increasing the bounds
+# Are bounds being hit on zero flow catchments
+gauges_with_a_hitting_bounds <- manual_check_bounds |> 
+  filter(!is.na(near_bounds)) |> 
+  pull(gauge) |> 
+  unique()
+
+y <- manual_check_bounds |> 
+  filter(!is.na(near_bounds)) 
+
+
+x <- data |> 
+  filter(gauge %in% gauges_with_a_hitting_bounds) |> 
+  summarise(
+    min_flow = min(q_mm, na.rm = TRUE),
+    .by = gauge
+  ) |> 
+  left_join(
+    y,
+    by = join_by(gauge)
+  ) |> 
+  distinct() |> 
+  select(gauge, min_flow, streamflow_model, parameter_value) |> 
+  arrange(min_flow)
+
+
+# Be methodical:
+# - determine what catchments are hitting the bounds 
+# - determine what parameters are hitting the bounds
+# - change one parameter at a time. Test in vignette
+# - my initial reaction is don't change slope terms to greater than 1
+# - play with intercept terms first (i.e, a0, a0_d, a0_n, a4, a3_intercept)
+# - start with streamflow_model_precip_only 
+
+
+precip_only_check <- parameter_results |> 
+  filter(streamflow_model == "streamflow_model_precip_only") |> 
+  filter(parameter %in% c("a0", "a1")) |> 
+  filter(!is.na(near_bounds))
+
+
+negative_transformed_streamflow <- streamflow_results |> 
+  filter(transformed_modelled_streamflow < 0) |> 
+  arrange(transformed_modelled_streamflow)
 
 
 ## Do the wobbly catchments have strange bounds? ===============================

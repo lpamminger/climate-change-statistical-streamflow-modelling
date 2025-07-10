@@ -70,7 +70,7 @@ log_sinh_transform <- function(a, b, y, offset) {
   }
   
   
-  (1 / b) * log(sinh(a + (b * y)))
+  (1 / b) * log(sinh(-a + (b * (y + offset))))
 }
 
 
@@ -113,7 +113,7 @@ inverse_log_sinh_transform <- function(a, b, z, offset) {
   #  asinh_component <- asinh(exp(b * z))
   #}
   
-  (asinh(exp(b * z)) / b) - (a / b) - offset
+  (asinh(exp(b * z)) / b) + (a / b) - offset
 }
 
 

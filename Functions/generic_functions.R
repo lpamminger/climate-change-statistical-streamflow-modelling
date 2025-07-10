@@ -327,7 +327,7 @@ get_transformed_optimised_streamflow <- function(cmaes_or_dream_result) {
 }
 
 get_realspace_optimised_streamflow <- function(cmaes_or_dream_result) {
-  
+
   # Requires and inverse transform on modelled streamflow
   transformed_modelled_streamflow <- get_transformed_optimised_streamflow(cmaes_or_dream_result)
   
@@ -348,7 +348,7 @@ get_realspace_optimised_streamflow <- function(cmaes_or_dream_result) {
   # if less than zero set to zero
   # modify the results
   
-  realspace_modelled_streamflow[realspace_modelled_streamflow < 0] <- 0
+  #realspace_modelled_streamflow[realspace_modelled_streamflow < 0] <- 0
 
 
   return(realspace_modelled_streamflow)
@@ -472,6 +472,7 @@ plot.result_set <- function(x, type) {
     
   } else if (type == "examine_transform") {
     # observed streamflow - x-axis and transformed streamflow on y-axis
+    offset <- x$numerical_optimiser_setup$streamflow_transform_method_offset
     
     modelled_streamflow_data <- list(
       realspace_modelled_streamflow = x$optimised_modelled_streamflow_realspace,#observed_data |> pull(observed_streamflow),
@@ -495,14 +496,14 @@ plot.result_set <- function(x, type) {
       a <- x$best_parameter_set[length(x$best_parameter_set) - 2]
       b <- x$best_parameter_set[length(x$best_parameter_set) - 1]
       
-      transformed_modelled_axis <- x$numerical_optimiser_setup$streamflow_transform_method(a, b, realspace_modelled_axis)
+      transformed_modelled_axis <- x$numerical_optimiser_setup$streamflow_transform_method(a, b, realspace_modelled_axis, offset)
 
     } else if(transform_name == "boxcox_transform") {
       lambda <- x$best_parameter_set[length(x$best_parameter_set) - 1]
       
       lambda_2 <- standardised_results$numerical_optimiser_setup$streamflow_transform_method_offset
       
-      transformed_modelled_axis <- x$numerical_optimiser_setup$streamflow_transform_method(realspace_modelled_axis, lambda, lambda_2)
+      transformed_modelled_axis <- x$numerical_optimiser_setup$streamflow_transform_method(realspace_modelled_axis, lambda, lambda_2, offset)
       
     } else {
       stop("Unrecognised transform")

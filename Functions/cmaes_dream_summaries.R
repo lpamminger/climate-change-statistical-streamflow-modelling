@@ -1,6 +1,5 @@
 check_near_bounds <- function(result_set_object) {
   
-  browser()
   # Get information ------------------------------------------------------------
   lower_bound <- result_set_object$numerical_optimiser_setup$lower_bound
   upper_bound <- result_set_object$numerical_optimiser_setup$upper_bound

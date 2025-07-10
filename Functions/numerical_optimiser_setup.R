@@ -130,10 +130,10 @@ numerical_optimiser_setup <- function(streamflow_model, objective_function, stre
     dplyr::filter(parameter %in% parameter_names)
   
   # Let user know offset does not do anything for log-sinh yet
-  streamflow_transform_method <- noquote(streamflow_transform_method)
-  if((streamflow_transform_method()$name == "log_sinh_transform") & (streamflow_transform_method_offset != 0)) {
-    message("streamflow_transform_method_offset have not effect on log_sinh_transform\n Set to zero to remove message.")
-  }
+  #streamflow_transform_method <- noquote(streamflow_transform_method)
+  #if((streamflow_transform_method()$name == "log_sinh_transform") & (streamflow_transform_method_offset != 0)) {
+  #  message("streamflow_transform_method_offset have not effect on log_sinh_transform\n Set to zero to remove message.")
+  #}
   
   ## Override defaults if NULL is replaced =====================================
   ### Add later...
@@ -168,32 +168,106 @@ numerical_optimiser_setup_vary_inputs <- function(catchment_data, ...) {
 ## 1. repeat this function but have catchment_data as input
 ## 2. find maximum CO2 value used in calibrate 
 ## 3. replace upper bound for a5 with that value
-make_default_bounds_and_transform_methods <- function(catchment_data_set) {
+
+
+
+
+## log-sinh needs special treatment to find acceptable bounds
+find_acceptable_log_sinh_bounds <- function(streamflow, offset) {
+  
+  # See log-sinh-bounds.xlsx for the method
+  # From excel a is limited to 1E-8 and 0.1
+  #browser()
+  
+  # rows and cols for matrix
+  possible_a <- sort(10^-seq(from = 1, to = 8, by = 1)) 
+  names_possible_a <- as.character(possible_a)
+  length_a <- length(possible_a)
+  possible_b <- sort(10^-seq(from = -3, to = 8, by = 1))
+  names_possible_b <- as.character(possible_b)
+  length_b <- length(possible_b)
+  
+  
+  matrix_of_values <- matrix(numeric(length_a * length_b), nrow = length_a, ncol = length_b) |> 
+    `colnames<-`(names_possible_b) |> 
+    `rownames<-`(names_possible_a)
+  
+  min_streamflow <- min(streamflow)
+  
+  for (i in 1:length_b) {
+    for (j in 1:length_a) {
+      matrix_of_values[j, i] <- log_sinh_transform(
+        a = possible_a[j], 
+        b = possible_b[i], 
+        y = min_streamflow, 
+        offset = offset
+        ) 
+    }
+  }
+  
+  # Only keep values less than min_streamflow
+  matrix_of_values[matrix_of_values > min_streamflow] <- NA
+  
+  # Filter out Inf
+  matrix_of_values[is.infinite(matrix_of_values)] <- NA
+  
+  # 1E-8 is always good for b
+  range_a <- possible_a |> range()
+  
+  # Use upper range_a to focus on row to get range_b
+  range_b <- matrix_of_values[as.character(range_a[2]), ] |> 
+    na.omit() |> 
+    names() |> 
+    as.numeric() |> 
+    range()
+  
+  
+  list(
+    "range_a" = c(1E-8, 1E-3),#range_a,
+    "range_b" = c(1E-2, 1)#range_b
+  )
+}
+
+
+
+
+
+
+make_default_bounds_and_transform_methods <- function(catchment_data_set, offset) {
   
   # get the largest CO2 from last tibble in stop_start_data_set
   upper_a5_bound <- max(catchment_data_set$stop_start_data_set[[length(catchment_data_set$stop_start_data_set)]]$CO2)
   
   # certain parmaeters must be scaled based on the maximum observed streamflow
-  max_observed_streamflow <- catchment_data_set$stop_start_data_set |> 
+  observed_streamflow <- catchment_data_set$stop_start_data_set |> 
     list_rbind() |> 
-    pull(observed_streamflow) |> 
-    max()
+    pull(observed_streamflow) 
+  
+  
+  # The observed streamflow should account for the offset
+  max_observed_streamflow <- max(observed_streamflow + offset) * 3
+  
+  # Get log-sinh bounds
+  
+  log_sinh_bounds <- find_acceptable_log_sinh_bounds(observed_streamflow, offset)
+  
+  #browser()
   
   tibble::tribble(
-    ~parameter,     ~lower_bound,             ~upper_bound,              ~transform_method,
-    "a0",           -max_observed_streamflow,  max_observed_streamflow,   linear_parameter_transform, # intercept
-    "a0_d",         -max_observed_streamflow,  max_observed_streamflow,   linear_parameter_transform, # intercept - no drought
-    "a0_n",         -max_observed_streamflow,  max_observed_streamflow,   linear_parameter_transform, # intercept - drought
-    "a1",            1E-8,                     1,                         logarithmic_parameter_transform, # slope
-    "a2",           -1,                        1,                         linear_parameter_transform, # autocorrelation
-    "a3_intercept", -max_observed_streamflow,  max_observed_streamflow,   linear_parameter_transform, # CO2 coefficient for intercept 
-    "a3_slope",     -1,                        1,                         linear_parameter_transform, # CO2 coefficent for slope
-    "a4",           -max_observed_streamflow,  max_observed_streamflow,   linear_parameter_transform, # seasonal parameter
-    "a5",            0,                        upper_a5_bound,            linear_parameter_transform, # Changes depending on last CO2 value in calibration
-    "a",             1E-8,                     0.3,                       logarithmic_parameter_transform, 
-    "b",             1E-8,                     1,                         logarithmic_parameter_transform, 
-    "lambda",        0,                        2,                         linear_parameter_transform, # boxcox recommended range is -2 to 2(0-2 because we want to shift it from positive skew)
-    "sd",            1E-8,                     2000,                      logarithmic_parameter_transform # constant sd objective function 
+    ~parameter,     ~lower_bound,              ~upper_bound,              ~transform_method,
+    "a0",           -max_observed_streamflow,   max_observed_streamflow,   linear_parameter_transform, # intercept
+    "a0_d",         -max_observed_streamflow,   max_observed_streamflow,   linear_parameter_transform, # intercept - no drought
+    "a0_n",         -max_observed_streamflow,   max_observed_streamflow,   linear_parameter_transform, # intercept - drought
+    "a1",            1E-8,                      1,                         logarithmic_parameter_transform, # slope
+    "a2",           -1,                         1,                         linear_parameter_transform, # autocorrelation
+    "a3_intercept", -max_observed_streamflow,   max_observed_streamflow,   linear_parameter_transform, # CO2 coefficient for intercept 
+    "a3_slope",     -1,                         1,                         linear_parameter_transform, # CO2 coefficent for slope
+    "a4",           -max_observed_streamflow,   max_observed_streamflow,   linear_parameter_transform, # seasonal parameter
+    "a5",            0,                         upper_a5_bound,            linear_parameter_transform, # Changes depending on last CO2 value in calibration
+    "a",             log_sinh_bounds$range_a[1],log_sinh_bounds$range_a[2],logarithmic_parameter_transform, 
+    "b",             log_sinh_bounds$range_b[1],log_sinh_bounds$range_b[2],logarithmic_parameter_transform, 
+    "lambda",        0,                        2,                          linear_parameter_transform, # boxcox recommended range is -2 to 2(0-2 because we want to shift it from positive skew)
+    "sd",            1E-8,                     2000,                       logarithmic_parameter_transform # constant sd objective function 
 
   )
   
