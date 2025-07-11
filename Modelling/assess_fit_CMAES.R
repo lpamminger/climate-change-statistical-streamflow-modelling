@@ -31,6 +31,10 @@ start_stop_indexes <- readr::read_csv(
 )
 
 
+gauge_information <- readr::read_csv(
+  "./Data/Tidy/gauge_information_CAMELS.csv",
+  show_col_types = FALSE
+)
 # 1. Are there any major issues with CMAES fitting? - visual inspection --------
 ## streamflow results only include data calibrated on
 ## page-per-gauge with unique models
@@ -273,9 +277,41 @@ bound_issues |> pull(parameter) |> unique()
 
 ## Mannually check if values are okay
 manual_check_bounds <- parameter_results |>
-  filter(parameter == "a") |> # change parameter here
+  filter(parameter == "a1") |> # change parameter here
   arrange(desc(parameter_value)) |> 
-  filter(!is.na(parameter_value))
+  filter(!is.na(parameter_value)) |> 
+  filter(!is.na(near_bounds)) 
+
+manual_check_bounds |> 
+  count(gauge)
+
+gauges_slope_near_1 <- parameter_results |>
+  filter(parameter == "a1") |> # change parameter here
+  arrange(desc(parameter_value)) |> 
+  filter(!is.na(parameter_value)) |> 
+  filter(!is.na(near_bounds)) |> 
+  pull(gauge) |> 
+  unique()
+
+# Are a1 near bounds associated with weird data?
+# Typically occur with higher rainfall catchments
+# a3_slope hitting bounds
+runoff_coeffs <- data |> 
+  drop_na() |> 
+  mutate(
+    runoff_coef = q_mm / p_mm
+  ) |> 
+  filter(gauge %in% gauges_slope_near_1) |> 
+  summarise(
+    max_runoff_coeff = max(runoff_coef),
+    .by = gauge
+  ) |> 
+  arrange(desc(max_runoff_coeff))
+
+# The median maximum runoff coeff for a given year is 0.38
+
+slope_near_bounds <- gauge_information |> 
+  filter(gauge %in% gauges_slope_near_1)
 
 head(manual_check_bounds)
 tail(manual_check_bounds)
@@ -360,3 +396,5 @@ write_csv(
 )
 
 
+x <- best_CO2_and_non_CO2_per_catchment |> 
+  filter(gauge %in% gauges_slope_near_1)
