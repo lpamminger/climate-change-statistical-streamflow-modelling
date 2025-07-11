@@ -471,9 +471,7 @@ plot.result_set <- function(x, type) {
     
     
   } else if (type == "examine_transform") {
-    # observed streamflow - x-axis and transformed streamflow on y-axis
-    offset <- x$numerical_optimiser_setup$streamflow_transform_method_offset
-    
+
     modelled_streamflow_data <- list(
       realspace_modelled_streamflow = x$optimised_modelled_streamflow_realspace,#observed_data |> pull(observed_streamflow),
       transformed_modelled_streamflow = x$optimised_modelled_streamflow_transformed_space#x$transformed_observed_streamflow
@@ -517,15 +515,21 @@ plot.result_set <- function(x, type) {
       as_tibble()
     
     
-    
-    
-    modelled_streamflow_data |> 
+    plot <- modelled_streamflow_data |> 
       ggplot(aes(x = realspace_modelled_streamflow, y = transformed_modelled_streamflow)) +
       geom_line(data = curve_data, colour = "red") +
       geom_point() +
       geom_vline(xintercept = 0, linetype = "dashed") +
       geom_hline(yintercept = 0, linetype = "dashed") +
       theme_bw()
+    
+    # Add histogram to examine distribution of transformed modelled streamflow
+    ggMarginal(
+      plot, 
+      type = "histogram", 
+      margins = "y",
+      yparams = list(binwidth = binwidth_bins(10), fill = "grey")
+      )
     
   }
 }
