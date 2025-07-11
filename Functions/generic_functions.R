@@ -566,6 +566,7 @@ plot.catchment_data <- function(x, type) {
         y = "Observed Streamflow (mm)"
       ) +
       geom_point(na.rm = TRUE) +
+      geom_abline(intercept = 0, slope = 1, colour = "red", linetype = "dashed") +
       theme_bw()
   }
 }
