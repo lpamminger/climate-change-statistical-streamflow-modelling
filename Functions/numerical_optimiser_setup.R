@@ -301,10 +301,10 @@ make_default_bounds_and_transform_methods <- function(catchment_data_set) {
     "a0",           -max_observed_streamflow,   max_observed_streamflow,    linear_parameter_transform, # intercept
     "a0_d",         -max_observed_streamflow,   max_observed_streamflow,    linear_parameter_transform, # intercept - no drought
     "a0_n",         -max_observed_streamflow,   max_observed_streamflow,    linear_parameter_transform, # intercept - drought
-    "a1",            1E-8,                      1,                          logarithmic_parameter_transform, # slope
+    "a1",            1E-8,                      3,                          logarithmic_parameter_transform, # slope
     "a2",           -1,                         1,                          linear_parameter_transform, # autocorrelation
     "a3_intercept", -max_observed_streamflow,   max_observed_streamflow,    linear_parameter_transform, # CO2 coefficient for intercept
-    "a3_slope",     -1,                         1,                          linear_parameter_transform, # CO2 coefficent for slope
+    "a3_slope",     -3,                         3,                          linear_parameter_transform, # CO2 coefficent for slope
     "a4",           -max_observed_streamflow,   max_observed_streamflow,    linear_parameter_transform, # seasonal parameter
     "a5",           0,                          upper_a5_bound,             linear_parameter_transform, # Changes depending on last CO2 value in calibration
     "a",            log_sinh_bounds$range_a[1], log_sinh_bounds$range_a[2], logarithmic_parameter_transform,
