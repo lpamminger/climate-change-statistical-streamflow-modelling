@@ -57,7 +57,7 @@ inverse_boxcox_transform <- function(yt, lambda = 0, lambda_2) {
 
 
 # Log-sinh transform -----------------------------------------------------------
-log_sinh_transform <- function(a, b, y, offset) {
+log_sinh_transform <- function(a, b, y, ...) {
   
   # If no parameters are given return description of model
   if(is.null(names(as.list(match.call())[-1]))) {
@@ -70,7 +70,8 @@ log_sinh_transform <- function(a, b, y, offset) {
   }
   
   
-  (1 / b) * log(sinh(-a + (b * (y + offset))))
+  #(1 / b) * log(sinh(-a + (b * (y + offset))))
+  (1 / b) * log(sinh(-a + (b * y)))
 }
 
 
@@ -91,7 +92,7 @@ asinh_exp_approximation <- function(x) {
 
 
 
-inverse_log_sinh_transform <- function(a, b, z, offset) {
+inverse_log_sinh_transform <- function(a, b, z, ...) {
   
   # If no parameters are given return description of model
   if(is.null(names(as.list(match.call())[-1]))) {
@@ -113,7 +114,8 @@ inverse_log_sinh_transform <- function(a, b, z, offset) {
   #  asinh_component <- asinh(exp(b * z))
   #}
   
-  (asinh(exp(b * z)) / b) + (a / b) - offset
+  (asinh(exp((b * z))) / b) + (a / b) 
+  
 }
 
 
