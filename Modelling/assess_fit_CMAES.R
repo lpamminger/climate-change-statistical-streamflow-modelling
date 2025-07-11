@@ -384,14 +384,21 @@ runoff_coeffs <- data |>
   mutate(
     runoff_coef = q_mm / p_mm
   ) |> 
-  filter(gauge %in% gauges_slope_near_1) |> 
+  #filter(gauge %in% gauges_slope_near_1) |> 
   summarise(
     max_runoff_coeff = max(runoff_coef),
     .by = gauge
   ) |> 
+  mutate(
+    slope_near_1 = if_else(gauge %in% gauges_slope_near_1, TRUE, FALSE)
+  ) |> 
   arrange(desc(max_runoff_coeff))
 
 # The median maximum runoff coeff for a given year is 0.38
+# The catchments with high a1 values tend to have a very high
+# runoff coefficent in at least 1 year i.e., > 0.9
+
+# The o
 
 slope_near_bounds <- gauge_information |> 
   filter(gauge %in% gauges_slope_near_1)
