@@ -289,7 +289,7 @@ make_default_bounds_and_transform_methods <- function(catchment_data_set) {
 
 
   ## the intercept terms are related to the maximum observed streamflow ========
-  max_observed_streamflow <- max(observed_streamflow) * 3
+  max_observed_streamflow <- max(observed_streamflow) * 5
 
   ## many combination of log-sinh a and b - select acceptable ones =============
   log_sinh_bounds <- find_acceptable_log_sinh_bounds(observed_streamflow)
