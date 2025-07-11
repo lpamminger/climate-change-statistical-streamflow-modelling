@@ -1,8 +1,10 @@
-pacman::p_load(tidyverse, gridExtra)
+pacman::p_load(tidyverse, gridExtra, ggExtra)
 
 
 # Import functions -------------------------------------------------------------
 source("./Functions/utility.R")
+source("./Functions/boxcox_logsinh_transforms.R")
+
 
 
 # Import the calibrated .csv's -------------------------------------------------
@@ -118,14 +120,7 @@ ggsave(
 
 
 ## Visual inspection of rainfall-runoff graphs =================================
-# REDO this
-
-# line-of-best fit not perfectly overlapping with observed
-# - 234203 (check bounds)
-# - 234209 - all wonky probably something related to the bounds
-# - 609002
-# - G8150098
-# There are more than mentioned above
+## Thoughts go here...
 
 
 ## streamflow-time comparison ==================================================
@@ -205,10 +200,98 @@ ggsave(
 
 
 ## Visual inspection ===========================================================
-## Nothing seems obviously wrong
+## Thoughts go here...
 
 
-# Maybe transforms here?
+
+
+
+
+## Transformation curves and histograms ========================================
+recreate_log_sinh_using_parameter_results <- function(streamflow_model, gauge_parameter_results, xaxis_range) {
+  log_sinh_parameters <- gauge_parameter_results |>
+    filter(streamflow_model == {{ streamflow_model }}) |>
+    filter(parameter %in% c("a", "b")) |>
+    pull(parameter_value)
+  
+  xaxis <- seq(from = xaxis_range[1], to = xaxis_range[2], by = 0.01)
+  
+  yaxis <- log_sinh_transform(
+    a = log_sinh_parameters[1],
+    b = log_sinh_parameters[2],
+    y = xaxis
+  )
+  
+  list(
+    "xaxis" = xaxis,
+    "yaxis" = yaxis,
+    "streamflow_model" = streamflow_model
+  ) |> 
+    as_tibble()
+}
+
+
+
+
+
+transformation_curves <- function(gauge, streamflow_results, parameter_results) {
+  
+  ## Get modelled_realspace_streamflow and modelled_transformed_streamflow =====
+  curve_data <- streamflow_results |> 
+    filter(gauge == {{ gauge }}) |> 
+    select(realspace_modelled_streamflow, transformed_modelled_streamflow, streamflow_model)
+  
+  ## Recreate curve using parameters to compare with model results =============
+  xaxis_range <- curve_data |> pull(realspace_modelled_streamflow) |> range()
+  
+  # extract parameter values for a given streamflow model
+  recreate_log_sinh_results <- map(
+    .x = parameter_results |> pull(streamflow_model) |> unique(),
+    .f = recreate_log_sinh_using_parameter_results,
+    gauge_parameter_results = parameter_results |> filter(gauge == {{ gauge }}),
+    xaxis_range = xaxis_range
+  ) |> 
+    list_rbind()
+
+  
+  
+  ## Plot ======================================================================
+  curve_data |> 
+    ggplot(aes(x = realspace_modelled_streamflow, y = transformed_modelled_streamflow)) +
+    geom_line(
+      aes(x = xaxis, y = yaxis, colour = "red"), 
+      data = recreate_log_sinh_results,
+      show.legend = FALSE
+      ) +
+    geom_point() +
+    geom_vline(xintercept = 0, linetype = "dashed", colour = "black") +
+    geom_hline(yintercept = 0, linetype = "dashed", colour = "black") +
+    theme_bw() +
+    facet_wrap(~streamflow_model)
+  
+}
+
+
+
+transformation_curves <- map(
+  .x = parameter_results |> pull(gauge) |> unique(),
+  .f = transformation_curves,
+  streamflow_results = streamflow_results,
+  parameter_results = parameter_results
+)
+
+
+ggsave(
+  filename = "all_transformation_curve_plots.pdf",
+  path = "./Figures/Supplementary",
+  # used to append all plots into a single pdf
+  plot = gridExtra::marrangeGrob(transformation_curves, nrow = 1, ncol = 1),
+  device = "pdf",
+  units = "mm",
+  width = 297,
+  height = 210
+)
+
 
 
 # 2. Are the fitted parameters "acceptable"? -----------------------------------
