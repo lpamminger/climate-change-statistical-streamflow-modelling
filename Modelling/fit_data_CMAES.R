@@ -126,19 +126,11 @@ objective_functions <- get_all_objective_functions() # there is only one objecti
 
 streamflow_transform_methods <- list(log_sinh_transform) # we only want to use the log-sinh transform method
 
-extracted_catchment_data <- catchment_streamflow_model_combinations |>
-  dplyr::pull(catchment_data)
-
-bounds <- map(
-  .x = extracted_catchment_data,
-  .f = make_default_bounds_and_transform_methods
-)
 
 catchment_streamflow_model_combinations <- catchment_streamflow_model_combinations |>
   add_column(
     "objective_functions" = objective_functions,
-    "streamflow_transform_methods" = streamflow_transform_methods,
-    "bounds" = bounds
+    "streamflow_transform_methods" = streamflow_transform_methods
   )
 
 
@@ -168,8 +160,7 @@ pmap_list <- list(
   repeat_catchment_streamflow_model_combinations |> pull(streamflow_models),
   repeat_catchment_streamflow_model_combinations |> pull(objective_functions),
   repeat_catchment_streamflow_model_combinations |> pull(streamflow_transform_methods),
-  repeat_catchment_streamflow_model_combinations |> pull(catchment_data),
-  repeat_catchment_streamflow_model_combinations |> pull(bounds)
+  repeat_catchment_streamflow_model_combinations |> pull(catchment_data)
 )
 
 
@@ -177,7 +168,8 @@ pmap_list <- list(
 numerical_optimisers <- pmap( # This is slow
   .l = pmap_list,
   .f = numerical_optimiser_setup,
-  streamflow_transform_method_offset = 0,
+  bounds_and_transform_method = make_default_bounds_and_transform_methods,
+  streamflow_transform_method_offset = 0.5,
   scale = 100,
   minimise_likelihood = TRUE
 )
