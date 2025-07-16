@@ -108,13 +108,13 @@ inverse_log_sinh_transform <- function(a, b, z, ...) {
   
   # Changing bounds may address this issue...
   # If any streamflow value is infinite the approximation is done for everything
-  #if (any(is.infinite(exp(b * z)))) {
-  #  asinh_component <- asinh_exp_approximation(b * z)
-  #} else {
-  #  asinh_component <- asinh(exp(b * z))
-  #}
+  if (any(is.infinite(exp(b * z)))) {
+    asinh_component <- asinh_exp_approximation(b * z)
+  } else {
+    asinh_component <- asinh(exp(b * z))
+  }
   
-  (asinh(exp((b * z))) / b) + (a / b) 
+  (asinh_component / b) + (a / b) 
   
 }
 
