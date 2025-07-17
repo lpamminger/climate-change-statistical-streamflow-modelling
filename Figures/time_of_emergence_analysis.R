@@ -2,10 +2,11 @@
 
 # Figures produced in this R file ----------------------------------------------
 
-# 1. Main --> ToE_map_aus_uncertainty.pdf (not working)
-# 2. Supplementary --> ToE_vs_uncertainty_and_evidence_ratio.pdf (get working - called ToE_vs_uncertainty in old files)
-# 3. Supplementary --> ToE_vs_record_length.pdf (get working)
-# 4. Testing --> ToE_cdf.pdf
+# 1. Main --> ToE_map_aus_uncertainty.pdf (requires dream results - currently working without dream results)
+# 2. Supplementary --> ToE_vs_uncertainty_and_evidence_ratio.pdf (requires dream results - called ToE_vs_uncertainty in old files)
+# 3. Supplementary --> ToE_vs_record_length.pdf 
+# 4. Testing --> ToE_cdf.pdf (not in file)
+# 5. Testing --> something related to climate types (not in file)
 
 
 
@@ -22,12 +23,57 @@
 
 
 
+# Import libraries -------------------------------------------------------------
+pacman::p_load(tidyverse, ozmaps, sf, ggmagnify, furrr)
 
 
-# Figure 3. Time of emergence map ----------------------------------------------
+
+# Import functions -------------------------------------------------------------
+source("./Functions/utility.R")
+source("./Functions/streamflow_models.R")
+source("./Functions/parameter_transformations.R")
+source("./Functions/catchment_data_blueprint.R")
+source("./Functions/cmaes_dream_summaries.R")
+source("./Functions/objective_functions.R")
+source("./Functions/numerical_optimiser_setup.R")
+source("./Functions/generic_functions.R")
+source("./Functions/DREAM.R")
+source("./Functions/objective_function_setup.R")
+source("./Functions/result_set.R")
+source("./Functions/boxcox_logsinh_transforms.R")
 
 
-# Time of emergence calculation ------------------------------------------------
+
+# Import data ------------------------------------------------------------------
+data <- readr::read_csv(
+  "./Data/Tidy/with_NA_yearly_data_CAMELS.csv",
+  show_col_types = FALSE
+) |>
+  mutate(year = as.integer(year))
+
+
+gauge_information <- readr::read_csv(
+  "./Data/Tidy/gauge_information_CAMELS.csv",
+  show_col_types = FALSE
+)
+
+lat_lon_gauge <- gauge_information |>
+  select(gauge, lat, lon, state)
+
+
+best_CO2_non_CO2_per_gauge <- read_csv(
+  "./Modelling/Results/CMAES/best_CO2_non_CO2_per_catchment_CMAES.csv",
+  show_col_types = FALSE
+)
+
+streamflow_results <- read_csv(
+  "./Modelling/Results/CMAES/cmaes_streamflow_results.csv",
+  show_col_types = FALSE
+)
+
+
+
+# Calculate time of emergence --------------------------------------------------
 best_model_per_gauge <- best_CO2_non_CO2_per_gauge |>
   slice_min(
     AIC,
@@ -39,6 +85,7 @@ best_model_per_gauge <- best_CO2_non_CO2_per_gauge |>
 ## Turn the a5 parameter (CO2 pmm) into a given year ===========================
 CO2_time_of_emergence <- best_model_per_gauge |>
   filter(parameter == "a5")
+
 
 CO2_data <- readr::read_csv(
   "./Data/Raw/20241125_Mauna_Loa_CO2_data.csv",
@@ -85,24 +132,102 @@ a5_to_time_of_emergence <- function(CO2, year) {
   }
 }
 
+
 # Function factory
 adjusted_a5_to_ToE <- a5_to_time_of_emergence(CO2 = CO2, year = year)
 
-# Add state
-gauge_state <- gauge_information |>
-  select(gauge, state)
+min_CO2 <- data |>
+  pull(CO2) |>
+  min()
+
 
 time_of_emergence_data <- CO2_time_of_emergence |>
   mutate(
     year_time_of_emergence = adjusted_a5_to_ToE(parameter_value)
   ) |>
   left_join(
-    gauge_state,
+    lat_lon_gauge,
     by = join_by(gauge)
+  ) |>
+  # make decade time of emergence
+  mutate(
+    decade_time_of_emergence = year_time_of_emergence - year_time_of_emergence %% 10
+  ) |>
+  # turn it into a factor for plotting
+  mutate(
+    decade_time_of_emergence = as.character(decade_time_of_emergence),
+    decade_time_of_emergence = if_else(
+      decade_time_of_emergence == "1950",
+      "Before 1960",
+      decade_time_of_emergence
+    ),
+    decade_time_of_emergence = factor(
+      decade_time_of_emergence,
+      levels = c("Before 1960", as.character(seq(from = 1960, to = 2020, by = 10)))
+    )
   )
 
 
-# Does the time of emergence kick in at the last couple of years 
+
+
+# Calculate evidence ratio -----------------------------------------------------
+evidence_ratio_calc <- best_CO2_non_CO2_per_gauge |>
+  select(gauge, contains_CO2, AIC) |>
+  distinct() |>
+  pivot_wider(
+    names_from = contains_CO2,
+    values_from = AIC
+  ) |>
+  mutate(
+    CO2_model = `TRUE`,
+    non_CO2_model = `FALSE`,
+    .keep = "unused"
+  ) |>
+  mutate(
+    AIC_difference = CO2_model - non_CO2_model # CO2 is smaller than non-CO2 then negative and CO2 is better
+  ) |>
+  mutate(
+    evidence_ratio = case_when(
+      AIC_difference < 0 ~ exp(0.5 * abs(AIC_difference)), # when CO2 model is better
+      AIC_difference > 0 ~ -exp(0.5 * abs(AIC_difference)) # when non-CO2 model is better
+    )
+  ) |>
+  arrange(evidence_ratio)
+
+
+
+## Add qualitative labels to evidence ratio ====================================
+
+
+time_of_emergence_data <- time_of_emergence_data |>
+  left_join(
+    evidence_ratio_calc,
+    by = join_by(gauge)
+  ) |>
+  mutate(
+    binned_evidence_ratio = case_when(
+      between(evidence_ratio, -1E1, 1E1) ~ "Weak",
+      between(evidence_ratio, 1E1, 1E2) ~ "Moderate",
+      between(evidence_ratio, 1E2, 1E3) ~ "Moderately Strong",
+      between(evidence_ratio, 1E3, 1E4) ~ "Strong",
+      between(evidence_ratio, 1E4, 1E6) ~ "Very Strong",
+      between(evidence_ratio, 1E6, Inf) ~ "Extremely Strong",
+      .default = NA
+    )
+  ) |>
+  # factor to force order of evidence ratio
+  mutate(
+    binned_evidence_ratio = factor(
+      binned_evidence_ratio,
+      levels = c("Weak", "Moderate", "Moderately Strong", "Strong", "Very Strong", "Extremely Strong")
+    )
+  ) |> 
+  # For the purpose of analysis we are only interested in moderate strong or above. 
+  filter(binned_evidence_ratio %in% c("Moderately Strong", "Strong", "Very Strong", "Extremely Strong")) 
+
+
+
+# Does the time of emergence kick in at the last couple of years? -------------- 
 best_gauges_time_of_emergence <- time_of_emergence_data |> 
   pull(gauge) |> 
   unique()
@@ -117,10 +242,396 @@ final_observed_year <- streamflow_results |>
 check_late_ToE <- time_of_emergence_data |> 
   filter(year_time_of_emergence >= 2021)
 
-# 21 out of the 253 catchments where CO2 is the best model have a CO2
-# ToE in the last year
+cat(nrow(check_late_ToE), "catchments with a evidence ratio of moderately strong or greater have a ToE in the final year of data\n")
 
 
+
+
+
+
+
+# Map of time of emergence------------------------------------------------------
+
+## Get shapefiles for Australia ================================================
+aus_map <- ozmaps::ozmap(x = "states") |>
+  filter(!NAME %in% c("Other Territories")) |>
+  rename(state = NAME) |>
+  mutate(
+    state = case_when(
+      state == "New South Wales" ~ "NSW",
+      state == "Victoria" ~ "VIC",
+      state == "Queensland" ~ "QLD",
+      state == "South Australia" ~ "SA",
+      state == "Western Australia" ~ "WA",
+      state == "Tasmania" ~ "TAS",
+      state == "Northern Territory" ~ "NT",
+      state == "Australian Capital Territory" ~ "ACT",
+    )
+  )
+
+combine_NSW_ACT <- aus_map |>
+  filter(state %in% c("NSW", "ACT")) |>
+  st_union()
+
+aus_map[1, 2] <- list(combine_NSW_ACT)
+
+aus_map <- aus_map |>
+  filter(state != "ACT")
+
+
+## Generate Insets =============================================================
+
+### Filter data by state #######################################################
+
+QLD_data <- time_of_emergence_data |>
+  filter(state == "QLD")
+
+NSW_data <- time_of_emergence_data |>
+  filter(state == "NSW")
+
+VIC_data <- time_of_emergence_data |>
+  filter(state == "VIC")
+
+WA_data <- time_of_emergence_data |>
+  filter(state == "WA")
+
+TAS_data <- time_of_emergence_data |>
+  filter(state == "TAS")
+
+
+### Generate inset plots #######################################################
+
+
+# Need to add these histograms as grobs in the inset
+# Main plot -> inset map -> inset histogram
+# Does patchwork do inset histograms?
+# See documentation: https://patchwork.data-imaginist.com/reference/inset_element.html
+
+# scale_size_binned() - used for dream
+# Using scale_size_binned() is technically between because it is a
+# does the binning for me.
+
+
+#scale_size_limits <- custom_bins_time_of_emergence_data |>
+#  pull(DREAM_ToE_IQR) |>
+#  range() # can round up if I want to
+
+
+transparent_dots_constant <- 0.75
+size <- 4 # remove when adding DREAM_ToE_IQR
+
+inset_plot_QLD <- aus_map |>
+  filter(state == "QLD") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = QLD_data,
+    aes(x = lon, y = lat, fill = decade_time_of_emergence),#, size = DREAM_ToE_IQR),
+    show.legend = FALSE,
+    stroke = 0.1,
+    alpha = transparent_dots_constant,
+    shape = 21, # remove this with size
+    colour = "black",
+    size = size
+  ) +
+  scale_fill_brewer(palette = "BrBG", drop = FALSE) +
+  #scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
+  guides(size = guide_bins(show.limits = TRUE)) +
+  theme_void() #+
+# annotation_custom(
+#  ggplotGrob(state_ToE_histograms[["QLD"]]),
+#  xmin = 145, xmax = 150, ymin = -15, ymax = -10 # dial in the coords
+# )
+# inset_element(state_ToE_histograms[["QLD"]], left = 0.5, bottom = 0.5, right = 1, top = 1)
+# It looks as if geom_magnify treats it as two plots instead of a single plot - it only take the 2nd element in the list
+# It must be a single plot (i.e., a list of length 1) - inset_element does not work
+
+
+#scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
+#guides(size = guide_bins(show.limits = TRUE)) +
+
+
+
+
+inset_plot_NSW <- aus_map |>
+  filter(state == "NSW") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = NSW_data,
+    aes(x = lon, y = lat, fill = decade_time_of_emergence),#, size = DREAM_ToE_IQR),
+    show.legend = FALSE,
+    stroke = 0.1,
+    alpha = transparent_dots_constant,
+    shape = 21,
+    colour = "black",
+    size = size
+  ) +
+  scale_fill_brewer(palette = "BrBG", drop = FALSE) +
+  #scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
+  #guides(size = guide_bins(show.limits = TRUE)) +
+  theme_void()
+
+
+
+inset_plot_VIC <- aus_map |>
+  filter(state == "VIC") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = VIC_data,
+    aes(x = lon, y = lat, fill = decade_time_of_emergence),#, size = DREAM_ToE_IQR),
+    show.legend = FALSE,
+    alpha = transparent_dots_constant,
+    stroke = 0.1,
+    shape = 21,
+    colour = "black",
+    size = size
+  ) +
+  scale_fill_brewer(palette = "BrBG", drop = FALSE) +
+  #scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
+  #guides(size = guide_bins(show.limits = TRUE)) +
+  theme_void()
+
+
+
+inset_plot_WA <- aus_map |>
+  filter(state == "WA") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = WA_data,
+    aes(x = lon, y = lat, fill = decade_time_of_emergence),#, size = DREAM_ToE_IQR),
+    show.legend = FALSE,
+    stroke = 0.1,
+    alpha = transparent_dots_constant,
+    shape = 21,
+    colour = "black",
+    size = size
+  ) +
+  scale_fill_brewer(palette = "BrBG", drop = FALSE) +
+  #scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
+  #guides(size = guide_bins(show.limits = TRUE)) +
+  theme_void()
+
+
+
+inset_plot_TAS <- aus_map |>
+  filter(state == "TAS") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = TAS_data,
+    aes(x = lon, y = lat, fill = decade_time_of_emergence),#, size = DREAM_ToE_IQR),
+    show.legend = FALSE,
+    stroke = 0.1,
+    alpha = transparent_dots_constant,
+    shape = 21,
+    colour = "black",
+    size = size
+  ) +
+  scale_fill_brewer(palette = "BrBG", drop = FALSE) +
+  #scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
+  #guides(size = guide_bins(show.limits = TRUE)) +
+  theme_void()
+
+
+
+## Put it together =============================================================
+## This probably could be functioned...
+ToE_map_aus <- aus_map |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = time_of_emergence_data,
+    mapping = aes(x = lon, y = lat, fill = decade_time_of_emergence), #size = DREAM_ToE_IQR),
+    stroke = 0.1,
+    shape = 21,
+    colour = "black",
+    size = size
+  ) +
+  scale_fill_brewer(palette = "BrBG", drop = FALSE) +
+  #scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
+  theme_bw() +
+  # expand map
+  coord_sf(xlim = c(95, 176), ylim = c(-60, 0)) +
+  # magnify WA
+  geom_magnify(
+    from = c(114, 118, -35.5, -30),
+    to = c(93, 112, -36, -10),
+    shadow = FALSE,
+    expand = 0,
+    plot = inset_plot_WA,
+    proj = "single"
+  ) +
+  # magnify VIC
+  geom_magnify(
+    # aes(from = state == "VIC"), # use aes rather than manually selecting area
+    from = c(141, 149.5, -39, -34),
+    to = c(95, 136, -38, -60),
+    shadow = FALSE,
+    plot = inset_plot_VIC,
+    proj = "single"
+  ) +
+  # magnify QLD
+  geom_magnify(
+    from = c(145, 155, -30, -15),
+    to = c(157, 178, -29.5, 1.5),
+    shadow = FALSE,
+    expand = 0,
+    plot = inset_plot_QLD,
+    proj = "single"
+  ) +
+  # magnify NSW
+  geom_magnify(
+    from = c(146.5, 154, -38, -28),
+    to = c(157, 178, -61, -30.5),
+    shadow = FALSE,
+    expand = 0,
+    plot = inset_plot_NSW,
+    proj = "single"
+  ) +
+  # magnify TAS
+  geom_magnify(
+    from = c(144, 149, -40, -44),
+    to = c(140, 155, -45, -61),
+    shadow = FALSE,
+    expand = 0,
+    plot = inset_plot_TAS,
+    proj = "single"
+  ) +
+  labs(
+    x = NULL, # "Latitude",
+    y = NULL, # "Longitude",
+    fill = "Time of Emergence",
+    size = "Time of Emergence Uncertainty Years (IQR)"
+  ) +
+  theme(
+    legend.key = element_rect(fill = "grey80"),
+    legend.title = element_text(hjust = 0.5),
+    legend.title.position = "top",
+    legend.background = element_rect(colour = "black"),
+    axis.text = element_blank(),
+    panel.border = element_blank(),
+    panel.grid = element_blank(),
+    axis.ticks = element_blank(),
+    legend.position = "inside",
+    legend.position.inside = c(0.325, 0.9),
+    legend.box = "horizontal" # , # side-by-side legends
+  ) +
+  guides(
+    fill = guide_legend(override.aes = list(size = 5, shape = 21), nrow = 3)#, # Wrap legend with nrow
+    #size = guide_bins(show.limits = TRUE, direction = "horizontal")
+  )
+
+
+ToE_map_aus
+
+ggsave(
+  filename = "./Figures/Main/ToE_map_aus_uncertainty.pdf", #"./Graphs/CMAES_graphs/log_sinh_no_uncertainty_ToE_map_aus.pdf",
+  plot = ToE_map_aus,
+  device = "pdf",
+  width = 232,
+  height = 200,
+  units = "mm"
+)
+
+
+
+
+
+
+
+# Relationships with time of emergence -----------------------------------------
+
+## Time of emergence, record length, uncertainty graph
+## See ToE vs. uncertainty in RQ2\Testing-Figures\CMAES-DREAM-old-figures-boxcox\Graphs\Supplementary_Figures
+
+
+
+## Time of emergence vs. record length =========================================
+record_length_data <- gauge_information |> 
+  select(gauge, record_length)
+
+time_of_emergence_data <- time_of_emergence_data |> 
+  left_join(
+    record_length_data,
+    by = join_by(gauge)
+  )
+  
+
+time_of_emergence_data |> 
+  ggplot(aes(x = record_length, y = year_time_of_emergence)) +
+  geom_point() +
+  theme_bw()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  # add uncertainty
+  #left_join(
+  #  summarised_sequences_ToE,
+  #  by = join_by(gauge)
+  #) |>
+  # add state
+  # DREAM ToE is not ready - leave for now
+  #|>
+  # Binning is required to DREAM_ToE_IQR
+  #mutate(
+  #  binned_DREAM_ToE_IQR = case_when(
+  #    DREAM_ToE_IQR <= 10 ~ "<=10",
+  #    between(DREAM_ToE_IQR, 11, 20) ~ "11-20",
+  #    between(DREAM_ToE_IQR, 21, 30) ~ "21-30",
+  #    between(DREAM_ToE_IQR, 31, 40) ~ "31-40",
+  #    between(DREAM_ToE_IQR, 41, 50) ~ "41-50",
+  #    DREAM_ToE_IQR > 50 ~ ">50",
+  #    .default = NA
+  #  )
+  #) |>
+  # factor it so all plots ahve the same bins
+  #mutate(
+  #  binned_DREAM_ToE_IQR = factor(binned_DREAM_ToE_IQR, levels = rev(c("<=10", "11-20", "21-30", "31-40", "41-50", "51-60", ">60")))
+  #) |>
+  # Points are plotted based on the order they appear in the tibble
+  # Order the tibble from largest IQR to smalleest before plotting.
+  #arrange(desc(DREAM_ToE_IQR))
+
+
+
+
+
+
+
+
+
+
+
+
+
+## When DREAM is complete put this in a separate file like assess_CMAES_fit...
 
 ## Interquartile range from DREAM ==============================================
 
@@ -210,150 +721,8 @@ check_late_ToE <- time_of_emergence_data |>
 # They all produce the same uncertainty. For now
 # use distinct. This temporarily solves the problem
 
-summarised_sequences_ToE <- read_csv(
-  "Results/my_dream/summarised_sequences_ToE_20250429.csv",
-  show_col_types = FALSE
-) |>
-  distinct()
-
-
-
-
-
-
-
-
-
-## Create my own bins ==========================================================
-min_CO2 <- data |>
-  pull(CO2) |>
-  min()
-
-lat_lon_gauge <- gauge_information |>
-  select(gauge, lat, lon)
-
-custom_bins_time_of_emergence_data <- time_of_emergence_data |>
-  # add uncertainty
-  left_join(
-    summarised_sequences_ToE,
-    by = join_by(gauge)
-  ) |>
-  # add state
-  left_join(
-    state_gauge,
-    by = join_by(gauge)
-  ) |>
-  mutate(custom_bins = year_time_of_emergence - (year_time_of_emergence %% 10)) |>
-  mutate(custom_bins = as.character(custom_bins)) |>
-  mutate(
-    custom_bins = if_else(parameter_value < min_CO2, "Before 1959", custom_bins)
-  ) |>
-  # Add evidence ratio for potential filtering
-  left_join(
-    a3_direction_binned_lat_lon_evidence_ratio,
-    by = join_by(gauge)
-  ) |>
-  # Only include moderately strong and above evidence ratio
-  filter(!binned_evidence_ratio %in% c("Weak", "Moderate", "Moderately Strong")) |>
-  # clean it up and add lat lon
-  select(gauge, state, year_time_of_emergence, custom_bins, DREAM_ToE_IQR, binned_evidence_ratio) |>
-  left_join(
-    lat_lon_gauge,
-    by = join_by(gauge)
-  ) |>
-  # factor custom_bins to force then into order
-  mutate(
-    custom_bins = factor(custom_bins, levels = c("Before 1959", "1960", "1970", "1980", "1990", "2000", "2010", "2020"))
-  ) |>
-  # Binning is required to DREAM_ToE_IQR
-  mutate(
-    binned_DREAM_ToE_IQR = case_when(
-      DREAM_ToE_IQR <= 10 ~ "<=10",
-      between(DREAM_ToE_IQR, 11, 20) ~ "11-20",
-      between(DREAM_ToE_IQR, 21, 30) ~ "21-30",
-      between(DREAM_ToE_IQR, 31, 40) ~ "31-40",
-      between(DREAM_ToE_IQR, 41, 50) ~ "41-50",
-      DREAM_ToE_IQR > 50 ~ ">50",
-      .default = NA
-    )
-  ) |>
-  # factor it so all plots ahve the same bins
-  mutate(
-    binned_DREAM_ToE_IQR = factor(binned_DREAM_ToE_IQR, levels = rev(c("<=10", "11-20", "21-30", "31-40", "41-50", "51-60", ">60")))
-  ) |>
-  # Points are plotted based on the order they appear in the tibble
-  # Order the tibble from largest IQR to smalleest before plotting.
-  arrange(desc(DREAM_ToE_IQR))
-
-
-
-
-
-
-# Examine the relationship between climate type and time of emergence ----------
-climate_type_ToE <- custom_bins_time_of_emergence_data |>
-  left_join(
-    gauge_information_with_climate,
-    by = join_by(gauge, lat, lon)
-  )
-
-
-
-climate_type_aus_map <- ozmaps::ozmap("country") |>
-  uncount(7) |> # repeat the geometry 4 times
-  mutate(
-    custom_bins = c("Before 1959", "1960", "1970", "1980", "1990", "2000", "2010")
-  ) |>
-  mutate(
-    custom_bins = factor(custom_bins, levels = c("Before 1959", "1960", "1970", "1980", "1990", "2000", "2010"))
-  )
-
-
-scale_size_limits <- custom_bins_time_of_emergence_data |>
-  pull(DREAM_ToE_IQR) |>
-  range() # can round up if I want to
-
-climate_type_ToE_plot <- climate_type_aus_map |>
-  ggplot(aes(geometry = geometry)) +
-  geom_sf(
-    colour = "black",
-    fill = "grey80"
-  ) +
-  coord_sf(xlim = c(111, 155), ylim = c(-44.5, -9.5)) +
-  geom_point(
-    aes(x = lon, y = lat, fill = climate_type, size = DREAM_ToE_IQR), # circle size as uncertainty?
-    data = climate_type_ToE,
-    inherit.aes = FALSE,
-    colour = "black",
-    stroke = 0.1,
-    shape = 21
-  ) +
-  scale_size_binned(limits = scale_size_limits, breaks = c(5, 10, 15, 20, 25, 30, 35), range = c(0.1, 3)) +
-  labs(
-    x = "Longitude",
-    y = "Latitude",
-    fill = "Climate type",
-    size = "Time of Emergence Uncertaity (Years)"
-  ) +
-  theme_bw() +
-  theme(
-    legend.position = "inside",
-    legend.position.inside = c(0.7, 0.15)
-  ) +
-  guides(
-    fill = guide_legend(override.aes = list(size = 5, shape = 21), nrow = 3), # Wrap legend with nrow
-    size = guide_bins(show.limits = TRUE, direction = "horizontal")
-  ) +
-  facet_wrap(~custom_bins)
-
-
-
-ggsave(
-  filename = "climate_type_ToE.pdf",
-  plot = climate_type_ToE_plot,
-  path = "Graphs/Supplementary_Figures",
-  device = "pdf",
-  width = 297,
-  height = 210,
-  units = "mm"
-)
+#summarised_sequences_ToE <- read_csv(
+#  "Results/my_dream/summarised_sequences_ToE_20250429.csv",
+#  show_col_types = FALSE
+#) |>
+#  distinct()
