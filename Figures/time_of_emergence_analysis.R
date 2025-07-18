@@ -5,8 +5,9 @@
 # 1. Main --> ToE_map_aus_uncertainty.pdf (requires dream results - currently working without dream results)
 # 2. Supplementary --> ToE_vs_uncertainty_and_evidence_ratio.pdf (requires dream results - called ToE_vs_uncertainty in old files)
 # 3. Supplementary --> ToE_vs_record_length.pdf 
-# 4. Testing --> ToE_cdf.pdf (not in file)
-# 5. Testing --> something related to climate types (not in file)
+# 4. Supplementary --> ToE_vs_catchment_area.pdf
+# 5. Testing --> ToE_cdf.pdf (not in file)
+# 6. Testing --> something related to climate types (not in file)
 
 
 
@@ -568,15 +569,24 @@ time_of_emergence_data |>
 
 
 
+## Time of emergence vs. catchment area ========================================
+
+catchment_area_data <- gauge_information |> 
+  select(gauge, catchment_area_sq_km)
 
 
+time_of_emergence_data <- time_of_emergence_data |> 
+  left_join(
+    catchment_area_data,
+    by = join_by(gauge)
+  )
 
 
-
-
-
-
-
+time_of_emergence_data |> 
+  ggplot(aes(x = catchment_area_sq_km, y = year_time_of_emergence)) +
+  geom_point() +
+  scale_x_log10() +
+  theme_bw()
 
 
 
