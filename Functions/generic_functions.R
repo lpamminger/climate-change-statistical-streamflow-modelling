@@ -472,6 +472,7 @@ plot.result_set <- function(x, type) {
     
   } else if (type == "examine_transform") {
 
+    
     modelled_streamflow_data <- list(
       realspace_modelled_streamflow = x$optimised_modelled_streamflow_realspace,#observed_data |> pull(observed_streamflow),
       transformed_modelled_streamflow = x$optimised_modelled_streamflow_transformed_space#x$transformed_observed_streamflow
@@ -490,11 +491,15 @@ plot.result_set <- function(x, type) {
     # Plot the curve using calibrated values
     transform_name <- x$numerical_optimiser_setup$streamflow_transform_method()$name
     
+    # Get offset
+    offset <- x$numerical_optimiser_setup$streamflow_transform_method_offset
+    
+    
     if(transform_name == "log_sinh_transform") {
-      a <- x$best_parameter_set[length(x$best_parameter_set) - 2]
+      #a <- x$best_parameter_set[length(x$best_parameter_set) - 2]
       b <- x$best_parameter_set[length(x$best_parameter_set) - 1]
       
-      transformed_modelled_axis <- x$numerical_optimiser_setup$streamflow_transform_method(a, b, realspace_modelled_axis, offset)
+      transformed_modelled_axis <- x$numerical_optimiser_setup$streamflow_transform_method(b, realspace_modelled_axis, offset)
 
     } else if(transform_name == "boxcox_transform") {
       lambda <- x$best_parameter_set[length(x$best_parameter_set) - 1]

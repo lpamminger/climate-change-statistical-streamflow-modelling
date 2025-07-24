@@ -49,7 +49,9 @@ source("./Functions/result_set.R")
 
 # 1. Select gauge to test from data --------------------------------------------
 
-gauge <- "G0050115"  #"603190" 
+# From other laptop find catchment with b hitting bounds and test
+
+gauge <- "112002A"  
 
 
 # ideally catchment_data_blueprint should have other methods of data entry such as giving vectors individually
@@ -64,7 +66,7 @@ example_catchment <- gauge |>
 
 # plot to see if there is anything strange happening in data
 plot(example_catchment, type = "streamflow-time")
-
+plot(example_catchment, type = "rainfall-runoff")
 
 # 2. Prepare numerical_optimiser object ----------------------------------------
 
@@ -84,18 +86,17 @@ plot(example_catchment, type = "streamflow-time")
 ###   For the streamflow_transform_method. Values > 0 help avoid negative 
 ###   streamflow values in the rainfall-runoff relationship. Only impacts
 ###   streamflow in the transformed space.
-###   for log-sinh it adds directly to observed flow, for box-cox it is lambda_2
 
 
 
 numerical_optimiser <- example_catchment |>
   numerical_optimiser_setup_vary_inputs(
-    streamflow_model = streamflow_model_drought_intercept_shifted_CO2_seasonal_ratio_auto,
+    streamflow_model = streamflow_model_intercept_shifted_CO2_seasonal_ratio,
     objective_function = constant_sd_objective_function, 
     streamflow_transform_method = log_sinh_transform, 
     bounds_and_transform_method = make_default_bounds_and_transform_methods, 
     minimise_likelihood = TRUE,
-    streamflow_transform_method_offset = 0.5 
+    streamflow_transform_method_offset = 1E-8
   )
 
 # Warnings generated from making the possible bound range of log-sinh a and b
@@ -127,7 +128,15 @@ plot(standardised_results, type = "examine_transform")
 # The near_bound column does not functioning correctly
 # Ideally, it should scale with the parameters. It does not do this currently.
 parameter_table <- parameters_summary(standardised_results)
-tail(parameter_table)
+head(parameter_table)
 result_table <- streamflow_timeseries_summary(standardised_results) 
 
 # DREAM is a bit more complex...
+
+b <- standardised_results$best_parameter_set["b"]
+q_obs <- standardised_results$numerical_optimiser_setup$catchment_data$stop_start_data_set |> list_rbind() |> pull(observed_streamflow)
+q_mod <- standardised_results$optimised_modelled_streamflow_realspace |> as.numeric()
+error <- q_obs - q_mod
+sd_error_function <- 1 / tanh(b * q_mod)
+plot(q_mod, sd_error_function, type = "l")
+plot(q_mod, error, xlim = c(0, 5000))

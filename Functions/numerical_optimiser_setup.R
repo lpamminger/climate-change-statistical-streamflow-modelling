@@ -143,24 +143,24 @@ numerical_optimiser_setup <- function(
   ## log-sinh offset involves altering observed flow ===========================
   streamflow_transform_method <- noquote(streamflow_transform_method)
 
-  if (streamflow_transform_method()$name == "log_sinh_transform") {
-    full_data_replacement <- alter_observed_streamflow(
-      observed_data_tibble = catchment_data$full_data_set,
-      operation = `+`,
-      value = streamflow_transform_method_offset
-    )
+  #if (streamflow_transform_method()$name == "log_sinh_transform") {
+  #  full_data_replacement <- alter_observed_streamflow(
+  #    observed_data_tibble = catchment_data$full_data_set,
+  #    operation = `+`,
+  #    value = streamflow_transform_method_offset
+  #  )
 
-    stop_start_data_replacement <- modify(
-      .x = catchment_data$stop_start_data_set,
-      .f = alter_observed_streamflow,
-      operation = `+`,
-      value = streamflow_transform_method_offset
-    )
+    #stop_start_data_replacement <- modify(
+    #  .x = catchment_data$stop_start_data_set,
+     # .f = alter_observed_streamflow,
+    #  operation = `+`,
+     # value = streamflow_transform_method_offset
+    #)
 
 
-    catchment_data$full_data_set <- full_data_replacement
-    catchment_data$stop_start_data_set <- stop_start_data_replacement
-  }
+    #catchment_data$full_data_set <- full_data_replacement
+   # catchment_data$stop_start_data_set <- stop_start_data_replacement
+  #}
 
 
 
@@ -289,10 +289,10 @@ make_default_bounds_and_transform_methods <- function(catchment_data_set) {
 
 
   ## the intercept terms are related to the maximum observed streamflow ========
-  max_observed_streamflow <- max(observed_streamflow) * 5
+  max_observed_streamflow <- max(observed_streamflow) * 2
 
   ## many combination of log-sinh a and b - select acceptable ones =============
-  log_sinh_bounds <- find_acceptable_log_sinh_bounds(observed_streamflow)
+  #log_sinh_bounds <- find_acceptable_log_sinh_bounds(observed_streamflow)
 
 
 
@@ -301,14 +301,14 @@ make_default_bounds_and_transform_methods <- function(catchment_data_set) {
     "a0",           -max_observed_streamflow,   max_observed_streamflow,    linear_parameter_transform, # intercept
     "a0_d",         -max_observed_streamflow,   max_observed_streamflow,    linear_parameter_transform, # intercept - no drought
     "a0_n",         -max_observed_streamflow,   max_observed_streamflow,    linear_parameter_transform, # intercept - drought
-    "a1",            1E-8,                      3,                          logarithmic_parameter_transform, # slope
+    "a1",            1E-4,                      2,                          logarithmic_parameter_transform, # slope
     "a2",           -1,                         1,                          linear_parameter_transform, # autocorrelation
     "a3_intercept", -max_observed_streamflow,   max_observed_streamflow,    linear_parameter_transform, # CO2 coefficient for intercept
     "a3_slope",     -3,                         3,                          linear_parameter_transform, # CO2 coefficent for slope
     "a4",           -max_observed_streamflow,   max_observed_streamflow,    linear_parameter_transform, # seasonal parameter
     "a5",           0,                          upper_a5_bound,             linear_parameter_transform, # Changes depending on last CO2 value in calibration
-    "a",            log_sinh_bounds$range_a[1], log_sinh_bounds$range_a[2], logarithmic_parameter_transform,
-    "b",            log_sinh_bounds$range_b[1], log_sinh_bounds$range_b[2], logarithmic_parameter_transform,
+    #"a",            log_sinh_bounds$range_a[1], log_sinh_bounds$range_a[2], logarithmic_parameter_transform,
+    "b",            1E-4,                       1,                         logarithmic_parameter_transform,
     "lambda",       0,                          2,                          linear_parameter_transform, # boxcox recommended range is -2 to 2(0-2 because we want to shift it from positive skew)
     "sd",           1E-8,                       2000,                       logarithmic_parameter_transform # constant sd objective function
   )
