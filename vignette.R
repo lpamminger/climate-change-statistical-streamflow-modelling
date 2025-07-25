@@ -22,7 +22,11 @@ data <- readr::read_csv( # data will be in the package
 ) |>
   mutate(
     year = as.integer(year)
-  )
+  ) |> 
+  # required for log-sinh. Log-sinh current formulation has asymptote of zero. 
+  # This means zero flows of ephemeral catchments cannot be transformed
+  # add a really small value
+  mutate(q_mm = q_mm + .Machine$double.eps^0.5) 
 
 gauge_information <- readr::read_csv(
   "./Data/Tidy/gauge_information_CAMELS.csv",
@@ -49,9 +53,7 @@ source("./Functions/result_set.R")
 
 # 1. Select gauge to test from data --------------------------------------------
 
-# From other laptop find catchment with b hitting bounds and test
-
-gauge <- "112002A"  
+gauge <- "218005"   
 
 
 # ideally catchment_data_blueprint should have other methods of data entry such as giving vectors individually
@@ -82,24 +84,22 @@ plot(example_catchment, type = "rainfall-runoff")
 ###   can be used to change bounds and transform methods
 ## - minimise_likelihood. 
 ###   A logical argument that can either minimise or maximise negative loglikelihood (dependent of numerical optimiser - CMAES or DREAM)
-## - streamflow offset used
-###   For the streamflow_transform_method. Values > 0 help avoid negative 
-###   streamflow values in the rainfall-runoff relationship. Only impacts
-###   streamflow in the transformed space.
+## - streamflow_transform_method_offset
+###   Shifts the asymptote of streamflow_transform_method
 
 
 
 numerical_optimiser <- example_catchment |>
   numerical_optimiser_setup_vary_inputs(
-    streamflow_model = streamflow_model_intercept_shifted_CO2_seasonal_ratio,
+    streamflow_model = streamflow_model_drought_slope_shifted_CO2_seasonal_ratio_auto,
     objective_function = constant_sd_objective_function, 
     streamflow_transform_method = log_sinh_transform, 
     bounds_and_transform_method = make_default_bounds_and_transform_methods, 
     minimise_likelihood = TRUE,
-    streamflow_transform_method_offset = 1E-8
+    streamflow_transform_method_offset = 0 
   )
 
-# Warnings generated from making the possible bound range of log-sinh a and b
+
 
 
 # 3. Put numerical_optimiser object into a numerical optimiser -----------------
@@ -122,7 +122,7 @@ standardised_results <- results |> result_set()
 plot(standardised_results, type = "streamflow-time")
 plot(standardised_results, type = "rainfall-runoff")
 plot(standardised_results, type = "examine_transform") 
-
+plot(standardised_results, type = "std_errors")
 
 
 # The near_bound column does not functioning correctly
@@ -133,10 +133,5 @@ result_table <- streamflow_timeseries_summary(standardised_results)
 
 # DREAM is a bit more complex...
 
-b <- standardised_results$best_parameter_set["b"]
-q_obs <- standardised_results$numerical_optimiser_setup$catchment_data$stop_start_data_set |> list_rbind() |> pull(observed_streamflow)
-q_mod <- standardised_results$optimised_modelled_streamflow_realspace |> as.numeric()
-error <- q_obs - q_mod
-sd_error_function <- 1 / tanh(b * q_mod)
-plot(q_mod, sd_error_function, type = "l")
-plot(q_mod, error, xlim = c(0, 5000))
+
+
