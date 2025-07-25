@@ -117,11 +117,6 @@ validate_optimiser_set <- function(numerical_optimiser_setup) {
 }
 
 
-# Use to combat zero flow values
-alter_observed_streamflow <- function(observed_data_tibble, operation, value) {
-  observed_data_tibble |>
-    mutate(observed_streamflow = operation(observed_streamflow, value))
-}
 
 
 # Helper -----------------------------------------------------------------------
@@ -142,27 +137,7 @@ numerical_optimiser_setup <- function(
 
   ## log-sinh offset involves altering observed flow ===========================
   streamflow_transform_method <- noquote(streamflow_transform_method)
-
-  #if (streamflow_transform_method()$name == "log_sinh_transform") {
-  #  full_data_replacement <- alter_observed_streamflow(
-  #    observed_data_tibble = catchment_data$full_data_set,
-  #    operation = `+`,
-  #    value = streamflow_transform_method_offset
-  #  )
-
-    #stop_start_data_replacement <- modify(
-    #  .x = catchment_data$stop_start_data_set,
-     # .f = alter_observed_streamflow,
-    #  operation = `+`,
-     # value = streamflow_transform_method_offset
-    #)
-
-
-    #catchment_data$full_data_set <- full_data_replacement
-   # catchment_data$stop_start_data_set <- stop_start_data_replacement
-  #}
-
-
+  
 
   ## called bounds_and_transfer_method to make bounds ==========================
   bounds_and_transform_method <- noquote(bounds_and_transform_method)
@@ -216,63 +191,6 @@ log_sinh_asymptote <- function(a, b) {
 }
 
 
-## log-sinh needs special treatment to find acceptable bounds
-find_acceptable_log_sinh_bounds <- function(streamflow) {
-  # See log-sinh-bounds.xlsx for the method
-
-  # rows and cols for matrix
-  possible_a <- sort(c(-10^-seq(from = 1, to = 7, by = 1), -.Machine$double.eps^0.5))
-  names_possible_a <- as.character(possible_a)
-  length_a <- length(possible_a)
-  possible_b <- sort(c(10^-seq(from = -3, to = 7, by = 1), -.Machine$double.eps^0.5))
-  names_possible_b <- as.character(possible_b)
-  length_b <- length(possible_b)
-
-
-  matrix_of_values <- matrix(numeric(length_a * length_b), nrow = length_a, ncol = length_b) |>
-    `colnames<-`(names_possible_b) |>
-    `rownames<-`(names_possible_a)
-
-  # min_streamflow <- min(streamflow)
-
-  for (i in 1:length_b) {
-    for (j in 1:length_a) {
-      matrix_of_values[j, i] <- log_sinh_asymptote(
-        a = possible_a[j],
-        b = possible_b[i]
-      )
-    }
-  }
-
-
-
-  matrix_of_values[matrix_of_values > min(streamflow)] <- NA
-
-
-  matrix_of_values[abs(matrix_of_values) < .Machine$double.eps^0.5] <- NA
-
-  # range of b is always between 1E-3 and 1
-  range_b <- c(1E-3, 10)
-
-  # Use upper range_a to focus on row to get range_b
-  range_a <- matrix_of_values[, as.character(range_b[1])] |>
-    na.omit() |>
-    names() |>
-    as.numeric() |>
-    range()
-
-
-
-
-  list(
-    "range_a" = range_a,
-    "range_b" = range_b
-  )
-}
-
-
-
-
 
 
 make_default_bounds_and_transform_methods <- function(catchment_data_set) {
@@ -291,10 +209,6 @@ make_default_bounds_and_transform_methods <- function(catchment_data_set) {
   ## the intercept terms are related to the maximum observed streamflow ========
   max_observed_streamflow <- max(observed_streamflow) * 2
 
-  ## many combination of log-sinh a and b - select acceptable ones =============
-  #log_sinh_bounds <- find_acceptable_log_sinh_bounds(observed_streamflow)
-
-
 
   tibble::tribble(
     ~parameter,    ~lower_bound,               ~upper_bound,               ~transform_method,
@@ -307,8 +221,7 @@ make_default_bounds_and_transform_methods <- function(catchment_data_set) {
     "a3_slope",     -3,                         3,                          linear_parameter_transform, # CO2 coefficent for slope
     "a4",           -max_observed_streamflow,   max_observed_streamflow,    linear_parameter_transform, # seasonal parameter
     "a5",           0,                          upper_a5_bound,             linear_parameter_transform, # Changes depending on last CO2 value in calibration
-    #"a",            log_sinh_bounds$range_a[1], log_sinh_bounds$range_a[2], logarithmic_parameter_transform,
-    "b",            1E-4,                       1,                         logarithmic_parameter_transform,
+    "b",            1E-4,                       1,                          logarithmic_parameter_transform,
     "lambda",       0,                          2,                          linear_parameter_transform, # boxcox recommended range is -2 to 2(0-2 because we want to shift it from positive skew)
     "sd",           1E-8,                       2000,                       logarithmic_parameter_transform # constant sd objective function
   )

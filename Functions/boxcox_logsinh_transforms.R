@@ -130,18 +130,8 @@ select_streamflow_transform_method <- function(timeseries, parameter_set, stream
   
   # Transform observed_streamflow into log-sinh space
   if (streamflow_transform_method_name == "log_sinh_transform") {
-    
-    #log_sinh_a <- parameter_set[(nrow(parameter_set) - 2), ]
-    
+  
     log_sinh_b <- parameter_set[nrow(parameter_set) - 1, ]
-    
-    
-    #matrix_log_sinh_a <- matrix(
-    #  log_sinh_a,
-    #  nrow = nrow(timeseries),
-    #  ncol = ncol(timeseries),
-    #  byrow = TRUE
-    #)
     
     matrix_log_sinh_b <- matrix(
       log_sinh_b,
@@ -151,7 +141,6 @@ select_streamflow_transform_method <- function(timeseries, parameter_set, stream
     )
     
     transformed_observed_streamflow <- log_sinh_transform(
-      #a = matrix_log_sinh_a,
       b = matrix_log_sinh_b,
       y = timeseries,
       offset = offset
@@ -181,17 +170,7 @@ select_streamflow_transform_method <- function(timeseries, parameter_set, stream
     
   } else if (streamflow_transform_method_name == "inverse_log_sinh_transform") {
     
-    #log_sinh_a <- parameter_set[(nrow(parameter_set) - 2), ]
-    
     log_sinh_b <- parameter_set[nrow(parameter_set) - 1, ]
-    
-    
-    #matrix_log_sinh_a <- matrix(
-    #  log_sinh_a,
-    #  nrow = nrow(timeseries),
-    #  ncol = ncol(timeseries),
-    #  byrow = TRUE
-    #)
     
     matrix_log_sinh_b <- matrix(
       log_sinh_b,
@@ -201,7 +180,6 @@ select_streamflow_transform_method <- function(timeseries, parameter_set, stream
     )
     
     realspace_observed_streamflow <- inverse_log_sinh_transform(
-     # a = matrix_log_sinh_a,
       b = matrix_log_sinh_b,
       z = timeseries,
       offset = offset

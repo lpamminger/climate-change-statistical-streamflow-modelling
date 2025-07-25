@@ -223,7 +223,6 @@ get_restart_count.default <- function(cmaes_result, ...) {
 ## Covert parameter into real space ============================================
 ## uses coef
 get_best_parameters_real_space <- function(cmaes_or_dream_result) {
-  
   force(cmaes_or_dream_result)
 
   scaled_parameters <- coef(cmaes_or_dream_result)
@@ -238,20 +237,20 @@ get_best_parameters_real_space <- function(cmaes_or_dream_result) {
     .f = transform_parameter_method,
     parameter_set = as.matrix(scaled_parameters, ncol = 1),
     scale = cmaes_or_dream_result$numerical_optimiser_setup$scale
-  ) |> 
+  ) |>
     unlist()
-  
+
   # If streamflow_transform_method is boxcox and lambda is less than machine tol
   # then set lambda to zero. This is what boxcox_transform() does. Reflect this
   # in result
-  if(cmaes_or_dream_result$numerical_optimiser_setup$streamflow_transform_method()$name == "boxcox_transform") {
+  if (cmaes_or_dream_result$numerical_optimiser_setup$streamflow_transform_method()$name == "boxcox_transform") {
     near_zero_lambda <- best_parameters[["lambda"]] <= .Machine$double.eps^0.5
-    
-    if(near_zero_lambda) {
+
+    if (near_zero_lambda) {
       best_parameters[["lambda"]] <- 0
     }
   }
-  
+
 
   return(best_parameters)
 }
@@ -284,27 +283,24 @@ get_boxcox_streamflow <- function(cmaes_or_dream_result) {
 
 
 get_transformed_observed_streamflow <- function(cmaes_or_dream_result) {
-  
   # get realspace streamflow
   realspace_streamflow <- cmaes_or_dream_result$numerical_optimiser_setup$catchment_data$stop_start_data_set |>
-    list_rbind() |> 
+    list_rbind() |>
     pull(observed_streamflow)
-  
+
   # get transform function
   # get parameters for transform
   # apply transform
-  
+
   select_streamflow_transform_method(
     streamflow_transform_method = cmaes_or_dream_result$numerical_optimiser_setup$streamflow_transform_method,
     parameter_set = as.matrix(get_best_parameters_real_space(cmaes_or_dream_result), ncol = 1), # function relies on matrices as inputs
     timeseries = as.matrix(realspace_streamflow, ncol = 1),
     offset = cmaes_or_dream_result$numerical_optimiser_setup$streamflow_transform_method_offset
   )
-  
 }
 
 get_transformed_optimised_streamflow <- function(cmaes_or_dream_result) {
-  
   # This should only show the streamflow used in calibration
   best_parameters <- get_best_parameters_real_space(cmaes_or_dream_result)
 
@@ -327,28 +323,27 @@ get_transformed_optimised_streamflow <- function(cmaes_or_dream_result) {
 }
 
 get_realspace_optimised_streamflow <- function(cmaes_or_dream_result) {
-
   # Requires and inverse transform on modelled streamflow
   transformed_modelled_streamflow <- get_transformed_optimised_streamflow(cmaes_or_dream_result)
-  
+
 
   # Get inverse transform - add inverse to front of function
   # this requires all streamflow_transform methods to have inverse_function_name style
   inverse_streamflow_transform_method_name <- paste0("inverse_", cmaes_or_dream_result$numerical_optimiser_setup$streamflow_transform_method()$name)
-  
+
   realspace_modelled_streamflow <- select_streamflow_transform_method(
     streamflow_transform_method = match.fun(FUN = inverse_streamflow_transform_method_name),
     parameter_set = as.matrix(get_best_parameters_real_space(cmaes_or_dream_result), ncol = 1), # function relies on matrices as inputs
     timeseries = as.matrix(transformed_modelled_streamflow, ncol = 1),
     offset = cmaes_or_dream_result$numerical_optimiser_setup$streamflow_transform_method_offset
   )
-  
-  
+
+
   # realspace_modelled_streamflow cannot be less than zero
   # if less than zero set to zero
   # modify the results
-  
-  #realspace_modelled_streamflow[realspace_modelled_streamflow < 0] <- 0
+
+  # realspace_modelled_streamflow[realspace_modelled_streamflow < 0] <- 0
 
 
   return(realspace_modelled_streamflow)
@@ -368,24 +363,21 @@ is_empty_tibble <- function(x) {
 
 
 plot.result_set <- function(x, type) {
-  
-  stopifnot(type %in% c("streamflow-time", "rainfall-runoff", "examine_transform"))
+  stopifnot(type %in% c("streamflow-time", "rainfall-runoff", "examine_transform", "std_errors"))
   # This should only show the streamflow used in calibration
 
   # Get precipitation and observed streamfow from stop_start_index
   observed_data <- x$numerical_optimiser_setup$catchment_data$stop_start_data_set |>
     list_rbind()
-  
+
   # Identify streamflow transformation method in objective function
   streamflow_transformation_method <- x$numerical_optimiser_setup$streamflow_transform_method()[[1]]
-  
+
 
 
 
   # Plotting
   if (type == "streamflow-time") {
-  
-    
     # Create tibble for plotting
     streamflow_results <- list(
       year = observed_data |> pull(year),
@@ -426,8 +418,6 @@ plot.result_set <- function(x, type) {
         legend.position.inside = c(0.9, 0.9),
         legend.background = element_rect(colour = "black")
       )
-    
-    
   } else if (type == "rainfall-runoff") {
     # Create tibble for plotting
     streamflow_results <- list(
@@ -467,75 +457,83 @@ plot.result_set <- function(x, type) {
         legend.position.inside = c(0.1, 0.9),
         legend.background = element_rect(colour = "black")
       )
-    
-    
-    
   } else if (type == "examine_transform") {
-
-    
     modelled_streamflow_data <- list(
-      realspace_modelled_streamflow = x$optimised_modelled_streamflow_realspace,#observed_data |> pull(observed_streamflow),
-      transformed_modelled_streamflow = x$optimised_modelled_streamflow_transformed_space#x$transformed_observed_streamflow
-    ) |> 
-      as_tibble() |> 
+      realspace_modelled_streamflow = x$optimised_modelled_streamflow_realspace, # observed_data |> pull(observed_streamflow),
+      transformed_modelled_streamflow = x$optimised_modelled_streamflow_transformed_space # x$transformed_observed_streamflow
+    ) |>
+      as_tibble() |>
       arrange(realspace_modelled_streamflow)
-      
-    
+
+
     # This is for the plot only using model parameters
-    range_of_values <- modelled_streamflow_data |> 
-      pull(realspace_modelled_streamflow) |> 
+    range_of_values <- modelled_streamflow_data |>
+      pull(realspace_modelled_streamflow) |>
       range()
-    
+
     realspace_modelled_axis <- seq(from = range_of_values[1], to = range_of_values[2], by = 0.01)
-    
+
     # Plot the curve using calibrated values
     transform_name <- x$numerical_optimiser_setup$streamflow_transform_method()$name
-    
+
     # Get offset
     offset <- x$numerical_optimiser_setup$streamflow_transform_method_offset
-    
-    
-    if(transform_name == "log_sinh_transform") {
-      #a <- x$best_parameter_set[length(x$best_parameter_set) - 2]
-      b <- x$best_parameter_set[length(x$best_parameter_set) - 1]
-      
-      transformed_modelled_axis <- x$numerical_optimiser_setup$streamflow_transform_method(b, realspace_modelled_axis, offset)
 
-    } else if(transform_name == "boxcox_transform") {
+
+    if (transform_name == "log_sinh_transform") {
+      # a <- x$best_parameter_set[length(x$best_parameter_set) - 2]
+      b <- x$best_parameter_set[length(x$best_parameter_set) - 1]
+
+      transformed_modelled_axis <- x$numerical_optimiser_setup$streamflow_transform_method(b, realspace_modelled_axis, offset)
+    } else if (transform_name == "boxcox_transform") {
       lambda <- x$best_parameter_set[length(x$best_parameter_set) - 1]
-      
+
       lambda_2 <- standardised_results$numerical_optimiser_setup$streamflow_transform_method_offset
-      
+
       transformed_modelled_axis <- x$numerical_optimiser_setup$streamflow_transform_method(realspace_modelled_axis, lambda, lambda_2, offset)
-      
     } else {
       stop("Unrecognised transform")
     }
-    
+
     # Get curve data into tibble
     curve_data <- list(
       "realspace_modelled_streamflow" = realspace_modelled_axis,
       "transformed_modelled_streamflow" = transformed_modelled_axis
-    ) |> 
+    ) |>
       as_tibble()
-    
-    
-    plot <- modelled_streamflow_data |> 
+
+
+    plot <- modelled_streamflow_data |>
       ggplot(aes(x = realspace_modelled_streamflow, y = transformed_modelled_streamflow)) +
       geom_line(data = curve_data, colour = "red") +
       geom_point() +
       geom_vline(xintercept = 0, linetype = "dashed") +
       geom_hline(yintercept = 0, linetype = "dashed") +
       theme_bw()
-    
+
     # Add histogram to examine distribution of transformed modelled streamflow
     ggMarginal(
-      plot, 
-      type = "histogram", 
+      plot,
+      type = "histogram",
       margins = "y",
       yparams = list(binwidth = binwidth_bins(10), fill = "grey")
-      )
+    )
+  } else if (type == "std_errors") {
+
+    results <- cbind(observed_data, "modelled_streamflow" = x$optimised_modelled_streamflow_realspace)
     
+    results |> 
+      # calculate error
+      mutate(
+        error = observed_streamflow - modelled_streamflow
+      ) |> 
+      # Plot error against simulated_flow
+      ggplot(aes(x = modelled_streamflow, y = error)) +
+      geom_point() +
+      theme_bw()
+
+
+
   }
 }
 
