@@ -50,7 +50,11 @@ data <- readr::read_csv(
   "./Data/Tidy/with_NA_yearly_data_CAMELS.csv",
   show_col_types = FALSE
 ) |>
-  mutate(year = as.integer(year))
+  mutate(year = as.integer(year)) |> 
+  # required for log-sinh. Log-sinh current formulation has asymptote of zero. 
+  # This means zero flows of ephemeral catchments cannot be transformed
+  # add a really small value
+  mutate(q_mm = q_mm + .Machine$double.eps^0.5) 
 
 
 gauge_information <- readr::read_csv(
@@ -561,12 +565,21 @@ time_of_emergence_data <- time_of_emergence_data |>
   )
 
 
-time_of_emergence_data |> 
+ToE_vs_record_length <- time_of_emergence_data |> 
   ggplot(aes(x = record_length, y = year_time_of_emergence)) +
   geom_point() +
   theme_bw()
 
 
+
+ggsave(
+  filename = "./Figures/Supplementary/ToE_vs_record_length.pdf", #"./Graphs/CMAES_graphs/log_sinh_no_uncertainty_ToE_map_aus.pdf",
+  plot = ToE_vs_record_length,
+  device = "pdf",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
 
 
 ## Time of emergence vs. catchment area ========================================
@@ -582,14 +595,21 @@ time_of_emergence_data <- time_of_emergence_data |>
   )
 
 
-time_of_emergence_data |> 
+ToE_vs_catchment_area <- time_of_emergence_data |> 
   ggplot(aes(x = catchment_area_sq_km, y = year_time_of_emergence)) +
   geom_point() +
   scale_x_log10() +
   theme_bw()
 
 
-
+ggsave(
+  filename = "./Figures/Supplementary/ToE_vs_catchment_area.pdf", #"./Graphs/CMAES_graphs/log_sinh_no_uncertainty_ToE_map_aus.pdf",
+  plot = ToE_vs_catchment_area,
+  device = "pdf",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
 
 
 

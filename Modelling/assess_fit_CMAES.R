@@ -24,7 +24,11 @@ data <- readr::read_csv(
   "./Data/Tidy/with_NA_yearly_data_CAMELS.csv",
   show_col_types = FALSE
 ) |>
-  mutate(year = as.integer(year))
+  mutate(year = as.integer(year)) |> 
+  # required for log-sinh. Log-sinh current formulation has asymptote of zero. 
+  # This means zero flows of ephemeral catchments cannot be transformed
+  # add a really small value
+  mutate(q_mm = q_mm + .Machine$double.eps^0.5) 
 
 
 start_stop_indexes <- readr::read_csv(
@@ -37,6 +41,9 @@ gauge_information <- readr::read_csv(
   "./Data/Tidy/gauge_information_CAMELS.csv",
   show_col_types = FALSE
 )
+
+
+
 # 1. Are there any major issues with CMAES fitting? - visual inspection --------
 ## streamflow results only include data calibrated on
 ## page-per-gauge with unique models
@@ -124,7 +131,8 @@ ggsave(
 
 
 ## Visual inspection of rainfall-runoff graphs =================================
-## Thoughts go here...
+## 238231, 418025, 614044, A5090503, 226222 - autocorrelation has an impact on the slope
+## 613146 - auto only an issue without a CO2 term
 
 
 ## streamflow-time comparison ==================================================
@@ -212,18 +220,22 @@ ggsave(
 
 
 ## Transformation curves and histograms ========================================
+
+## This does not work - FIX
+
 recreate_log_sinh_using_parameter_results <- function(streamflow_model, gauge_parameter_results, xaxis_range) {
+  
   log_sinh_parameters <- gauge_parameter_results |>
     filter(streamflow_model == {{ streamflow_model }}) |>
-    filter(parameter %in% c("a", "b")) |>
+    filter(parameter == "b") |>
     pull(parameter_value)
   
   xaxis <- seq(from = xaxis_range[1], to = xaxis_range[2], by = 0.01)
   
   yaxis <- log_sinh_transform(
-    a = log_sinh_parameters[1],
-    b = log_sinh_parameters[2],
-    y = xaxis
+    b = log_sinh_parameters,
+    y = xaxis,
+    offset = 0
   )
   
   list(
@@ -276,25 +288,30 @@ transformation_curves <- function(gauge, streamflow_results, parameter_results) 
 }
 
 
-
-transformation_curves <- map(
-  .x = parameter_results |> pull(gauge) |> unique(),
-  .f = transformation_curves,
+transformation_curves(
+  gauge = "302208",
   streamflow_results = streamflow_results,
   parameter_results = parameter_results
 )
 
+#transformation_curves <- map(
+#  .x = parameter_results |> pull(gauge) |> unique(),
+#  .f = transformation_curves,
+#  streamflow_results = streamflow_results,
+#  parameter_results = parameter_results
+#)
 
-ggsave(
-  filename = "all_transformation_curve_plots.pdf",
-  path = "./Figures/Supplementary",
+
+#ggsave(
+#  filename = "all_transformation_curve_plots.pdf",
+#  path = "./Figures/Supplementary",
   # used to append all plots into a single pdf
-  plot = gridExtra::marrangeGrob(transformation_curves, nrow = 1, ncol = 1),
-  device = "pdf",
-  units = "mm",
-  width = 297,
-  height = 210
-)
+#  plot = gridExtra::marrangeGrob(transformation_curves, nrow = 1, ncol = 1),
+#  device = "pdf",
+#  units = "mm",
+#  width = 297,
+#  height = 210
+#)
 
 
 
@@ -309,40 +326,7 @@ check_near_zero_parameter_values <- parameter_results |>
   filter(is_parameter_turned_off)
 
 check_near_zero_parameter_values |> pull(parameter) |> unique()
-# Only the `a` parameter want to be turned-off
 
-check_near_zero_parameter_values |> pull(parameter) |> length()
-# The `a` parameter wants to be turned off for x catchment-model combinations (out of 9684)
-
-
-# Results from latest batch:
-parameter_results |> filter(parameter == "a") |> pull(parameter_value) |> range(na.rm = T)
-
-# New results in progress
-
-# - range of a values is a = -9.99E-7 to 1E-1
-# - lower range of a0 needs increasing (do the same for drought terms) maybe x3 max_Q
-# - leave slope terms
-# - sd and b parameters are good
-# - a parameter is not good. Because set a to lower 1E-8 and upper larger?
-# --> I think a is a log-transform angle set the lower to 1E-8 since most
-#     catchments do not want to be shifted
-# change a so lower is 1E-8 and upper is calculated - can use log-trans
-# change intercept to x3
-
-
-# Results
-# - a3_intercept needs to be larger 
-# - a3_slope and a1 are hitting the bounds for some catchment
-# - 327 `a` values have hit upper bound and 204 near lower - for 9684 its fine
-# What do I do with the slope terms? make them bigger? Leave them?
-# Talk with Murray
-# do i even need an `a` variable?
-# Do a = 1E-8 or a = 0.1 correspond to catchments with zero flow? Would an offset = 1 fix this?
-# A lot of them are - maybe try an offset?
-
-# QJ cautions against large values as it turn into linear with no normalisation stabilitation
-# Recommended range is -15 to 0
 
 
 
@@ -352,117 +336,21 @@ bound_issues <- parameter_results |>
   arrange(parameter_value)
 
 
-## Only issues for a and a5 = good
-## a can be near zero and a5 can be near the upper/lower bound
+## a5 can be near the upper bound --> means CO2 kicks in during the last year
+## a5 can be near the lower bound --> means CO2 kicks in during the first year
+## b can be near the upper bound (equal to 1) --> means transform is linear
+
+
+# Check all parameters
 bound_issues |> pull(parameter) |> unique()
-
-# Look like everything hit the bounds 
-
-## Mannually check if values are okay
-manual_check_bounds <- parameter_results |>
-  filter(parameter == "a1") |> # change parameter here
-  arrange(desc(parameter_value)) |> 
-  filter(!is.na(parameter_value)) |> 
-  filter(!is.na(near_bounds)) 
-
-manual_check_bounds |> 
-  count(gauge)
-
-gauges_slope_near_1 <- parameter_results |>
-  filter(parameter == "a1") |> # change parameter here
-  arrange(desc(parameter_value)) |> 
-  filter(!is.na(parameter_value)) |> 
-  filter(!is.na(near_bounds)) |> 
-  pull(gauge) |> 
-  unique()
-
-# Are a1 near bounds associated with weird data?
-# Typically occur with higher rainfall catchments
-# a3_slope hitting bounds
-runoff_coeffs <- data |> 
-  drop_na() |> 
-  mutate(
-    runoff_coef = q_mm / p_mm
-  ) |> 
-  #filter(gauge %in% gauges_slope_near_1) |> 
-  summarise(
-    max_runoff_coeff = max(runoff_coef),
-    .by = gauge
-  ) |> 
-  mutate(
-    slope_near_1 = if_else(gauge %in% gauges_slope_near_1, TRUE, FALSE)
-  ) |> 
-  arrange(desc(max_runoff_coeff))
-
-# The median maximum runoff coeff for a given year is 0.38
-# The catchments with high a1 values tend to have a very high
-# runoff coefficent in at least 1 year i.e., > 0.9
-
-# The o
-
-slope_near_bounds <- gauge_information |> 
-  filter(gauge %in% gauges_slope_near_1)
-
-head(manual_check_bounds)
-tail(manual_check_bounds)
-
-# Are bounds being hit on zero flow catchments
-gauges_with_a_hitting_bounds <- manual_check_bounds |> 
-  filter(!is.na(near_bounds)) |> 
-  pull(gauge) |> 
-  unique()
-
-y <- manual_check_bounds |> 
-  filter(!is.na(near_bounds)) 
+# Only b and a5 hit the bounds
 
 
-x <- data |> 
-  filter(gauge %in% gauges_with_a_hitting_bounds) |> 
-  summarise(
-    min_flow = min(q_mm, na.rm = TRUE),
-    .by = gauge
-  ) |> 
-  left_join(
-    y,
-    by = join_by(gauge)
-  ) |> 
-  distinct() |> 
-  select(gauge, min_flow, streamflow_model, parameter_value) |> 
-  arrange(min_flow)
+# Check b parameter
+bound_issues |> filter(parameter == "b") |> pull(parameter_value) |> range()
 
+# No issues with parameters hitting bounds
 
-# Be methodical:
-# - determine what catchments are hitting the bounds 
-# - determine what parameters are hitting the bounds
-# - change one parameter at a time. Test in vignette
-# - my initial reaction is don't change slope terms to greater than 1
-# - play with intercept terms first (i.e, a0, a0_d, a0_n, a4, a3_intercept)
-# - start with streamflow_model_precip_only 
-
-
-precip_only_check <- parameter_results |> 
-  filter(streamflow_model == "streamflow_model_precip_only") |> 
-  filter(parameter %in% c("a0", "a1")) |> 
-  filter(!is.na(near_bounds))
-
-
-negative_transformed_streamflow <- streamflow_results |> 
-  filter(transformed_modelled_streamflow < 0) |> 
-  arrange(transformed_modelled_streamflow)
-
-
-## Do the wobbly catchments have strange bounds? ===============================
-check_parameters_wobbly_catchments <- parameter_results |> 
-  filter(gauge %in% wobbly_catchments) |> 
-  filter(parameter == "sd") |> 
-  arrange(parameter_value)
-
-head(check_parameters_wobbly_catchments)
-tail(check_parameters_wobbly_catchments)
-
-# The near bounds are only for a and a5. This is okay
-# I do not see anything inherently wrong with parameters - they are not
-# near any of the bounds
 
 
 
@@ -480,11 +368,101 @@ best_CO2_and_non_CO2_per_catchment <- parameter_results |>
     by = c(gauge, contains_CO2)
   )
 
+
+# There are some catchments with the exact same AIC
+check_duplicates <- best_CO2_and_non_CO2_per_catchment |> 
+  select(gauge, streamflow_model) |> 
+  distinct() |> 
+  count(gauge) |> 
+  filter(n > 2)
+
+
+duplicate_gauges <- check_duplicates |> pull(gauge) |> unique()
+
+# There are 48 gauges with the exact same AIC values
+# It only occurs for CO2 models
+# The parameters are almost exactly the same
+
+
+duplicates_best_results <- best_CO2_and_non_CO2_per_catchment |> 
+  filter(gauge %in% duplicate_gauges)
+  
+
+# If the non-CO2 model is better than the CO2 model, then
+# selecting which CO2 does not matter 
+# --> filter out duplicates where non-CO2 is better
+
+duplicates_where_CO2_model_is_best <- duplicates_best_results |> 
+  mutate(
+    contains_CO2 = if_else(str_detect(streamflow_model, "CO2"), "CO2_model", "no_CO2_model")
+  ) |> 
+  select(gauge, contains_CO2, AIC) |>
+  distinct() |> 
+  pivot_wider(
+    names_from = contains_CO2,
+    values_from = AIC
+  ) |> 
+  mutate(
+    is_CO2_model_better = CO2_model < no_CO2_model
+  ) |> 
+  filter(is_CO2_model_better) |> 
+  pull(gauge)
+
+
+duplicates_to_focus_on <- best_CO2_and_non_CO2_per_catchment |> 
+  filter(gauge %in% duplicates_where_CO2_model_is_best)
+  
+
+# Since AIC cannot be used to differentiate the best model for some gauges,
+# visual inspect will be used. The graphs used are: 
+## - rainfall-runoff graphs (all look very similar - cannot be used to differentiate)
+## - streamflow-time graphs (all look very similar - cannot be used to differentiate)
+## - transform streamflow vs streamflow graphs (all look very similar - cannot be used to differentiate)
+
+
+# Notes:
+# - all four catchment have the exact same model
+# - I am inclined to select the slope variant because this is easier to detect
+
+
+# Adjust best_CO2_and_non_CO2_per_catchment based on findings above:
+## Take the best CO2 slope model. This will not matter for cases where the 
+## non-CO2 model is better. Justification = slope is easier to detect
+
+
+key_removed_intercept_model_duplicates <- duplicates_best_results |> 
+  select(gauge, replicate, contains_CO2, streamflow_model) |> 
+  distinct() |> 
+  mutate(
+    contains_intercept = if_else(str_detect(streamflow_model, "intercept"), TRUE, FALSE)
+  ) |> 
+  mutate(
+    contains_intercept_and_CO2 = contains_CO2 & contains_intercept
+  ) |> 
+  # remove intercept CO2 streamflow models
+  filter(!contains_intercept_and_CO2) |> 
+  select(gauge, replicate, streamflow_model)
+
+
+removed_intercept_model_duplicates <- duplicates_best_results |> 
+  semi_join(
+    key_removed_intercept_model_duplicates,
+    by = join_by(gauge, replicate, streamflow_model)
+  )
+
+
+
+adjusted_best_CO2_and_non_CO2_per_catchment <- best_CO2_and_non_CO2_per_catchment |> 
+  # filter out duplicate gauges
+  filter(!gauge %in% duplicate_gauges) |> 
+  # add back the altered duplicates (removed intercept model duplicates)
+  rbind(removed_intercept_model_duplicates)
+
+
+
 write_csv(
-  best_CO2_and_non_CO2_per_catchment,
+  adjusted_best_CO2_and_non_CO2_per_catchment,
   file = "./Modelling/Results/CMAES/best_CO2_non_CO2_per_catchment_CMAES.csv"
 )
 
 
-x <- best_CO2_and_non_CO2_per_catchment |> 
-  filter(gauge %in% gauges_slope_near_1)

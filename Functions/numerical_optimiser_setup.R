@@ -207,7 +207,7 @@ make_default_bounds_and_transform_methods <- function(catchment_data_set) {
 
 
   ## the intercept terms are related to the maximum observed streamflow ========
-  max_observed_streamflow <- max(observed_streamflow) * 2
+  max_observed_streamflow <- max(observed_streamflow) * 2.5
 
 
   tibble::tribble(
@@ -218,7 +218,7 @@ make_default_bounds_and_transform_methods <- function(catchment_data_set) {
     "a1",            1E-4,                      2,                          logarithmic_parameter_transform, # slope
     "a2",           -1,                         1,                          linear_parameter_transform, # autocorrelation
     "a3_intercept", -max_observed_streamflow,   max_observed_streamflow,    linear_parameter_transform, # CO2 coefficient for intercept
-    "a3_slope",     -3,                         3,                          linear_parameter_transform, # CO2 coefficent for slope
+    "a3_slope",     -2,                         2,                          linear_parameter_transform, # CO2 coefficent for slope
     "a4",           -max_observed_streamflow,   max_observed_streamflow,    linear_parameter_transform, # seasonal parameter
     "a5",           0,                          upper_a5_bound,             linear_parameter_transform, # Changes depending on last CO2 value in calibration
     "b",            1E-4,                       1,                          logarithmic_parameter_transform,

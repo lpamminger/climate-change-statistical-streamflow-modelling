@@ -55,7 +55,11 @@ data <- readr::read_csv(
   "./Data/Tidy/with_NA_yearly_data_CAMELS.csv",
   show_col_types = FALSE
 ) |>
-  mutate(year = as.integer(year))
+  mutate(year = as.integer(year)) |> 
+  # required for log-sinh. Log-sinh current formulation has asymptote of zero. 
+  # This means zero flows of ephemeral catchments cannot be transformed
+  # add a really small value
+  mutate(q_mm = q_mm + .Machine$double.eps^0.5) 
 
 
 gauge_information <- readr::read_csv(

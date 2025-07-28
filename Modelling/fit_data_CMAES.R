@@ -13,7 +13,12 @@ data <- readr::read_csv(
   "./Data/Tidy/with_NA_yearly_data_CAMELS.csv",
   show_col_types = FALSE
 ) |>
-  mutate(year = as.integer(year))
+  mutate(year = as.integer(year)) |> 
+  # required for log-sinh. Log-sinh current formulation has asymptote of zero. 
+  # This means zero flows of ephemeral catchments cannot be transformed
+  # add a really small value
+  mutate(q_mm = q_mm + .Machine$double.eps^0.5) 
+  
 
 gauge_information <- readr::read_csv(
   "./Data/Tidy/gauge_information_CAMELS.csv",
@@ -36,12 +41,9 @@ source("./Functions/objective_function_setup.R")
 source("./Functions/result_set.R")
 
 
-# Try using reformulated log-sinh model - adjust parameters afterwards
-# change line 44 and 198
-
 # Constants --------------------------------------------------------------------
 # Number of times we want to repeat each catchment-optimiser-streamflow model combinations
-REPLICATES <- 1L 
+REPLICATES <- 10L 
 
 
 # Construct catchment_data objects ---------------------------------------------
@@ -169,7 +171,7 @@ numerical_optimisers <- pmap( # This is slow
   .l = pmap_list,
   .f = numerical_optimiser_setup,
   bounds_and_transform_method = make_default_bounds_and_transform_methods,
-  streamflow_transform_method_offset = 0.5,
+  streamflow_transform_method_offset = 0,
   scale = 100,
   minimise_likelihood = TRUE
 )
@@ -187,7 +189,7 @@ run_length_gauges_from_combinations <- rle(gauges_from_combinations)
 
 # Change values in rle ($values) to 1, 2, 3 etc. to construct factor values for split
 # The rle $values must be split based on GAUGES_PER_CHUNK
-GAUGES_PER_CHUNK <- 100 #24L
+GAUGES_PER_CHUNK <- 24L
 
 total_gauges <- gauges_from_combinations |>
   unique() |>

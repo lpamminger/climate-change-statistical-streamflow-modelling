@@ -57,7 +57,11 @@ data <- readr::read_csv(
   "./Data/Tidy/with_NA_yearly_data_CAMELS.csv",
   show_col_types = FALSE
 ) |>
-  mutate(year = as.integer(year))
+  mutate(year = as.integer(year)) |> 
+  # required for log-sinh. Log-sinh current formulation has asymptote of zero. 
+  # This means zero flows of ephemeral catchments cannot be transformed
+  # add a really small value
+  mutate(q_mm = q_mm + .Machine$double.eps^0.5) 
 
 gauge_information <- readr::read_csv(
   "./Data/Tidy/gauge_information_CAMELS.csv",
@@ -107,11 +111,13 @@ streamflow_data_best_CO2_non_CO2 <- streamflow_results |>
 compare_equivalent_models <- only_gauge_model_best_CO2_non_CO2_per_gauge |>
   mutate(
     CO2_or_non_CO2_model = if_else(str_detect(streamflow_model, "CO2"), "CO2_model", "non_CO2_model")
-  ) |>
+  ) |>  
   pivot_wider(
+    id_cols = gauge,
     names_from = CO2_or_non_CO2_model,
     values_from = streamflow_model
   )
+
 
 
 ### Comparison table ###
@@ -309,11 +315,9 @@ convert_a3_off_transformed_to_realspace <- function(gauge, streamflow_data_a3_of
     filter(gauge == {{ gauge }}) |>
     pull(parameter_value)
   
-  a <- parameters[length(parameters) - 2]
   b <- parameters[length(parameters) - 1]
   
   a3_off_realspace_streamflow <- inverse_log_sinh_transform(
-    a = a,
     b = b,
     a3_off_transformed_streamflow,
     offset = 0
