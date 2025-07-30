@@ -209,7 +209,6 @@ make_default_bounds_and_transform_methods <- function(catchment_data_set) {
   ## the intercept terms are related to the maximum observed streamflow ========
   max_observed_streamflow <- max(observed_streamflow) * 2.5
 
-
   tibble::tribble(
     ~parameter,    ~lower_bound,               ~upper_bound,               ~transform_method,
     "a0",           -max_observed_streamflow,   max_observed_streamflow,    linear_parameter_transform, # intercept
