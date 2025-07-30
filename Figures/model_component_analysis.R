@@ -180,14 +180,14 @@ model_components <- single_aus_map |>
   ) +
   coord_sf(xlim = c(111, 155), ylim = c(-44.5, -9.5)) +
   geom_point(
-    mapping = aes(x = lon, y = lat, fill = show),
+    mapping = aes(x = lon, y = lat, colour = show),
     data = plot_best_model_components,
     inherit.aes = FALSE,
     size = 1,
     show.legend = TRUE,
     shape = 21,
-    colour = "black",
-    stroke = 0.1
+    fill = NA,
+    stroke = 0.25
   ) +
   geom_text(
     mapping = aes(x = lon, y = lat, label = label),
@@ -196,13 +196,13 @@ model_components <- single_aus_map |>
     size = 10,
     size.unit = "pt"
   ) +
-  scale_fill_brewer(palette = "Set1") +
+  scale_colour_brewer(palette = "Set1") +
   metR::scale_x_longitude(ticks = 7) +
   metR::scale_y_latitude(ticks = 7) +
   labs(
     x = "Longitude",
     y = "Latitude",
-    fill = "Best Streamflow Model Contains Component"
+    colour = "Best Streamflow Model Contains Component"
   ) +
   facet_wrap(~simple_name) +
   theme_bw() +
@@ -213,9 +213,8 @@ model_components <- single_aus_map |>
     axis.text = element_text(size = 7)
   ) +
   guides(
-    fill = guide_legend(override.aes = list(size = 5, shape = 21, colour = "black"))
+    colour = guide_legend(override.aes = list(size = 5, shape = 21, fill = NA))
   )
-
 
 
 ggsave(
