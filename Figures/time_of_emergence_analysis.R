@@ -3,11 +3,12 @@
 # Figures produced in this R file ----------------------------------------------
 
 # 1. Main --> ToE_map_aus_uncertainty.pdf (requires dream results - currently working without dream results)
-# 2. Supplementary --> ToE_vs_uncertainty_and_evidence_ratio.pdf (requires dream results - called ToE_vs_uncertainty in old files)
-# 3. Supplementary --> ToE_vs_record_length.pdf 
-# 4. Supplementary --> ToE_vs_catchment_area.pdf
-# 5. Testing --> ToE_cdf.pdf (not in file)
-# 6. Testing --> something related to climate types (not in file)
+# 2. Supplementary --> time_of_emergence_decade_histogram.pdf
+# 3. Supplementary --> ToE_vs_uncertainty_and_evidence_ratio.pdf (requires dream results - called ToE_vs_uncertainty in old files)
+# 4. Supplementary --> ToE_vs_record_length.pdf 
+# 5. Supplementary --> ToE_vs_catchment_area.pdf
+# 6. Testing --> ToE_cdf.pdf (not in file)
+# 7. Testing --> something related to climate types (not in file)
 
 
 
@@ -544,6 +545,25 @@ ggsave(
 
 
 
+# Decade histogram time of emergence -------------------------------------------
+time_of_emergence_histogram <- time_of_emergence_data |> 
+  ggplot(aes(x = decade_time_of_emergence)) +
+  geom_histogram(stat = "count") +
+  labs(
+    x = "Time of Emergence Decade",
+    y = "Frequency"
+  ) +
+  theme_bw()
+
+
+ggsave(
+  filename = "./Figures/Supplementary/time_of_emergence_decade_histogram.pdf", 
+  plot = time_of_emergence_histogram,
+  device = "pdf",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
 
 
 
