@@ -131,6 +131,7 @@ numerical_optimiser_setup <- function(
     minimise_likelihood
     ) { # same as constructor
 
+
   ## Make a vector of parameter names ==========================================
   parameter_names <- make_parameter_names(streamflow_model, streamflow_transform_method, objective_function)
 
@@ -169,8 +170,8 @@ numerical_optimiser_setup <- function(
 }
 
 # Helpers helper - this is not great
-numerical_optimiser_setup_vary_inputs <- function(catchment_data, ...) {
-  numerical_optimiser_setup(catchment_data = catchment_data, ...)
+numerical_optimiser_setup_vary_inputs <- function(catchment_data, streamflow_model, ...) {
+  numerical_optimiser_setup(catchment_data = catchment_data, streamflow_model = streamflow_model, ...)
 }
 
 
@@ -181,15 +182,6 @@ numerical_optimiser_setup_vary_inputs <- function(catchment_data, ...) {
 ## 1. repeat this function but have catchment_data as input
 ## 2. find maximum CO2 value used in calibrate
 ## 3. replace upper bound for a5 with that value
-
-log_sinh_asymptote <- function(a, b) {
-  # Vertical asymptotes occur when log() approaches zero
-  # sinh(a + bx) approaches zero
-  # a + bx = 0
-  # asymptote --> -a/b
-  -a / b
-}
-
 
 
 
