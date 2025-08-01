@@ -529,7 +529,7 @@ get_convergence_statistics <- function(dream_object) {
 save_sequences <- function(dream_object, ...) {
   dream_object |>
     mcmc_list_to_tibble(add_gauge = TRUE) |>
-    write_csv(...)
+    write_parquet(...)
 }
 
 

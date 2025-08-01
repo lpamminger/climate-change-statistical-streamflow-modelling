@@ -2,7 +2,7 @@
 
 
 # Import libraries--------------------------------------------------------------
-pacman::p_load(tidyverse, dream, smoof, tictoc, furrr, parallel, truncnorm, sloop)
+pacman::p_load(tidyverse, dream, smoof, tictoc, furrr, parallel, truncnorm, sloop, arrow)
 
 
 # Import and prepare data-------------------------------------------------------
@@ -124,3 +124,41 @@ test_DREAM <- DREAM(
 get_convergence_statistics(test_DREAM)
 gg_trace_plot(test_DREAM)
 gg_distribution_plot(test_DREAM)
+save_sequences(test_DREAM, sink = "./Modelling/Results/DREAM/test.parquet")
+# save as parquet file instead of RDA
+
+# see https://r4ds.hadley.nz/arrow.html
+
+# Rules for saving parquet files
+# 1. It is recommended to split large files into many smaller files
+# 2. Arrow suggests avoiding files smaller than 20 Mb
+# 3. Arrow suggests avoid files larger than 2 Gb
+# 4. Arrow suggests avoiding partitions with greater than 10,000 files
+# 5. Partition variables that you filter by 
+# 6. Finding what to partition takes experimentation
+
+
+# Partitioning options (test using old DREAM files):
+# 1. by gauge - This produces 533 files. This will likely produce a file smaller than 20 Mb (test this)
+# 2. by model - Produces 23 files. Significantly uneven files sizes - some < 20 Mb and some > 2Gb
+model_count <- best_model_per_gauge |> 
+  count(streamflow_model)
+# 3. by chunks during iteration - does not take advantage of smart partitioning - easiest option (write_parquet instead of write_csv)
+# 4. CO2 and non-CO2 models - this is a good option for smart partitioning - I am mainly interested in CO2 models
+#    This will produce two files. They might be over the 2 Gb recommendation
+CO2_model_count <- best_model_and_parameters_per_gauge |> 
+  select(gauge, contains_CO2, streamflow_model) |> 
+  distinct() |> 
+  count(contains_CO2)
+# 5. A combination of option 4 and option 3. Try to get all CO2 models in a single and spread the non_CO2 over multiple files.
+#    Try to group all CO2 models in similar chunks and non-CO2 models in similar chunks.
+#    From previous tests I could do 16 catchments at a time - see how large 16 DREAM results in parquet is
+
+
+# functions: write_parquet and read_parquet
+
+x <- read_csv(file = "./Modelling/Results/DREAM/test.csv")
+
+
+x |>
+  write_dataset(path = "./Modelling/Results/DREAM/", format = "parquet")
