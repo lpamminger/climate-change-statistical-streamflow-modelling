@@ -162,3 +162,43 @@ x <- read_csv(file = "./Modelling/Results/DREAM/test.csv")
 
 x |>
   write_dataset(path = "./Modelling/Results/DREAM/", format = "parquet")
+
+
+# Load in old DREAM results
+old_dream_results <- read_csv(
+  "~/Documents/R-code/Old-Code/Results/my_dream/part_3_sequences_20250428.csv",
+  show_col_types = FALSE
+)
+# 16 catchments
+all_gauges_in_dataset <- old_dream_results |> 
+  pull(gauge) |> 
+  unique()
+
+first_16_gauges_in_dataset <- all_gauges_in_dataset[1:16] 
+
+chunk_dream_results <- old_dream_results |> 
+  filter(gauge %in% first_16_gauges_in_dataset)
+
+# Convert to .parquet 
+write_parquet(chunk_dream_results, sink = "test_file.parquet")
+# See how large the file is - is it ~30 Mb
+# THis means I will have 34 files of ~ 30 Mb - Does this matter?
+# It is worth having the files larger
+# The chunk files is ~200 Mb
+
+# load in massive file
+biggest_file <- read_csv(
+  "~/Documents/R-code/Old-Code/Results/my_dream/big_chunk_1_sequences_20250509.csv",
+  show_col_types = FALSE
+)
+
+# A 10 Gb .csv as a .parquet becomes < 1Gb
+write_parquet(biggest_file, sink = "biggest_file.parquet")
+
+test <- read_parquet("biggest_file.parquet")
+
+test_alternative <- open_dataset("biggest_file.parquet")
+
+x <- test_alternative |> 
+  filter(gauge == "003303A") |> 
+  collect()
