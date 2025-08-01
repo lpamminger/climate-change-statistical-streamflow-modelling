@@ -154,7 +154,7 @@ chunk_DREAM <- function(single_chunk_numerical_optimiser, chunk_iter, DREAM_cont
 
   
   # Save sequences 
-  walk(
+  map(
     .x = chunk_DREAM_results,
     .f = mcmc_list_to_tibble,
     add_gauge = TRUE
@@ -164,7 +164,7 @@ chunk_DREAM <- function(single_chunk_numerical_optimiser, chunk_iter, DREAM_cont
   
   
   # Save convergence stats
-  walk( 
+  map( 
     .x = chunk_DREAM_results, 
     .f = get_convergence_statistics
   ) |> 
@@ -221,19 +221,22 @@ chunk_DREAM <- function(single_chunk_numerical_optimiser, chunk_iter, DREAM_cont
   
   rm(chunk_DREAM_results, converged_trace_plots, converged_distributions_plots)
   gc()
+  browser() 
 }
 
 
 
 # Run DREAM --------------------------------------------------------------------
 plan(multisession, workers = length(availableWorkers()))
-walk(
+iwalk(
   .x = chunked_numerical_optimisers,
   .f = chunk_DREAM,
   DREAM_controls = DREAM_controls
 )
 
 
+# TODO:
+# - test with DREAM controls set to max - check RAM
 
 
 
@@ -256,4 +259,7 @@ gg_distribution_plot(test_DREAM)
 save_sequences(test_DREAM, sink = "./Modelling/Results/DREAM/test.parquet")
 
 
-
+x <- open_dataset(
+  "./Modelling/Results/DREAM/Sequences/sequence_1.parquet"
+) |> 
+  collect()
