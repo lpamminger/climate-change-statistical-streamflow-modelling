@@ -4,11 +4,12 @@
 
 # 1. Main --> CO2_streamflow_on_off_decade_comparison.pdf 
 # 2. Supplementary --> CO2_on_off_decade_histogram.pdf
-# 3. Supplementary --> CO2_on_off_rainfall_runoff_comparison.pdf (mega)
-# 4. Supplementary --> CO2_on_off_streamflow_time_comparison.pdf (mega)
-# 5. Supplementary --> CO2_on_off_streamflow_time_comparison_with_rainfall.pdf (mega)
-# 6. Supplementary --> streamflow_CO2_percentage_change_vs_prop_forested.pdf
-
+# 3. Supplementary --> CO2_on_off_rainfall_runoff_comparison.pdf (mega) -  only catchments where CO2 model is better than non-CO2 model (evidence ratio > 0)
+# 4. Supplementary --> CO2_on_off_streamflow_time_comparison.pdf (mega) -  only catchments where CO2 model is better than non-CO2 model (evidence ratio > 0)
+# 5. Supplementary --> streamflow_CO2_percentage_change_vs_prop_forested.pdf
+# 6. Supplementary --> streamflow_percentage_difference_best_CO2_model_vs_best_non_CO2_model.pdf
+# 7. Supplementary --> CO2_model_vs_non_CO2_model_streamflow_time.pdf -  only catchments where CO2 model is better than non-CO2 model (evidence ratio > 0)
+# 8. Supplementary --> CO2_model_vs_non_CO2_model_rainfall_runoff.pdf - The transformed_realspace is different depending on model used. This means 2 observed transformed streamflow is required. 
 
 
 
@@ -753,6 +754,8 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
 
 }
 
+
+
 # Patchwork results
 plot_ready_percentage_difference_a3_on_off_1990s <- plot_ready_percentage_difference_a3_on_off_data |> 
   filter(decade == 1) |> 
@@ -854,7 +857,7 @@ mega_timeseries_plot <- timeseries_plotting_data |>
   facet_wrap(~gauge, scales = "free_y")
 
 ggsave(
-  filename = "CO2_on_off_streamflow_time_comparison_with_rainfall.pdf",
+  filename = "CO2_on_off_streamflow_time_comparison.pdf",
   path = "Figures/Supplementary",
   device = "pdf",
   plot = mega_timeseries_plot,
@@ -940,6 +943,246 @@ ggsave(
   height = 210,
   units = "mm"
 )
+
+
+
+
+
+
+# Compare percentage difference in best CO2 vs best non-CO2 model --------------
+
+
+## Extract best CO2 and non-CO2 model streamflow ===============================
+only_models_best_CO2_non_CO2_per_gauge <- best_CO2_non_CO2_per_gauge |> 
+  select(gauge, streamflow_model) |> 
+  distinct()
+
+best_CO2_non_CO2_streamflow <- streamflow_results |> 
+  semi_join(
+    only_models_best_CO2_non_CO2_per_gauge,
+    by = join_by(gauge, streamflow_model)
+    )
+
+
+## Calculate streamflow difference =============================================
+difference_best_CO2_non_CO2_streamflow <- best_CO2_non_CO2_streamflow |> 
+  select(gauge, year, realspace_modelled_streamflow, streamflow_model) |> 
+  mutate(
+    streamflow_model = if_else(str_detect(streamflow_model, "CO2"), "CO2_model", "non_CO2_model")
+  ) |> 
+  pivot_wider(
+    names_from = streamflow_model,
+    values_from = realspace_modelled_streamflow
+  ) |> 
+  # Sum streamflow for each decade
+  # We are interested only in 1990-1999 and 2012-2021
+  mutate(
+    decade = case_when(
+      year %in% seq(from = 1990, to = 1999) ~ 1,
+      year %in% seq(from = 2012, to = 2021) ~ 2,
+      .default = NA
+    )
+  ) |>
+  filter(!is.na(decade)) |> 
+  summarise(
+    sum_decade_non_CO2_model_streamflow = sum(non_CO2_model),
+    sum_decade_CO2_model_streamflow = sum(CO2_model),
+    .by = c(gauge, decade)
+  ) |> 
+  # Find percetange difference between modelled Co2 and non-CO2 streamflow
+  mutate(
+    CO2_impact_streamflow_mm_decade = sum_decade_CO2_model_streamflow - sum_decade_non_CO2_model_streamflow,
+    CO2_impact_streamflow_percent = (CO2_impact_streamflow_mm_decade / sum_decade_non_CO2_model_streamflow) * 100
+  ) |> 
+  arrange(desc(CO2_impact_streamflow_percent))
+
+
+## Plot percentage difference graph ============================================
+### add lat-lon and evidence ratio for plotting
+plotting_best_CO2_non_CO2_streamflow <- difference_best_CO2_non_CO2_streamflow |> 
+  left_join(
+    lat_lon_gauge,
+    by = join_by(gauge)
+  ) |> 
+  left_join(
+    evidence_ratio_calc,
+    by = join_by(gauge)
+  ) |> 
+  # rename columns for I can use existing plotting function --> make_CO2_streamflow_percentage_change_map
+  rename(
+    CO2_impact_on_streamflow_percent = CO2_impact_streamflow_percent
+  ) |> 
+  # filter evidence ratio
+  filter(evidence_ratio > 100)
+
+
+### redo limits 
+CO2_impact_on_streamflow_percent_limits <- plotting_best_CO2_non_CO2_streamflow |> 
+  pull(CO2_impact_on_streamflow_percent) |> 
+  make_limits() |> 
+  as.double()
+
+hard_coded_breaks_CO2_impact_of_streamflow <- c(-75, -50, -25, -10, -1, 0, 1, 10, 25, 50, 75)
+
+## Plots for 1990s and 2010s ===================================================
+
+percentage_difference_CO2_model_non_CO2_model_1990s <- plotting_best_CO2_non_CO2_streamflow |> 
+  filter(decade == 1) 
+
+percentage_difference_CO2_model_non_CO2_model_2010s <- plotting_best_CO2_non_CO2_streamflow |> 
+  filter(decade == 2) 
+
+patchwork_CO2_model_and_non_CO2_model_percentage_differences <- (make_CO2_streamflow_percentage_change_map(percentage_difference_CO2_model_non_CO2_model_1990s, "1990-1999") | make_CO2_streamflow_percentage_change_map(percentage_difference_CO2_model_non_CO2_model_2010s, "2012-2021")) + 
+  plot_layout(guides = "collect") & theme(legend.position = "bottom")
+
+patchwork_CO2_model_and_non_CO2_model_percentage_differences
+
+ggsave(
+  filename = "./Figures/Supplementary/streamflow_percentage_difference_best_CO2_model_vs_best_non_CO2_model.pdf",
+  plot = patchwork_CO2_model_and_non_CO2_model_percentage_differences,
+  device = "pdf",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
+
+
+
+
+
+# Rainfall-runoff and streamflow time graphs for best CO2 and nonCO2 models ----
+
+# The CO2_on_off_streamflow_time_comparision only includes catchments
+# where the evidence ratio is greater than zero
+evidence_ratio_greater_0_gauges <- a3_on_off_difference_data |> 
+  pull(gauge) |> 
+  unique()
+
+
+## Streamflow-time =============================================================
+plot_streamflow_time_best_CO2_non_CO2 <- best_CO2_non_CO2_streamflow |> 
+  select(
+    gauge, 
+    year, 
+    precipitation, 
+    realspace_observed_streamflow, 
+    realspace_modelled_streamflow, 
+    streamflow_model
+    ) |> 
+  mutate(
+    streamflow_model = if_else(str_detect(streamflow_model, "CO2"), "CO2_model", "non_CO2_model")
+  ) |> 
+  pivot_wider(
+    names_from = streamflow_model,
+    values_from = realspace_modelled_streamflow
+  ) |> 
+  pivot_longer(
+    cols = realspace_observed_streamflow:CO2_model,
+    names_to = "type",
+    values_to = "streamflow"
+  ) |> 
+  mutate(
+    type = factor(type, levels = c("non_CO2_model", "CO2_model", "realspace_observed_streamflow"))
+  ) |> 
+  left_join(
+    evidence_ratio_calc,
+    by = join_by(gauge)
+  ) |> 
+  filter(gauge %in% evidence_ratio_greater_0_gauges) |>  # this is done so the CO2_on_off_streamflow is an equal comparison
+  ggplot(aes(x = year, y = streamflow, colour = type)) +
+  geom_line() +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  facet_wrap(~gauge, scales = "free_y")
+
+
+ggsave(
+  filename = "CO2_model_vs_non_CO2_model_streamflow_time.pdf",
+  path = "Figures/Supplementary",
+  device = "pdf",
+  plot = plot_streamflow_time_best_CO2_non_CO2,
+  width = 1189,
+  height = 841,
+  units = "mm"
+)
+
+
+
+
+
+## Rainfall-runoff =============================================================
+
+# The transformed_realspace is different depending on model used.
+# This means 2 observed transformed streamflow is required.
+# They overlap see all_rainfall_runoff plots
+
+
+plot_rainfall_runoff_best_CO2_non_CO2 <- best_CO2_non_CO2_streamflow |> 
+  select(
+    gauge, 
+    year, 
+    precipitation, 
+    transformed_observed_streamflow, 
+    transformed_modelled_streamflow, 
+    streamflow_model
+  ) |> 
+  pivot_longer(
+    cols = starts_with("transformed"),
+    names_to = "type",
+    values_to = "streamflow"
+  ) |> 
+  # simplify streamflow names
+  mutate(
+    model = if_else(str_detect(streamflow_model, "CO2"), "CO2_model", "no_CO2_model")
+  ) |> 
+  unite(
+    col = "streamflow_type_and_model",
+    type,
+    model
+  ) |> 
+  filter(gauge %in% evidence_ratio_greater_0_gauges) |>   # this is done so the CO2_on_off_streamflow is an equal comparison
+  ggplot(aes(x = precipitation, y = streamflow, colour = streamflow_type_and_model)) +
+  geom_smooth(
+    method = lm,
+    formula = y ~ x,
+    se = FALSE,
+    linewidth = 0.5
+  ) +
+  geom_point(size = 0.75) +
+  scale_colour_brewer(palette = "Set1") +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  facet_wrap(~gauge, scales = "free")
+  
+  
+
+ggsave(
+  filename = "CO2_model_vs_non_CO2_model_rainfall_runoff.pdf",
+  path = "Figures/Supplementary",
+  device = "pdf",
+  plot = plot_rainfall_runoff_best_CO2_non_CO2,
+  width = 1189,
+  height = 841,
+  units = "mm"
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
