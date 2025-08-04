@@ -2,7 +2,7 @@
 
 
 # Import libraries--------------------------------------------------------------
-pacman::p_load(tidyverse, dream, smoof, tictoc, furrr, parallel, truncnorm, sloop, arrow)
+pacman::p_load(tidyverse, dream, smoof, furrr, parallel, truncnorm, sloop, arrow)
 
 
 # Import and prepare data-------------------------------------------------------
@@ -106,7 +106,7 @@ numerical_optimisers <- map2(
 
 # Chunk numerical optimisers ---------------------------------------------------
 # Based off previous DREAM runs 17 gauges per chunks seems to be the limit in term of RAM
-GAUGES_PER_CHUNK <- 17L
+GAUGES_PER_CHUNK <- 10L
 length_numerical_optimsers <- length(numerical_optimisers)
 total_chunks <- ceiling(length_numerical_optimsers / GAUGES_PER_CHUNK)
 
@@ -123,13 +123,14 @@ chunked_numerical_optimisers <- split(numerical_optimisers, f = chunk_index_for_
 # Define DREAM controls --------------------------------------------------------
 DREAM_controls <- list(
   check_convergence_steps = 1000,
-  warm_up_per_chain = 1E3,#1E5,
-  burn_in_per_chain = 1E3,#3E4, 
-  iterations_after_burn_in_per_chain = 1E3,#3E4, 
-  eps = 1E-6, #0.1
-  steps = 300, #300
+  warm_up_per_chain = 1E5, # low = 1E3
+  burn_in_per_chain = 3E4, # low = 1E3
+  iterations_after_burn_in_per_chain = 3E4, # low = 1E3
+  eps = 0.1, # 1E-6
+  steps = 300, 
   thinning = 1
 )
+
 
 
 
@@ -221,7 +222,7 @@ chunk_DREAM <- function(single_chunk_numerical_optimiser, chunk_iter, DREAM_cont
   
   rm(chunk_DREAM_results, converged_trace_plots, converged_distributions_plots)
   gc()
-  browser() 
+  #browser() 
 }
 
 
@@ -229,37 +230,69 @@ chunk_DREAM <- function(single_chunk_numerical_optimiser, chunk_iter, DREAM_cont
 # Run DREAM --------------------------------------------------------------------
 plan(multisession, workers = length(availableWorkers()))
 iwalk(
-  .x = chunked_numerical_optimisers,
+  .x = chunked_numerical_optimisers[35:52],
   .f = chunk_DREAM,
   DREAM_controls = DREAM_controls
 )
 
 
-# TODO:
-# - test with DREAM controls set to max - check RAM
+
+
+# Combine files ----------------------------------------------------------------
+## combine convergence stats
+convergence_stats <- list.files(
+  path = "./Modelling/Results/DREAM",
+  pattern = "convergence",
+  full.names = TRUE,
+  recursive = FALSE
+) |> 
+  read_csv(show_col_types = FALSE) |> 
+  write_csv("./Modelling/Results/DREAM/DREAM_convergence_stats.csv")
+
+
+## combine trace plots
+trace_plot_paths <- list.files(
+  path = "./Figures/Supplementary",
+  pattern = "trace",
+  full.names = TRUE,
+  recursive = FALSE
+)
+
+qpdf::pdf_combine( 
+  input = trace_plot_paths, 
+  output = "./Figures/Supplementary/DREAM_trace_plots.pdf"
+)
+
+## combine distribution plots
+distribution_plot_paths <- list.files(
+  path = "./Figures/Supplementary",
+  pattern = "distribution",
+  full.names = TRUE,
+  recursive = FALSE
+)
+
+qpdf::pdf_combine( 
+  input = distribution_plot_paths, 
+  output = "./Figures/Supplementary/DREAM_distribution_plots.pdf"
+)
 
 
 
 
-
-stop_here()
 
 
 
 # Single catchment test
-test_DREAM <- DREAM(
-  input = numerical_optimisers[[22]],
-  controls = DREAM_controls
-)
+#test_DREAM <- DREAM(
+#  input = numerical_optimisers[[22]],
+#  controls = DREAM_controls
+#)
 
 
-get_convergence_statistics(test_DREAM)
-gg_trace_plot(test_DREAM)
-gg_distribution_plot(test_DREAM)
-save_sequences(test_DREAM, sink = "./Modelling/Results/DREAM/test.parquet")
+#get_convergence_statistics(test_DREAM)
+#gg_trace_plot(test_DREAM)
+#gg_distribution_plot(test_DREAM)
+#save_sequences(test_DREAM, sink = "./Modelling/Results/DREAM/test.parquet")
 
 
-x <- open_dataset(
-  "./Modelling/Results/DREAM/Sequences/sequence_1.parquet"
-) |> 
-  collect()
+

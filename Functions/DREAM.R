@@ -38,8 +38,8 @@ control_DREAM_defaults <- function(numerical_optimiser_setup) {
   parameter_number <- length(numerical_optimiser_setup$parameter_names)
 
   # logic for chain number calculation - subject to change
-  chain_number_based_on_parameter_number <- c(32, 32, 32, 128, 128, 128) # magic numbers based on trial and error
-  names(chain_number_based_on_parameter_number) <- c("3", "4", "5", "6", "7", "8")
+  chain_number_based_on_parameter_number <-        c(32,  32,  32,  128, 128, 128, 128, 128) # magic numbers based on trial and error
+  names(chain_number_based_on_parameter_number) <- c("3", "4", "5", "6", "7", "8", "9", "10")
 
   chain_number <- if_else(
     is.na(unname(chain_number_based_on_parameter_number[as.character(parameter_number)])),
