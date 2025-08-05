@@ -391,14 +391,19 @@ a3_on_off_difference_data <- streamflow_data_with_a3_off |>
 ### - average by number of years during decade
 ### - percentage change is ((CO2_on - CO2_off) / CO2_off) * 100
 
-years_of_intrest <- c(seq(1990, 1999), seq(2012, 2021))
 
-percentage_difference_a3_on_off_data <- a3_on_off_difference_data |> 
-  filter(year %in% years_of_intrest) |> 
+
+percentage_difference_a3_on_off_data <- a3_on_off_difference_data |>
+  filter(year %in% years_of_intrest) |>
   # add decade group for summarising
   mutate(
-    decade = year %/% 1000
-  ) |> 
+    decade = case_when( # year - (year %% 10)
+      year %in% seq(1990, 1999) ~ 1,
+      year %in% seq(2012, 2021) ~ 2,
+      .default = NA
+    )
+  ) |>
+  filter(!is.na(decade)) |> 
   # sum streamflow for each decade
   summarise(
     sum_decade_realspace_CO2_off_streamflow = sum(realspace_a3_off_streamflow),
@@ -406,14 +411,14 @@ percentage_difference_a3_on_off_data <- a3_on_off_difference_data |>
     sum_decade_realspace_observed_streamflow = sum(realspace_observed_streamflow),
     years_of_data = n(),
     .by = c(gauge, decade)
-  ) |> 
+  ) |>
   # find the absolution and percentage difference
   mutate(
     realspace_CO2_off_streamflow_per_year = sum_decade_realspace_CO2_off_streamflow / years_of_data,
     realspace_a3_on_streamflow_per_year = sum_decade_realspace_CO2_on_streamflow / years_of_data,
     CO2_impact_on_streamflow_mm_per_year = (realspace_a3_on_streamflow_per_year - realspace_CO2_off_streamflow_per_year),
     CO2_impact_on_streamflow_percent = (CO2_impact_on_streamflow_mm_per_year / realspace_CO2_off_streamflow_per_year) * 100
-  ) |> 
+  ) |>
   arrange(desc(CO2_impact_on_streamflow_percent)) # Large percentage changes are not tied to years_of_data
   
 
@@ -1047,6 +1052,12 @@ ggsave(
 )
 
 
+plotting_best_CO2_non_CO2_streamflow |>
+  summarise(
+    mean = mean(CO2_impact_on_streamflow_percent),
+    median = median(CO2_impact_on_streamflow_percent),
+    .by = decade
+  )
 
 
 
