@@ -7,8 +7,10 @@
 # 3. Supplementary --> ToE_vs_uncertainty_and_evidence_ratio.pdf (requires dream results - called ToE_vs_uncertainty in old files)
 # 4. Supplementary --> ToE_vs_record_length.pdf 
 # 5. Supplementary --> ToE_vs_catchment_area.pdf
-# 6. Testing --> ToE_cdf.pdf (not in file)
-# 7. Testing --> something related to climate types (not in file)
+# 6. Supplementary --> time_of_emergence_and_uncertainty_plot.pdf
+# 7. Supplementary --> time_of_emergence_uncertainty_vs_evidence_ratio.pdf
+# 8. Supplementary --> ToE_cdf.pdf 
+# X. Testing --> something related to climate types (not in file)
 
 
 
@@ -26,7 +28,7 @@
 
 
 # Import libraries -------------------------------------------------------------
-pacman::p_load(tidyverse, ozmaps, sf, ggmagnify, furrr)
+pacman::p_load(tidyverse, ozmaps, sf, ggmagnify, furrr, arrow)
 
 
 
@@ -78,8 +80,14 @@ streamflow_results <- read_csv(
 )
 
 
+year_DREAM_sequence_data <- open_dataset(
+  source = "./Modelling/Results/DREAM/year_DREAM_sequence_data.parquet",
+  format = "parquet"
+)
 
-# Calculate time of emergence --------------------------------------------------
+
+
+# Calculate time of emergence using CMAES parameters ---------------------------
 best_model_per_gauge <- best_CO2_non_CO2_per_gauge |>
   slice_min(
     AIC,
@@ -233,6 +241,31 @@ time_of_emergence_data <- time_of_emergence_data |>
 
 
 
+## Add DREAM Time of emergence IQR to time of emergence data ===================
+### To save load time only load in gauges that will be used in the plot
+filtered_gauges <- time_of_emergence_data |> pull(gauge) |> unique()
+
+DREAM_time_of_emergence_IQR <- year_DREAM_sequence_data |> 
+  filter(gauge %in% filtered_gauges) |> 
+  select(gauge, ToE) |> 
+  collect() |> 
+  summarise(
+    ToE_IQR = IQR(ToE),
+    .by = gauge
+  )
+
+time_of_emergence_data <- time_of_emergence_data |> 
+  left_join(
+    DREAM_time_of_emergence_IQR,
+    by = join_by(gauge)
+  ) |> 
+  # in the plot we want big dots (large uncertainty) on the bottom and small dots (small uncertainty) on top
+  # ggplot plots thing in order they appear in the tibble
+  arrange(desc(ToE_IQR))
+
+
+
+
 # Does the time of emergence kick in at the last couple of years? -------------- 
 best_gauges_time_of_emergence <- time_of_emergence_data |> 
   pull(gauge) |> 
@@ -306,25 +339,14 @@ TAS_data <- time_of_emergence_data |>
 
 
 ### Generate inset plots #######################################################
-
-
-# Need to add these histograms as grobs in the inset
-# Main plot -> inset map -> inset histogram
-# Does patchwork do inset histograms?
-# See documentation: https://patchwork.data-imaginist.com/reference/inset_element.html
-
-# scale_size_binned() - used for dream
-# Using scale_size_binned() is technically between because it is a
-# does the binning for me.
-
-
-#scale_size_limits <- custom_bins_time_of_emergence_data |>
-#  pull(DREAM_ToE_IQR) |>
-#  range() # can round up if I want to
+scale_size_limits <- time_of_emergence_data |>
+  pull(ToE_IQR) |>
+  range() # can round up if I want to
 
 
 transparent_dots_constant <- 0.75
-size <- 4 # remove when adding DREAM_ToE_IQR
+ToE_IQR_breaks <- c(5, 10, 15, 20, 25, 30, 35, 40)
+
 
 inset_plot_QLD <- aus_map |>
   filter(state == "QLD") |>
@@ -332,18 +354,25 @@ inset_plot_QLD <- aus_map |>
   geom_sf() +
   geom_point(
     data = QLD_data,
-    aes(x = lon, y = lat, fill = decade_time_of_emergence),#, size = DREAM_ToE_IQR),
+    aes(x = lon, y = lat, fill = decade_time_of_emergence, size = ToE_IQR),
     show.legend = FALSE,
     stroke = 0.1,
     alpha = transparent_dots_constant,
     shape = 21, # remove this with size
-    colour = "black",
-    size = size
+    colour = "black"
   ) +
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
-  #scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
+  scale_size_binned(limits = scale_size_limits, breaks = ToE_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
   guides(size = guide_bins(show.limits = TRUE)) +
-  theme_void() #+
+  theme_void() 
+
+
+
+# Need to add these histograms as grobs in the inset
+# Main plot -> inset map -> inset histogram
+# Does patchwork do inset histograms?
+# See documentation: https://patchwork.data-imaginist.com/reference/inset_element.html
+# Potential code:
 # annotation_custom(
 #  ggplotGrob(state_ToE_histograms[["QLD"]]),
 #  xmin = 145, xmax = 150, ymin = -15, ymax = -10 # dial in the coords
@@ -352,9 +381,6 @@ inset_plot_QLD <- aus_map |>
 # It looks as if geom_magnify treats it as two plots instead of a single plot - it only take the 2nd element in the list
 # It must be a single plot (i.e., a list of length 1) - inset_element does not work
 
-
-#scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
-#guides(size = guide_bins(show.limits = TRUE)) +
 
 
 
@@ -365,17 +391,16 @@ inset_plot_NSW <- aus_map |>
   geom_sf() +
   geom_point(
     data = NSW_data,
-    aes(x = lon, y = lat, fill = decade_time_of_emergence),#, size = DREAM_ToE_IQR),
+    aes(x = lon, y = lat, fill = decade_time_of_emergence, size = ToE_IQR),
     show.legend = FALSE,
     stroke = 0.1,
     alpha = transparent_dots_constant,
     shape = 21,
-    colour = "black",
-    size = size
+    colour = "black"
   ) +
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
-  #scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
-  #guides(size = guide_bins(show.limits = TRUE)) +
+  scale_size_binned(limits = scale_size_limits, breaks = ToE_IQR_breaks) + 
+  guides(size = guide_bins(show.limits = TRUE)) +
   theme_void()
 
 
@@ -386,17 +411,16 @@ inset_plot_VIC <- aus_map |>
   geom_sf() +
   geom_point(
     data = VIC_data,
-    aes(x = lon, y = lat, fill = decade_time_of_emergence),#, size = DREAM_ToE_IQR),
+    aes(x = lon, y = lat, fill = decade_time_of_emergence, size = ToE_IQR),
     show.legend = FALSE,
     alpha = transparent_dots_constant,
     stroke = 0.1,
     shape = 21,
-    colour = "black",
-    size = size
+    colour = "black"
   ) +
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
-  #scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
-  #guides(size = guide_bins(show.limits = TRUE)) +
+  scale_size_binned(limits = scale_size_limits, breaks = ToE_IQR_breaks) +
+  guides(size = guide_bins(show.limits = TRUE)) +
   theme_void()
 
 
@@ -407,17 +431,16 @@ inset_plot_WA <- aus_map |>
   geom_sf() +
   geom_point(
     data = WA_data,
-    aes(x = lon, y = lat, fill = decade_time_of_emergence),#, size = DREAM_ToE_IQR),
+    aes(x = lon, y = lat, fill = decade_time_of_emergence, size = ToE_IQR),
     show.legend = FALSE,
     stroke = 0.1,
     alpha = transparent_dots_constant,
     shape = 21,
-    colour = "black",
-    size = size
+    colour = "black"
   ) +
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
-  #scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
-  #guides(size = guide_bins(show.limits = TRUE)) +
+  scale_size_binned(limits = scale_size_limits, breaks = ToE_IQR_breaks) + 
+  guides(size = guide_bins(show.limits = TRUE)) +
   theme_void()
 
 
@@ -428,17 +451,16 @@ inset_plot_TAS <- aus_map |>
   geom_sf() +
   geom_point(
     data = TAS_data,
-    aes(x = lon, y = lat, fill = decade_time_of_emergence),#, size = DREAM_ToE_IQR),
+    aes(x = lon, y = lat, fill = decade_time_of_emergence, size = ToE_IQR),
     show.legend = FALSE,
     stroke = 0.1,
     alpha = transparent_dots_constant,
     shape = 21,
-    colour = "black",
-    size = size
+    colour = "black"
   ) +
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
-  #scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
-  #guides(size = guide_bins(show.limits = TRUE)) +
+  scale_size_binned(limits = scale_size_limits, breaks = ToE_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+  guides(size = guide_bins(show.limits = TRUE)) +
   theme_void()
 
 
@@ -450,14 +472,13 @@ ToE_map_aus <- aus_map |>
   geom_sf() +
   geom_point(
     data = time_of_emergence_data,
-    mapping = aes(x = lon, y = lat, fill = decade_time_of_emergence), #size = DREAM_ToE_IQR),
+    mapping = aes(x = lon, y = lat, fill = decade_time_of_emergence, size = ToE_IQR),
     stroke = 0.1,
     shape = 21,
-    colour = "black",
-    size = size
+    colour = "black"
   ) +
   scale_fill_brewer(palette = "BrBG", drop = FALSE) +
-  #scale_size_binned(limits = scale_size_limits) + # range = c(0, 2) dictates the size of the dots (important)
+  scale_size_binned(limits = scale_size_limits, breaks = ToE_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
   theme_bw() +
   # expand map
   coord_sf(xlim = c(95, 176), ylim = c(-60, 0)) +
@@ -513,7 +534,7 @@ ToE_map_aus <- aus_map |>
     size = "Time of Emergence Uncertainty Years (IQR)"
   ) +
   theme(
-    legend.key = element_rect(fill = "grey80"),
+    #legend.key = element_rect(fill = "grey80"),
     legend.title = element_text(hjust = 0.5),
     legend.title.position = "top",
     legend.background = element_rect(colour = "black"),
@@ -526,21 +547,135 @@ ToE_map_aus <- aus_map |>
     legend.box = "horizontal" # , # side-by-side legends
   ) +
   guides(
-    fill = guide_legend(override.aes = list(size = 5, shape = 21), nrow = 3)#, # Wrap legend with nrow
-    #size = guide_bins(show.limits = TRUE, direction = "horizontal")
+    fill = guide_legend(override.aes = list(size = 5, shape = 21), nrow = 3), # Wrap legend with nrow
+    size = guide_bins(show.limits = TRUE, direction = "horizontal")
   )
 
 
 ToE_map_aus
 
 ggsave(
-  filename = "./Figures/Main/ToE_map_aus_uncertainty.pdf", #"./Graphs/CMAES_graphs/log_sinh_no_uncertainty_ToE_map_aus.pdf",
+  filename = "./Figures/Main/ToE_map_aus_uncertainty.pdf", 
   plot = ToE_map_aus,
   device = "pdf",
   width = 232,
   height = 200,
   units = "mm"
 )
+
+
+
+
+
+# Time of Emergence Empirical Cumulative Distribution --------------------------
+# Construct Empirical Cumulative Distribution for each catchment using
+# time of emergence data
+
+# Method:
+# 1. Pull ToE data for each gauge
+# 2. Put ToE data into ecdf to produce a ecdf function
+# 3. Use ecdf function to produce y-axis of cdf (xaxis remains constant)
+# 4. Average y-axis (for every value of x) for each state
+
+year_DREAM_ToE_data <- year_DREAM_sequence_data |> 
+  filter(gauge %in% filtered_gauges) |> 
+  select(gauge, ToE) |> 
+  collect()
+
+ecdf_function_factory <- function(gauge, data) {
+  data |> 
+    filter(gauge == {{ gauge }}) |>   
+    pull(ToE) |> 
+    ecdf()
+}
+
+gauge_ecdf_functions <- map(
+  .x = filtered_gauges,
+  .f = ecdf_function_factory,
+  data = year_DREAM_ToE_data
+)
+
+
+# You cannot map over function - make a function that allows this
+map_ecdf <- function(specific_ecdf, x_axis) {
+  specific_ecdf(x_axis)
+}
+
+cdf_x_axis <- seq(from = 1959, to = 2010, by = 1)
+
+gauge_cdf_results <- map(
+  .x = gauge_ecdf_functions,
+  .f = map_ecdf,
+  x_axis = cdf_x_axis
+) |> 
+  `names<-`(filtered_gauges) |> 
+  as_tibble() |> 
+  add_column(
+    "cdf_x_axis" = cdf_x_axis,
+    .before = 1
+  ) 
+
+
+## Construct state cdf's =======================================================
+state_cdf_results <- gauge_cdf_results |>
+  pivot_longer(
+    cols = !cdf_x_axis,
+    names_to = "gauge",
+    values_to = "cdf_value"
+  ) |> 
+  # add state
+  left_join(
+    lat_lon_gauge,
+    by = join_by(gauge)
+  ) |> 
+  # summarise by state
+  summarise(
+    median_cdf = median(cdf_value),
+    lower_bound_cdf = quantile(cdf_value, probs = 0.1),
+    upper_bound_cdf = quantile(cdf_value, probs = 0.9),
+    n = n(),
+    .by = c(cdf_x_axis, state)
+  ) 
+
+
+## add n = ??? to plots
+count_state_cdf <- state_cdf_results |> 
+  filter(cdf_x_axis == 1959) |> 
+  select(state, n) |>
+  mutate(
+    n_label = paste0("n = ", n)
+  ) |> 
+  add_column(
+    "x_pos" = 1963,
+    "y_pos" = 0.9
+  )
+
+
+## Plot ========================================================================
+state_cdf_plot <- state_cdf_results |> 
+  ggplot(aes(x = cdf_x_axis, y = median_cdf)) +
+  geom_step() +
+  geom_label(
+    aes(x = x_pos, y = y_pos, label = n_label),
+    data = count_state_cdf
+  ) +
+  geom_ribbon(aes(ymin = lower_bound_cdf, ymax = upper_bound_cdf), alpha = 0.2) +
+  labs(x = "Time of Emergence (Year)", y = "Cumulative Probabiliy") +
+  theme_bw() +
+  facet_wrap(~state)
+
+
+ggsave(
+  filename = "./Figures/Supplementary/ToE_cdf.pdf", 
+  plot = state_cdf_plot,
+  device = "pdf",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
+
+
+
 
 
 
@@ -567,11 +702,54 @@ ggsave(
 
 
 
+
+
+
+
 # Relationships with time of emergence -----------------------------------------
 
-## Time of emergence, record length, uncertainty graph
-## See ToE vs. uncertainty in RQ2\Testing-Figures\CMAES-DREAM-old-figures-boxcox\Graphs\Supplementary_Figures
+## Time of emergence vs. uncertainty ===========================================
+time_of_emergence_and_uncertainty_plot <- time_of_emergence_data |> 
+  ggplot(aes(x = year_time_of_emergence, y = ToE_IQR)) +
+  geom_point() +
+  facet_wrap(~binned_evidence_ratio) +
+  labs(
+    x = "Time of Emergence (Year)",
+    y = "Time of Emergence Interquantile Range"
+  ) +
+  theme_bw()
 
+
+ggsave(
+  filename = "./Figures/Supplementary/time_of_emergence_and_uncertainty_plot.pdf", 
+  plot = time_of_emergence_and_uncertainty_plot,
+  device = "pdf",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
+
+
+## Time of emergence uncertainty vs. evidence ratio ============================
+time_of_emergence_uncertainty_vs_evidence_ratio <- time_of_emergence_data |> 
+  ggplot(aes(x = evidence_ratio, y = ToE_IQR)) +
+  geom_point() +
+  scale_x_log10() +
+  labs(
+    x = "Evidence Ratio",
+    y = "Time of Emergence Interquantile Range"
+  ) +
+  theme_bw()
+
+
+ggsave(
+  filename = "./Figures/Supplementary/time_of_emergence_uncertainty_vs_evidence_ratio.pdf", 
+  plot = time_of_emergence_uncertainty_vs_evidence_ratio,
+  device = "pdf",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
 
 
 ## Time of emergence vs. record length =========================================
