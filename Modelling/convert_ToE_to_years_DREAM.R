@@ -73,6 +73,6 @@ year_DREAM_sequence_data <- a5_DREAM_sequence_data |>
 # Save results -----------------------------------------------------------------
 write_parquet(
   x = year_DREAM_sequence_data,
-  sink = "./Modelling/Results/DREAM/year_DREAM_sequence_data.R"
+  sink = "./Modelling/Results/DREAM/year_DREAM_sequence_data.parquet"
 )
 
