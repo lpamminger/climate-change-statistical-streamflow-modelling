@@ -2,7 +2,7 @@
 
 
 # Import libraries--------------------------------------------------------------
-pacman::p_load(tidyverse, dream, smoof, furrr, parallel, truncnorm, sloop, arrow)
+pacman::p_load(tidyverse, dream, furrr, parallel, truncnorm, sloop, arrow)
 
 
 # Import and prepare data-------------------------------------------------------
