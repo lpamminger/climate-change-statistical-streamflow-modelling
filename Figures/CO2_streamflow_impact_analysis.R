@@ -391,15 +391,18 @@ a3_on_off_difference_data <- streamflow_data_with_a3_off |>
 ### - average by number of years during decade
 ### - percentage change is ((CO2_on - CO2_off) / CO2_off) * 100
 
+decade_1 <- seq(from = 1990, to = 1999)
+decade_2 <- seq(from = 2012, to = 2021)
+
 
 
 percentage_difference_a3_on_off_data <- a3_on_off_difference_data |>
-  filter(year %in% years_of_intrest) |>
+  filter(year %in% c(decade_1, decade_2)) |>
   # add decade group for summarising
   mutate(
     decade = case_when( # year - (year %% 10)
-      year %in% seq(1990, 1999) ~ 1,
-      year %in% seq(2012, 2021) ~ 2,
+      year %in% decade_1 ~ 1,
+      year %in% decade_2 ~ 2,
       .default = NA
     )
   ) |>

@@ -41,9 +41,14 @@ best_CO2_non_CO2_per_gauge <- read_csv(
 )
 
 DREAM_sequences_query <- open_dataset(
-  sources = "./Modelling/Results/DREAM/Sequences"
+  sources = "./Modelling/Results/DREAM/Parameter_Sequences"
 )
 
+
+CO2_off_DREAM_sequences_query <- DREAM_sequences_query |>
+  mutate(
+    parameter_value = if_else(str_detect(parameter, "a3"), 0, parameter_value)
+  )
 # Approach:
 # 1. from CO2_impact_analysis get the relevant catchments (only best models with CO2 with an evidence ratio greater than 100)
 # 2. filter sequence.parquet files using relevant catchments
@@ -168,12 +173,88 @@ make_DREAM_streamflow_sequences <- function(gauge, observed_data, start_stop_ind
     add_column(
       gauge = {{ gauge }},
       .before = 1
-    )
+    ) |> 
+    select(!c(precipitation, observed_streamflow, is_drought_year, CO2, seasonal_ratio))
   
 }
 
 
 
+# Does gauge 235205 produce NA? No, something is up
+# TEST
+decade_1 <- seq(from = 1990, to = 1999)
+decade_2 <- seq(from = 2012, to = 2021)
+  
+x <- make_DREAM_streamflow_sequences(
+  gauge = "235205",
+  observed_data = data, 
+  start_stop_indexes = start_stop_indexes, 
+  DREAM_sequences_query = DREAM_sequences_query, 
+  best_model_per_gauge = best_model_per_gauge
+) |> 
+  filter(year %in% c(decade_1, decade_2)) |> 
+  pivot_longer(
+    cols = !c(gauge, year),
+    names_to = "permutation",
+    values_to = "CO2_on_streamflow"
+  ) |> 
+  mutate(
+    decade = case_when(
+      year %in% decade_1 ~ 1,
+      year %in% decade_2 ~ 2,
+      .default = NA
+    )
+  ) |> 
+  summarise(
+    total_decade_CO2_on_streamflow = sum(CO2_on_streamflow),
+    .by = c(decade, permutation, gauge)
+  ) 
+
+
+y <- make_DREAM_streamflow_sequences(
+  gauge = "235205",
+  observed_data = data, 
+  start_stop_indexes = start_stop_indexes, 
+  DREAM_sequences_query = CO2_off_DREAM_sequences_query, 
+  best_model_per_gauge = best_model_per_gauge
+) |> 
+  filter(year %in% c(decade_1, decade_2)) |> 
+  pivot_longer(
+    cols = !c(gauge, year),
+    names_to = "permutation",
+    values_to = "CO2_off_streamflow"
+  ) |> 
+  mutate(
+    decade = case_when(
+      year %in% decade_1 ~ 1,
+      year %in% decade_2 ~ 2,
+      .default = NA
+    )
+  ) |> 
+  summarise(
+    total_decade_CO2_off_streamflow = sum(CO2_off_streamflow),
+    .by = c(decade, permutation, gauge)
+  )
+
+combine_xy <- x |> 
+  left_join(
+    y,
+    by = join_by(gauge, permutation, decade)
+  ) |> 
+  mutate(
+    CO2_percent_impact = ((total_decade_CO2_on_streamflow - total_decade_CO2_off_streamflow) / total_decade_CO2_off_streamflow) * 100
+  ) 
+  # uncertainty 
+
+# I feel like it would be more impactful if it were +/- the other uncertainty
+combine_xy |> summarise(
+  IQR_test = IQR(CO2_percent_impact),
+  median_test = median(CO2_percent_impact),
+  .by = decade
+  )
+# How does this compare to the CMAES value
+# The mean and median is within a percentage point to the CMAES calibrated value
+# I could do a total switch for Figure 3 only using DREAM data
 
 
 # Filter parquet Sequences using best_model_per_gauge for iteration ------------
@@ -181,48 +262,141 @@ filter_gauges <- best_model_per_gauge |>
   pull(gauge) |>
   unique()
 
+round_1_gauges <- filter_gauges[1:ceiling(length(filter_gauges)/2)]
+round_2_gauges <- filter_gauges[(ceiling(length(filter_gauges)/2) + 1):length(filter_gauges)]
 
-# Iterate of gauges ------------------------------------------------------------
-plan(multisession, workers = length(availableWorkers()))
+# Iterate of gauges and save ---------------------------------------------------
+# furrr and query does not work together - cannot filter in parallel
+# This produces a 27 Gb tibble -> split filter gauges in two
+# Partitioning into year exceeds RAM
+# Likely have to stage it 
 
-DREAM_streamflow_sequences <- future_map(
-  .x = filter_gauges,
-  .f = make_DREAM_streamflow_sequences,
-  observed_data = data,
-  start_stop_indexes = start_stop_indexes,
-  DREAM_sequences_query = DREAM_sequences_query,
-  best_model_per_gauge = best_model_per_gauge,
-  .progress = TRUE
-) |> 
-  list_rbind()
+# for now split gauges vector in two and get the relevent data for
+# figure 3 (e.g., total decade streamflow for the two decades of intrest)
 
+# Temporary solution copy paste
 
-# Repeat with CO2 components turned off ----------------------------------------
+relevant_years <- c(seq(from = 1990, to = 1999), seq(from = 2012, to = 2021))
+
 CO2_off_DREAM_sequences_query <- DREAM_sequences_query |>
   mutate(
     parameter_value = if_else(str_detect(parameter, "a3"), 0, parameter_value)
   )
 
-DREAM_streamflow_sequences_CO2_off <- future_map(
-  .x = filter_gauges,
-  .f = make_DREAM_streamflow_sequences,
-  observed_data = data,
-  start_stop_indexes = start_stop_indexes,
-  DREAM_sequences_query = CO2_off_DREAM_sequences_query,
-  best_model_per_gauge = best_model_per_gauge,
-  .progress = TRUE
+produce_and_save_decade_streamflow_totals <- function(gauge_set, DREAM_sequences_query, filename) {
+  map(
+    .x = gauge_set,
+    .f = make_DREAM_streamflow_sequences,
+    observed_data = data,
+    start_stop_indexes = start_stop_indexes,
+    DREAM_sequences_query = DREAM_sequences_query, 
+    best_model_per_gauge = best_model_per_gauge
+  ) |> 
+    list_rbind() |> 
+    filter(year %in% relevant_years) |> 
+    pivot_longer(
+      cols = !c(gauge, year),
+      names_to = "streamflow_permutation",
+      values_to = "streamflow"
+    ) |> 
+    mutate(
+      decade = if_else(year %in% seq(from = 1990, to = 1999), 1, 2)
+    ) |> 
+    summarise(
+      total_decade_streamflow = sum(streamflow),
+      .by = c(decade, gauge, streamflow_permutation)
+    ) |> 
+    write_parquet(
+      sink = paste0("./Modelling/Results/DREAM/Streamflow_Sequences/", filename, ".parquet")
+    )
+}
+
+# query does not play nice with walk/map
+# Do this manually to avoid RAM limitations
+stop_here() # manually do this
+produce_and_save_decade_streamflow_totals(
+  gauge_set = round_1_gauges,
+  DREAM_sequences_query = DREAM_sequences_query, 
+  filename = "streamflow_sequence_CO2_on_1"
+)
+
+
+produce_and_save_decade_streamflow_totals(
+  gauge_set = round_2_gauges,
+  DREAM_sequences_query = DREAM_sequences_query, 
+  filename = "streamflow_sequence_CO2_on_2"
+)
+
+produce_and_save_decade_streamflow_totals(
+  gauge_set = round_1_gauges,
+  DREAM_sequences_query = CO2_off_DREAM_sequences_query, 
+  filename = "streamflow_sequence_CO2_off_1"
+)
+
+produce_and_save_decade_streamflow_totals(
+  gauge_set = round_2_gauges,
+  DREAM_sequences_query = CO2_off_DREAM_sequences_query, 
+  filename = "streamflow_sequence_CO2_off_2"
+)
+
+
+
+
+# Import the streamflow_sequence parquet files and join CO2 on/off -------------
+## copy and paste for other sections then rbind
+decade_streamflow_CO2_on_sequence_1 <- open_dataset(
+  sources = "./Modelling/Results/DREAM/Streamflow_Sequences/streamflow_sequence_CO2_on_1.parquet"
 ) |> 
-  list_rbind()
+  collect() |> 
+  rename(total_decade_streamflow_CO2_on = total_decade_streamflow) 
 
+decade_streamflow_CO2_off_sequence_1 <- open_dataset(
+  sources = "./Modelling/Results/DREAM/Streamflow_Sequences/streamflow_sequence_CO2_off_1.parquet"
+) |> 
+  collect() |> 
+  rename(total_decade_streamflow_CO2_off = total_decade_streamflow)
 
+decade_streamflow_CO2_on_sequence_2 <- open_dataset(
+  sources = "./Modelling/Results/DREAM/Streamflow_Sequences/streamflow_sequence_CO2_on_2.parquet"
+) |> 
+  collect() |> 
+  rename(total_decade_streamflow_CO2_on = total_decade_streamflow)
 
-# Save results -----------------------------------------------------------------
-write_parquet(
-  x = DREAM_streamflow_sequences,
-  sink = "./Modelling/Results/DREAM/DREAM_streamflow_sequences.parquet"
+decade_streamflow_CO2_off_sequence_2 <- open_dataset(
+  sources = "./Modelling/Results/DREAM/Streamflow_Sequences/streamflow_sequence_CO2_off_2.parquet"
+) |> 
+  collect() |> 
+  rename(total_decade_streamflow_CO2_off = total_decade_streamflow)
+
+decade_streamflow_CO2_on <- rbind(
+  decade_streamflow_CO2_on_sequence_1,
+  decade_streamflow_CO2_on_sequence_2
 )
 
-write_parquet(
-  x = DREAM_streamflow_sequences_CO2_off,
-  sink = "./Modelling/Results/DREAM/DREAM_streamflow_sequences_CO2_off.parquet"
+decade_streamflow_CO2_off <- rbind(
+  decade_streamflow_CO2_off_sequence_1,
+  decade_streamflow_CO2_off_sequence_2
 )
+
+
+## left_join CO2_on/off sequences
+decade_streamflow_sequences <- decade_streamflow_CO2_on |> 
+  left_join(
+    decade_streamflow_CO2_off,
+    by = join_by(decade, gauge, streamflow_permutation)
+  )
+
+
+# calculate CO2 on/off % difference from streamflow sequences ------------------
+# sum_decade_streamflow_CO2_on - sum_decade_streamflow_CO2_off / sum_decade_streamflow_CO2_off,
+CO2_impact_on_streamflow_sequences <- decade_streamflow_sequences |> 
+  mutate(
+    CO2_impact_on_streamflow_percent = (total_decade_streamflow_CO2_on - total_decade_streamflow_CO2_off / total_decade_streamflow_CO2_off) * 100
+  ) |> 
+  summarise(
+    mean_impact_CO2_percentage = mean(CO2_impact_on_streamflow_percent),
+    .by = gauge
+  )
+
+# This is not good. Something is not right...
+
