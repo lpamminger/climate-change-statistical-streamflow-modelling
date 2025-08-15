@@ -40,12 +40,6 @@ best_CO2_non_CO2_per_gauge <- read_csv(
   show_col_types = FALSE
 )
 
-DREAM_sequences <- open_dataset(
-  sources = "./Modelling/Results/DREAM/Sequences"
-) |>
-  collect()
-
-
 
 
 
@@ -95,6 +89,24 @@ best_model_per_gauge <- best_CO2_non_CO2_per_gauge |>
 
 
 
+# Collect DREAM sequences ------------------------------------------------------
+# Insufficent RAM to load the entire dataset
+# Split gauges in two. Run script 2 times
+gauges <- best_model_per_gauge |>
+  pull(gauge) |>
+  unique()
+
+round_1_gauges <- gauges[1:41]
+round_2_gauges <- gauges[42:81]
+
+DREAM_sequences <- open_dataset(
+  sources = "./Modelling/Results/DREAM/Sequences"
+) |>
+  filter(gauge == "235234") |> 
+  #filter(gauge %in% round_1_gauges) |> 
+  collect()
+
+
 
 # Create function to convert sequences_parameters to streamflow ----------------
 
@@ -128,6 +140,7 @@ DREAM_sequences_to_matrix <- function(DREAM_sequences) {
 
 
 make_DREAM_streamflow_sequences <- function(gauge, observed_data, start_stop_indexes, DREAM_sequences, best_model_per_gauge) {
+  browser()
   # Make catchment data for streamflow model
   catchment_data <- gauge |>
     catchment_data_blueprint(
@@ -249,6 +262,7 @@ CO2_impact_total_decade_streamflow_uncertainty <- function(gauge, period_1, peri
       total_decade_streamflow_CO2_off = total_decade_streamflow
     )
 
+  browser()
   # Return summary tibble
   total_decade_streamflow_CO2_on |>
     left_join(
@@ -277,16 +291,25 @@ CO2_off_DREAM_sequences <- DREAM_sequences |>
     parameter_value = if_else(str_detect(parameter, "a3"), 0, parameter_value)
   )
 
-# Filter parquet Sequences using best_model_per_gauge for iteration ------------
-gauges <- best_model_per_gauge |>
-  pull(gauge) |>
-  unique()
 
 
 # Calculate and save the impact of CO2 on streamflow uncertainty ---------------
 decade_1 <- seq(from = 1990, to = 1999)
 decade_2 <- seq(from = 2012, to = 2021)
 
+
+CO2_impact_total_decade_streamflow_uncertainty(
+  gauge = "235234",
+  period_1 = decade_1,
+  period_2 = decade_2,
+  observed_data = data,
+  start_stop_indexes = start_stop_indexes,
+  DREAM_sequences = DREAM_sequences,
+  CO2_off_DREAM_sequences = CO2_off_DREAM_sequences,
+  best_model_per_gauge = best_model_per_gauge
+)
+
+# Infs are present when back-transforming - solution?
 
 DREAM_CO2_impact_uncertainty_on_streamflow <- map(
   .x = gauges,
@@ -304,5 +327,7 @@ DREAM_CO2_impact_uncertainty_on_streamflow <- map(
 
 DREAM_CO2_impact_uncertainty_on_streamflow |>
   write_csv(
-    file = "./Modelling/Results/DREAM/DREAM_CO2_impact_uncertainty_on_streamflow.csv"
+    file = "./Modelling/Results/DREAM/DREAM_CO2_impact_uncertainty_on_streamflow_round_1.csv"
   )
+
+
