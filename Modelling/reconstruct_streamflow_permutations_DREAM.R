@@ -96,19 +96,23 @@ gauges <- best_model_per_gauge |>
   pull(gauge) |>
   unique()
 
-round_1_gauges <- gauges[1:41]
-round_2_gauges <- gauges[42:81]
+round_1_gauges <- gauges[1:40]
+round_2_gauges <- gauges[41:81]
 
 DREAM_sequences <- open_dataset(
   sources = "./Modelling/Results/DREAM/Sequences"
 ) |>
-  filter(gauge == "235234") |> 
-  #filter(gauge %in% round_1_gauges) |> 
-  collect()
+  filter(gauge %in% round_2_gauges) |> 
+  collect() |> 
+  arrange(chain, n)
+
 
 
 
 # Create function to convert sequences_parameters to streamflow ----------------
+
+# Sequence to matrix pivots_wider forcing a rectangular matrix
+
 
 DREAM_sequences_to_matrix <- function(DREAM_sequences) {
   DREAM_sequences |>
@@ -127,20 +131,28 @@ DREAM_sequences_to_matrix <- function(DREAM_sequences) {
     # convert to matrix
     as.matrix() |>
     # transpose
-    t() |>
+    t() #|>
     # strip names
-    unname()
+    #unname()
 
   # returns a n x m matrix.
   # n = parameters
   # m = unique parameter sets
 }
 
-
+check_NA_parameter_matrix <- function(parameter_matrix) {
+  parameter_matrix |> is.na() |> any()
+}
 
 
 make_DREAM_streamflow_sequences <- function(gauge, observed_data, start_stop_indexes, DREAM_sequences, best_model_per_gauge) {
 
+  force(gauge)
+  force(observed_data)
+  force(start_stop_indexes)
+  force(DREAM_sequences)
+  force(best_model_per_gauge)
+  
   # Make catchment data for streamflow model
   catchment_data <- gauge |>
     catchment_data_blueprint(
@@ -151,7 +163,8 @@ make_DREAM_streamflow_sequences <- function(gauge, observed_data, start_stop_ind
 
   # Extract sequences for a given gauge
   gauge_DREAM_sequences <- DREAM_sequences |>
-    filter(gauge == {{ gauge }})
+    filter(gauge == {{ gauge }}) 
+  
 
 
   if (is_empty_tibble(gauge_DREAM_sequences)) {
@@ -165,13 +178,20 @@ make_DREAM_streamflow_sequences <- function(gauge, observed_data, start_stop_ind
     pull(streamflow_model) |>
     match.fun()
 
-
+  
   # Convert sequences to a matrix
   parameter_matrix_for_streamflow_model <- DREAM_sequences_to_matrix(gauge_DREAM_sequences)
 
+  # Check if pivot_wider has filled in missing values with NA
+  if(check_NA_parameter_matrix(parameter_matrix_for_streamflow_model)) {
+    stop("pivot_wider has filled in missing sequences with NA")
+  }
+  
   transformed_streamflow <- streamflow_model(
     catchment_data = catchment_data,
-    parameter_set = parameter_matrix_for_streamflow_model
+    parameter_set = parameter_matrix_for_streamflow_model[
+      !(rownames(parameter_matrix_for_streamflow_model) %in% c("b", "sd")),
+      ]
   ) |>
     add_column(
       gauge = {{ gauge }},
@@ -185,7 +205,7 @@ make_DREAM_streamflow_sequences <- function(gauge, observed_data, start_stop_ind
     as.list()
 
   realspace_streamflow_permutations <- map2(
-    .x = parameter_matrix_for_streamflow_model[(nrow(parameter_matrix_for_streamflow_model) - 1), ],
+    .x = parameter_matrix_for_streamflow_model["b", ],
     .y = transformed_streamflow_permutations,
     .f = inverse_log_sinh_transform,
     offset = 0
@@ -194,9 +214,12 @@ make_DREAM_streamflow_sequences <- function(gauge, observed_data, start_stop_ind
     `names<-`(paste0("perm_", seq(from = 1, to = length(transformed_streamflow_permutations)))) |>
     as_tibble()
 
-  transformed_streamflow |>
+  result_tibble <- transformed_streamflow |>
     select(gauge, year) |>
     cbind(realspace_streamflow_permutations)
+  
+
+  return(result_tibble)
 }
 
 
@@ -229,10 +252,20 @@ total_streamflow_years <- function(x, period_1, period_2) {
 # Create function to summarise the impact of CO2 on streamflow uncertainty -----
 
 
-CO2_impact_total_decade_streamflow_uncertainty <- function(gauge, period_1, period_2, observed_data, start_stop_indexes, DREAM_sequences, CO2_off_DREAM_sequences, best_model_per_gauge) {
+CO2_impact_total_decade_streamflow_uncertainty <- function(specific_gauge, period_1, period_2, observed_data, start_stop_indexes, DREAM_sequences, CO2_off_DREAM_sequences, best_model_per_gauge) {
+  force(specific_gauge)
+  force(period_1)
+  force(period_2)
+  force(observed_data)
+  force(start_stop_indexes)
+  force(DREAM_sequences)
+  force(CO2_off_DREAM_sequences)
+  force(best_model_per_gauge)
+  
+  
   # Convert DREAM parameter sequences to DREAM streamflow sequences
   total_decade_streamflow_CO2_on <- make_DREAM_streamflow_sequences(
-    gauge = {{ gauge }},
+    gauge = specific_gauge,
     observed_data = observed_data,
     start_stop_indexes = start_stop_indexes,
     DREAM_sequences = DREAM_sequences,
@@ -243,14 +276,15 @@ CO2_impact_total_decade_streamflow_uncertainty <- function(gauge, period_1, peri
       period_2 = period_2
     ) |>
     rename(
-      total_decade_streamflow_CO2_on = total_decade_streamflow
+      "total_decade_streamflow_CO2_on" = "total_decade_streamflow"
     )
 
 
+  
   # Convert DREAM parameter sequences to DREAM streamflow sequences with the
   # CO2 component turned off
   total_decade_streamflow_CO2_off <- make_DREAM_streamflow_sequences(
-    gauge = {{ gauge }},
+    gauge = specific_gauge,
     observed_data = observed_data,
     start_stop_indexes = start_stop_indexes,
     DREAM_sequences = CO2_off_DREAM_sequences,
@@ -261,12 +295,13 @@ CO2_impact_total_decade_streamflow_uncertainty <- function(gauge, period_1, peri
       period_2 = period_2
     ) |>
     rename(
-      total_decade_streamflow_CO2_off = total_decade_streamflow
+      "total_decade_streamflow_CO2_off" = "total_decade_streamflow"
     )
 
-
+  # Sometimes both total_decade_streamflow_CO2_on/off produce zero
+  # flow even though it should not be zero.
   # Return summary tibble
-  total_decade_streamflow_CO2_on |>
+  return_tibble <- total_decade_streamflow_CO2_on |>
     left_join(
       total_decade_streamflow_CO2_off,
       by = join_by(decade, permutation, gauge)
@@ -281,9 +316,11 @@ CO2_impact_total_decade_streamflow_uncertainty <- function(gauge, period_1, peri
       .by = decade
     ) |>
     add_column(
-      gauge = {{ gauge }},
+      gauge = {{ specific_gauge }},
       .before = 1
     )
+  
+  return(return_tibble)
 }
 
 
@@ -302,7 +339,7 @@ decade_2 <- seq(from = 2012, to = 2021)
 
 
 DREAM_CO2_impact_uncertainty_on_streamflow <- map(
-  .x = gauges,
+  .x = round_2_gauges, # replace with round_2 when complete
   .f = CO2_impact_total_decade_streamflow_uncertainty,
   period_1 = decade_1,
   period_2 = decade_2,
@@ -317,7 +354,49 @@ DREAM_CO2_impact_uncertainty_on_streamflow <- map(
 
 DREAM_CO2_impact_uncertainty_on_streamflow |>
   write_csv(
-    file = "./Modelling/Results/DREAM/DREAM_CO2_impact_uncertainty_on_streamflow_round_1.csv"
+    file = "./Modelling/Results/DREAM/DREAM_CO2_impact_uncertainty_on_streamflow_round_2.csv"
   )
+
+
+# Join the two rounds and save -------------------------------------------------
+list.files(
+  path = "./Modelling/Results/DREAM/",
+  pattern = "DREAM_CO2",
+  full.names = TRUE,
+  recursive = FALSE
+) |> 
+  read_csv() |> 
+  write_csv("./Modelling/Results/DREAM/DREAM_CO2_impact_uncertainty_on_streamflow.csv")
+
+
+# Testing
+stop_here()
+
+# Pivot_wider fills missing value with NA
+tribble(
+  ~identifier, ~parameter, ~parameter_value,
+  1, "a", 1,
+  1, "b", 2,
+  1, "c", 3,
+  2, "a", 4,
+  2, "b", 5
+) |> 
+  pivot_wider(
+    names_from = parameter,
+    values_from = parameter_value
+  ) |> 
+  is.na()
+
+
+y <- CO2_impact_total_decade_streamflow_uncertainty(
+  specific_gauge = "305202",
+  period_1 = decade_1,
+  period_2 = decade_2,
+  observed_data = data,
+  start_stop_indexes = start_stop_indexes,
+  DREAM_sequences = DREAM_sequences,
+  CO2_off_DREAM_sequences = CO2_off_DREAM_sequences,
+  best_model_per_gauge = best_model_per_gauge
+)
 
 
