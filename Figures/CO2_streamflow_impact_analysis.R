@@ -88,7 +88,10 @@ streamflow_results <- read_csv(
   show_col_types = FALSE
 )
 
-
+DREAM_CO2_impact_uncertainty_on_streamflow <- read_csv(
+  "Modelling/Results/DREAM/DREAM_CO2_impact_uncertainty_on_streamflow.csv",
+  show_col_types = FALSE
+  )
 
 
 
@@ -464,6 +467,10 @@ plot_ready_percentage_difference_a3_on_off_data <- percentage_difference_a3_on_o
   left_join(
     evidence_ratio_calc,
     by = join_by(gauge)
+  ) |> 
+  left_join(
+    DREAM_CO2_impact_uncertainty_on_streamflow,
+    by = join_by(gauge, decade)
   )
 
 
@@ -512,6 +519,20 @@ big_palette <- function(x) {
 # Get shapefiles for Australia ------------------------------------------------
 aus_map <- generate_aus_map_sf()
 
+## Breaks for DREAM uncertainty IQR
+scale_size_limits <- plot_ready_percentage_difference_a3_on_off_data |>
+  pull(IQR_CO2_impact_on_streamflow_percentage) |>
+  range(na.rm = T) |> # can round up if I want to
+  round(digits = 0)
+
+percentage_IQR_breaks <- seq(
+  from = scale_size_limits[1], 
+  to = scale_size_limits[2], 
+  length.out = 10
+  )
+
+percentage_IQR_breaks <- percentage_IQR_breaks[!(percentage_IQR_breaks %in% scale_size_limits)]
+
 
 # Plotting function ============================================================
 make_CO2_streamflow_percentage_change_map <- function(data, title) {
@@ -543,9 +564,9 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
     geom_sf() +
     geom_point(
       data = QLD_data,
-      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
+      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent, size = IQR_CO2_impact_on_streamflow_percentage),
       show.legend = FALSE,
-      size = inset_dot_size,
+      #size = inset_dot_size,
       colour = "black",
       stroke = 0.1,
       shape = 21
@@ -558,6 +579,8 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
       show.limits = TRUE,
       guide = "colorsteps"
     ) +
+    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    guides(size = guide_bins(show.limits = TRUE)) +
     theme_void()
   
   
@@ -567,9 +590,9 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
     geom_sf() +
     geom_point(
       data = NSW_data,
-      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
+      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent, size = IQR_CO2_impact_on_streamflow_percentage),
       show.legend = FALSE,
-      size = inset_dot_size,
+      #size = inset_dot_size,
       colour = "black",
       stroke = 0.1,
       shape = 21
@@ -582,6 +605,8 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
       show.limits = TRUE,
       guide = "colorsteps"
     ) +
+    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    guides(size = guide_bins(show.limits = TRUE)) +
     theme_void()
   
   
@@ -592,9 +617,9 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
     geom_sf() +
     geom_point(
       data = VIC_data,
-      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
+      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent, size = IQR_CO2_impact_on_streamflow_percentage),
       show.legend = FALSE,
-      size = inset_dot_size,
+      #size = inset_dot_size,
       colour = "black",
       stroke = 0.1,
       shape = 21
@@ -607,6 +632,8 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
       show.limits = TRUE,
       guide = "colorsteps"
     ) +
+    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    guides(size = guide_bins(show.limits = TRUE)) +
     theme_void()
   
   
@@ -617,9 +644,9 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
     geom_sf() +
     geom_point(
       data = WA_data,
-      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
+      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent, size = IQR_CO2_impact_on_streamflow_percentage),
       show.legend = FALSE,
-      size = inset_dot_size,
+      #size = inset_dot_size,
       colour = "black",
       stroke = 0.1,
       shape = 21
@@ -632,6 +659,8 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
       show.limits = TRUE,
       guide = "colorsteps"
     ) +
+    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    guides(size = guide_bins(show.limits = TRUE)) +
     theme_void()
   
   
@@ -642,9 +671,9 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
     geom_sf() +
     geom_point(
       data = TAS_data,
-      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
+      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent, size = IQR_CO2_impact_on_streamflow_percentage),
       show.legend = FALSE,
-      size = inset_dot_size,
+      #size = inset_dot_size,
       colour = "black",
       stroke = 0.1,
       shape = 21
@@ -657,6 +686,8 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
       show.limits = TRUE,
       guide = "colorsteps"
     ) +
+    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    guides(size = guide_bins(show.limits = TRUE)) +
     theme_void()
   
   
@@ -667,8 +698,8 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
     geom_sf() +
     geom_point(
       data = data,
-      mapping = aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
-      size = 2.2,
+      mapping = aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent, size = IQR_CO2_impact_on_streamflow_percentage),
+      #size = 2.2,
       colour = "black",
       shape = 21,
       inherit.aes = FALSE,
@@ -683,6 +714,8 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
       show.limits = TRUE,
       guide = "colorsteps"
     ) +
+    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    guides(size = guide_bins(show.limits = TRUE)) +
     # expand map
     coord_sf(xlim = c(95, 176), ylim = c(-60, 0)) +
     # magnify WA
@@ -734,6 +767,7 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
       x = NULL, # "Latitude",
       y = NULL, # "Longitude",
       fill = "Average impact of CO2 on streamflow per year (%)",
+      size = "Percentage Impact Uncertainty (IQR)",
       title = {{ title }}
     ) +
     theme(
@@ -755,7 +789,8 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
         even.steps = TRUE,
         title.position = "top",
         direction = "horizontal"
-      )
+      ),
+      size = guide_bins(show.limits = TRUE, direction = "horizontal")
     )
   
   return(single_map_aus)
