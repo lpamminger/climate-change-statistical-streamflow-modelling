@@ -140,7 +140,7 @@ DREAM_sequences_to_matrix <- function(DREAM_sequences) {
 
 
 make_DREAM_streamflow_sequences <- function(gauge, observed_data, start_stop_indexes, DREAM_sequences, best_model_per_gauge) {
-  browser()
+
   # Make catchment data for streamflow model
   catchment_data <- gauge |>
     catchment_data_blueprint(
@@ -185,7 +185,7 @@ make_DREAM_streamflow_sequences <- function(gauge, observed_data, start_stop_ind
     as.list()
 
   realspace_streamflow_permutations <- map2(
-    .x = parameter_matrix_for_streamflow_model[nrow(parameter_matrix_for_streamflow_model), ],
+    .x = parameter_matrix_for_streamflow_model[(nrow(parameter_matrix_for_streamflow_model) - 1), ],
     .y = transformed_streamflow_permutations,
     .f = inverse_log_sinh_transform,
     offset = 0
@@ -198,6 +198,8 @@ make_DREAM_streamflow_sequences <- function(gauge, observed_data, start_stop_ind
     select(gauge, year) |>
     cbind(realspace_streamflow_permutations)
 }
+
+
 
 
 
@@ -262,7 +264,7 @@ CO2_impact_total_decade_streamflow_uncertainty <- function(gauge, period_1, peri
       total_decade_streamflow_CO2_off = total_decade_streamflow
     )
 
-  browser()
+
   # Return summary tibble
   total_decade_streamflow_CO2_on |>
     left_join(
@@ -298,18 +300,6 @@ decade_1 <- seq(from = 1990, to = 1999)
 decade_2 <- seq(from = 2012, to = 2021)
 
 
-CO2_impact_total_decade_streamflow_uncertainty(
-  gauge = "235234",
-  period_1 = decade_1,
-  period_2 = decade_2,
-  observed_data = data,
-  start_stop_indexes = start_stop_indexes,
-  DREAM_sequences = DREAM_sequences,
-  CO2_off_DREAM_sequences = CO2_off_DREAM_sequences,
-  best_model_per_gauge = best_model_per_gauge
-)
-
-# Infs are present when back-transforming - solution?
 
 DREAM_CO2_impact_uncertainty_on_streamflow <- map(
   .x = gauges,
