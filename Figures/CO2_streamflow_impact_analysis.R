@@ -490,7 +490,9 @@ make_limits <- function(timeseries) {
 CO2_impact_on_streamflow_percent_limits <- plot_ready_percentage_difference_a3_on_off_data |> 
   pull(CO2_impact_on_streamflow_percent) |> 
   make_limits() |> 
-  as.double()
+  as.double() |> 
+  round_any(accuracy = 10, f = ceiling) # round-up to nearest 10
+
 
 hard_coded_breaks_CO2_impact_of_streamflow <- c(-75, -50, -25, -10, -1, 0, 1, 10, 25, 50, 75)
 
@@ -525,14 +527,9 @@ scale_size_limits <- plot_ready_percentage_difference_a3_on_off_data |>
   range(na.rm = T) |> # can round up if I want to
   round(digits = 0)
 
-percentage_IQR_breaks <- seq(
-  from = scale_size_limits[1], 
-  to = scale_size_limits[2], 
-  length.out = 10
-  )
+percentage_IQR_breaks <- c(0, 2.5, 5, 10, 15, 50, 100) # custom breaks
 
-percentage_IQR_breaks <- percentage_IQR_breaks[!(percentage_IQR_breaks %in% scale_size_limits)]
-
+dot_transparency <- 0.8
 
 # Plotting function ============================================================
 make_CO2_streamflow_percentage_change_map <- function(data, title) {
@@ -566,7 +563,7 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
       data = QLD_data,
       aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent, size = IQR_CO2_impact_on_streamflow_percentage),
       show.legend = FALSE,
-      #size = inset_dot_size,
+      alpha = dot_transparency,
       colour = "black",
       stroke = 0.1,
       shape = 21
@@ -592,7 +589,7 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
       data = NSW_data,
       aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent, size = IQR_CO2_impact_on_streamflow_percentage),
       show.legend = FALSE,
-      #size = inset_dot_size,
+      alpha = dot_transparency,
       colour = "black",
       stroke = 0.1,
       shape = 21
@@ -619,7 +616,7 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
       data = VIC_data,
       aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent, size = IQR_CO2_impact_on_streamflow_percentage),
       show.legend = FALSE,
-      #size = inset_dot_size,
+      alpha = dot_transparency,
       colour = "black",
       stroke = 0.1,
       shape = 21
@@ -646,7 +643,7 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
       data = WA_data,
       aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent, size = IQR_CO2_impact_on_streamflow_percentage),
       show.legend = FALSE,
-      #size = inset_dot_size,
+      alpha = dot_transparency,
       colour = "black",
       stroke = 0.1,
       shape = 21
@@ -673,7 +670,7 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
       data = TAS_data,
       aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent, size = IQR_CO2_impact_on_streamflow_percentage),
       show.legend = FALSE,
-      #size = inset_dot_size,
+      alpha = dot_transparency,
       colour = "black",
       stroke = 0.1,
       shape = 21
@@ -699,7 +696,7 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
     geom_point(
       data = data,
       mapping = aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent, size = IQR_CO2_impact_on_streamflow_percentage),
-      #size = 2.2,
+      alpha = dot_transparency,
       colour = "black",
       shape = 21,
       inherit.aes = FALSE,
@@ -715,7 +712,6 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
       guide = "colorsteps"
     ) +
     scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
-    guides(size = guide_bins(show.limits = TRUE)) +
     # expand map
     coord_sf(xlim = c(95, 176), ylim = c(-60, 0)) +
     # magnify WA
@@ -771,9 +767,9 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
       title = {{ title }}
     ) +
     theme(
-      legend.key = element_rect(fill = "grey80"),
+      legend.key = element_rect(fill = "white"),
       legend.title = element_text(hjust = 0.5),
-      #legend.background = element_rect(colour = "black"), this cuts off the negative sign
+      #legend.background = element_rect(colour = "black"), #this cuts off the negative sign
       axis.text = element_blank(),
       legend.position = "inside",
       legend.position.inside = c(0.351, 0.9),
@@ -784,14 +780,20 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
     ) +
     guides(
       fill = guide_coloursteps(
-        barwidth = unit(15, "cm"),
+        barwidth = unit(10, "cm"),
         show.limits = TRUE,
         even.steps = TRUE,
         title.position = "top",
         direction = "horizontal"
       ),
-      size = guide_bins(show.limits = TRUE, direction = "horizontal")
-    )
+      size = guide_bins(
+        override.aes = aes(stroke = 0.5),
+        show.limits = TRUE, 
+        direction = "horizontal",
+        title.position = "top", # warnings says its ignore these parameter - The warnings are wrong
+        barwidth = unit(1, "cm")
+        )
+    ) 
   
   return(single_map_aus)
 
@@ -810,8 +812,6 @@ plot_ready_percentage_difference_a3_on_off_2010s <- plot_ready_percentage_differ
   
 patchwork_percentage_differences <- (make_CO2_streamflow_percentage_change_map(plot_ready_percentage_difference_a3_on_off_1990s, "1990-1999") | make_CO2_streamflow_percentage_change_map(plot_ready_percentage_difference_a3_on_off_2010s, "2012-2021")) + 
   plot_layout(guides = "collect") & theme(legend.position = "bottom")
-
-
 
 
 ggsave(
