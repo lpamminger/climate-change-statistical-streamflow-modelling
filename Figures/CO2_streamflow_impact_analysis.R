@@ -474,6 +474,24 @@ plot_ready_percentage_difference_a3_on_off_data <- percentage_difference_a3_on_o
   )
 
 
+# Compare DREAM values to CMAES values 
+compare_CMAES_and_DREAM <- plot_ready_percentage_difference_a3_on_off_data |> 
+  select(gauge, decade, CO2_impact_on_streamflow_percent, IQR_CO2_impact_on_streamflow_percentage, median_CO2_impact_on_streamflow_percentage) |> 
+  drop_na() |> 
+  mutate(
+    CMAES_DREAM_diff = CO2_impact_on_streamflow_percent - median_CO2_impact_on_streamflow_percentage,
+    relative_CMAES_DREAM_diff = (CMAES_DREAM_diff / median_CO2_impact_on_streamflow_percentage) * 100
+  ) |> 
+  arrange(CMAES_DREAM_diff)
+
+compare_CMAES_and_DREAM |> 
+  ggplot(aes(y = relative_CMAES_DREAM_diff)) + 
+  geom_boxplot(
+    staplewidth = 0.5
+  ) +
+  labs(y = "Relative percentage difference between best CMAES percentage and median DREAM percentage") +
+  theme_bw()
+
 
 
 ### Calculate limits and breaks ################################################
