@@ -625,39 +625,36 @@ state_cdf_results <- gauge_cdf_results |>
   left_join(
     lat_lon_gauge,
     by = join_by(gauge)
-  ) |> 
-  # summarise by state
-  summarise(
-    median_cdf = median(cdf_value),
-    lower_bound_cdf = quantile(cdf_value, probs = 0.1),
-    upper_bound_cdf = quantile(cdf_value, probs = 0.9),
-    n = n(),
-    .by = c(cdf_x_axis, state)
   ) 
 
-
-## add n = ??? to plots
-count_state_cdf <- state_cdf_results |> 
-  filter(cdf_x_axis == 1959) |> 
-  select(state, n) |>
-  mutate(
-    n_label = paste0("n = ", n)
-  ) |> 
-  add_column(
-    "x_pos" = 1963,
-    "y_pos" = 0.9
+median_cdf_results <- state_cdf_results |> 
+  summarise(
+    median_cdf = median(cdf_value),
+    .by = c(cdf_x_axis, state)
   )
+
+
+
+
+
+
+
 
 
 ## Plot ========================================================================
 state_cdf_plot <- state_cdf_results |> 
-  ggplot(aes(x = cdf_x_axis, y = median_cdf)) +
-  geom_step() +
-  geom_label(
-    aes(x = x_pos, y = y_pos, label = n_label),
-    data = count_state_cdf
+  ggplot(aes(x = cdf_x_axis, y = cdf_value, group = gauge)) +
+  geom_step(
+    colour = "black", 
+    show.legend = FALSE,
+    alpha = 0.25
   ) +
-  geom_ribbon(aes(ymin = lower_bound_cdf, ymax = upper_bound_cdf), alpha = 0.2) +
+  geom_step(
+    aes(x = cdf_x_axis, y = median_cdf),
+    data = median_cdf_results,
+    colour = "red",
+    inherit.aes = FALSE
+  ) +
   labs(x = "Time of Emergence (Year)", y = "Cumulative Probabiliy") +
   theme_bw() +
   facet_wrap(~state)
