@@ -12,7 +12,7 @@
 # 8. Supplementary --> CO2_model_vs_non_CO2_model_rainfall_runoff.pdf - The transformed_realspace is different depending on model used. This means 2 observed transformed streamflow is required.
 # 9. Supplementary --> complete_timeseries_plot.pdf (combined plot 4 and plot 7 into a single plot)
 # 10. Main --> short_list_all_timeseries_plot (select handful of catchments from plot 9)
-
+# 11. Testing --> streamflow_percentage_difference_with_timeseries.pdf 
 
 
 
@@ -778,7 +778,7 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
     labs(
       x = NULL, # "Latitude",
       y = NULL, # "Longitude",
-      fill = "Average impact of CO2 on streamflow per year (%)",
+      fill = "Average impact of CO2 on streamflow (%)",
       size = "Percentage Impact Uncertainty (IQR)",
       title = {{ title }}
     ) +
@@ -1318,7 +1318,7 @@ ggsave(
 
 ## Select handful of catchments for main paper =================================
 # short list - 230210, 415226, 617003, 701002, 235234, 231211, 303203, 407246, 407253, 208004, 406214, 614044, 405230, 227210, 606195
-short_list_catchments <- c("401210", "606195", "235205", "303203", "701002", "407246") # select 4
+short_list_catchments <- c("401210", "606195", "701002", "407246") # select 4
 
 short_list_all_timeseries_plot <- all_timeseries_data |>
   filter(gauge %in% short_list_catchments) |>
@@ -1375,22 +1375,128 @@ ggsave(
 
 
 
+# Combining percentage change and timeseries plots -----------------------------
+# streamflow_percentage_difference_with_timeseries.pdf
+
+## Percentage change components ================================================
+percent_change_1990 <- make_CO2_streamflow_percentage_change_map(
+  plot_ready_percentage_difference_a3_on_off_1990s, 
+  "1990-1999"
+  )
+
+percent_change_2012 <- make_CO2_streamflow_percentage_change_map(
+  plot_ready_percentage_difference_a3_on_off_2010s, 
+  "2012-2021"
+  )
 
 
 
+top <- (percent_change_1990 | percent_change_2012) +
+  plot_layout(guides = "collect") & theme(legend.position = "top")
+
+## timeseries components =======================================================
+bottom <- all_timeseries_data |>
+  filter(gauge %in% short_list_catchments[1:4]) |>
+  ggplot(aes(x = year, y = streamflow, colour = type)) +
+  geom_line(alpha = 0.8) +
+  scale_colour_brewer(palette = "Set1") +
+  labs(x = "Year", y = "Streamflow (mm)", colour = NULL) +
+  theme_bw() +
+  theme(
+    legend.position = "bottom",
+    strip.background = element_blank(), # remove strip labels from faceting
+    strip.text = element_blank() # remove strip labels from faceting
+    ) +
+  facet_wrap(~gauge, scales = "free_y", ncol = 2)
 
 
+x <- top / bottom / plot_spacer() / plot_spacer() +
+  plot_layout(heights = c(3, 1, 1, 1))
+# patchwork gives equal space to top and bottom
+# I don't want this
+# I want 2/3 top and 1/3 bottom
 
 
+ggsave(
+  filename = "./Figures/Testing/streamflow_percentage_difference_with_timeseries.pdf",
+  plot = x,
+  device = "pdf",
+  width = 210,
+  height = 287,
+  units = "mm"
+)
+
+# Alternative method is:
+# This requires more work trying to get the legends to behave
+# If I want the percentage change maps to line up with streamflow-time I 
+# must do the streamflow-time individually rather than faceting
+
+# use the area() constructor
+# top, left, bottom, right bounds (t < b and l < r)
+layout <- c(
+  area(t = 1, l = 1, b = 3, r = 3), # 1990s percentage change
+  area(t = 1, l = 4, b = 3, r = 6), # 2010s percentage change
+  area(t = 4, l = 1, b = 4, r = 6) # timeseries
+)
+
+plot(layout) # check the patches are working
+
+y <- (percent_change_1990 + percent_change_2012 + bottom) + 
+  plot_layout(design = layout, guides = "collect") & 
+  theme(legend.position = "bottom")
+# This seems like the best option right now
+
+ggsave(
+  filename = "./Figures/Testing/streamflow_percentage_difference_with_timeseries_2.pdf",
+  plot = y,
+  device = "pdf",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
+# here
+
+# Trying the bottom plots indivually
+plot_individual_timeseries <- function(gauge, data) {
+  data |>
+    filter(gauge == {{ gauge }}) |>
+    ggplot(aes(x = year, y = streamflow, colour = type)) +
+    geom_line(alpha = 0.8) +
+    scale_colour_brewer(palette = "Set1") +
+    labs(x = "Year", y = "Streamflow (mm)", colour = NULL) +
+    theme_bw() +
+    theme(
+      legend.position = "bottom",
+      strip.background = element_blank(), # remove strip labels from faceting
+      strip.text = element_blank() # remove strip labels from faceting
+    ) 
+}
+
+plots <- map(
+  .x = short_list_catchments,
+  .f = plot_individual_timeseries,
+  data = all_timeseries_data
+)
 
 
+layout <- c(
+  area(t = 1, l = 1, b = 3, r = 3), # 1990s percentage change
+  area(t = 1, l = 4, b = 3, r = 6), # 2010s percentage change
+  area(t = 4, l = 1, b = 4, r = 3), # timeseries 1
+  area(t = 4, l = 4, b = 4, r = 6), # timeseries 2
+  area(t = 5, l = 1, b = 5, r = 3), # timeseries 3
+  area(t = 5, l = 4, b = 5, r = 6)  # timeseries 4
+)
+
+plot(layout) # check the patches are working
+
+y <- (percent_change_1990 + percent_change_2012 + plots) + 
+  plot_layout(design = layout, guides = "collect") & 
+  theme(legend.position = "bottom")
 
 
-
-
-
-
-
+y
+# remove other attempts when complete
 
 
 
