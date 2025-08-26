@@ -1418,10 +1418,31 @@ top <- (percent_change_1990 | percent_change_2012) +
   plot_layout(guides = "collect") & theme(legend.position = "top")
 
 ## timeseries components =======================================================
+
+# annotating facets
+
+facet_annotation <- all_timeseries_data |> 
+  filter(gauge %in% short_list_catchments) |>
+  summarise(
+    streamflow = max(streamflow) - (max(streamflow) * 0.1),
+    .by = gauge
+  ) |> 
+  add_column(
+    year = 1960,
+    label_name = LETTERS[1:4]
+  )
+
 bottom <- all_timeseries_data |>
-  filter(gauge %in% short_list_catchments[1:4]) |>
+  filter(gauge %in% short_list_catchments) |>
   ggplot(aes(x = year, y = streamflow, colour = type)) +
   geom_line(alpha = 0.8) +
+  geom_label(
+    aes(x = year, y = streamflow, label = label_name),
+    data = facet_annotation,
+    inherit.aes = FALSE,
+    fill = NA,
+    label.size = NA
+    ) +
   scale_colour_brewer(palette = "Set1") +
   labs(x = "Year", y = "Streamflow (mm)", colour = "Streamflow Timeseries") +
   theme_bw() +
