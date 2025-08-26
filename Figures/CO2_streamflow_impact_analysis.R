@@ -1329,13 +1329,26 @@ ribbon <- all_timeseries_data |>
     .by = gauge
   ) 
 
-short_list_all_timeseries_plot <- all_timeseries_data |>
+short_list_timeseries_data <- all_timeseries_data |> 
   filter(gauge %in% short_list_catchments) |>
+  mutate(
+    period_1 = if_else(year %in% decade_1, year, NA),
+    period_2 = if_else(year %in% decade_2, year, NA)
+    ) |> 
+  left_join(
+    ribbon,
+    by = join_by(gauge)
+  ) |> 
+  select(!period_2)
+
+
+
+short_list_all_timeseries_plot <- short_list_timeseries_data |>
   ggplot(aes(x = year, y = streamflow, colour = type)) +
   geom_line(alpha = 0.8) +
-  # geom_area() + 
+  #geom_area(aes(y = max_streamflow), alpha = 0.2) + 
   scale_colour_brewer(palette = "Set1") +
-  labs(x = "Year", y = "Streamflow (mm)", colour = NULL) +
+  labs(x = "Year", y = "Streamflow (mm)", colour = "Streamflow Timeseries") +
   theme_bw() +
   theme(legend.position = "bottom") +
   facet_wrap(~gauge, scales = "free_y")
@@ -1410,7 +1423,7 @@ bottom <- all_timeseries_data |>
   ggplot(aes(x = year, y = streamflow, colour = type)) +
   geom_line(alpha = 0.8) +
   scale_colour_brewer(palette = "Set1") +
-  labs(x = "Year", y = "Streamflow (mm)", colour = NULL) +
+  labs(x = "Year", y = "Streamflow (mm)", colour = "Streamflow Timeseries") +
   theme_bw() +
   theme(
     legend.position = "bottom",
@@ -1453,11 +1466,12 @@ plot(layout) # check the patches are working
 
 y <- (percent_change_1990 + percent_change_2012 + bottom) + 
   plot_layout(design = layout, guides = "collect") & 
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") &
+  guides(colour = guide_legend(title.position = "top", ncol = 2))
 # This seems like the best option right now
 
 ggsave(
-  filename = "./Figures/Testing/streamflow_percentage_difference_with_timeseries_2.pdf",
+  filename = "./Figures/Testing/mockup_streamflow_percentage_difference_with_timeseries.pdf",
   plot = y,
   device = "pdf",
   width = 297,
