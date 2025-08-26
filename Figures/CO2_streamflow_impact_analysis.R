@@ -1283,16 +1283,16 @@ all_timeseries_data <- timeseries_data_obs_CO2_off_CO2_on |>
   # give type good names
   mutate(
     type = case_when(
-      type == "realspace_a3_on_streamflow" ~ "Best CO2 Model",
-      type == "realspace_a3_off_streamflow" ~ "Best CO2 Model with CO2 turned-off",
+      type == "realspace_a3_on_streamflow" ~ "CO2 Model",
+      type == "realspace_a3_off_streamflow" ~ "Counterfactual",
       type == "realspace_observed_streamflow" ~ "Observed",
-      type == "non_CO2_model" ~ "Best non-CO2 Model",
+      type == "non_CO2_model" ~ "non-CO2 Model",
       .default = NA
     )
   ) |>
   # set order
   mutate(
-    type = factor(type, levels = c("Observed", "Best CO2 Model", "Best CO2 Model with CO2 turned-off", "Best non-CO2 Model"))
+    type = factor(type, levels = c("Observed", "CO2 Model", "Counterfactual", "non-CO2 Model"))
   )
 
 
@@ -1320,10 +1320,20 @@ ggsave(
 # short list - 230210, 415226, 617003, 701002, 235234, 231211, 303203, 407246, 407253, 208004, 406214, 614044, 405230, 227210, 606195
 short_list_catchments <- c("401210", "606195", "701002", "407246") # select 4
 
+# year x = 1990 to 1999 
+# streamflow y = cover everything (annotate does not work because y-axis flucuates)
+ribbon <- all_timeseries_data |> 
+  filter(gauge %in% short_list_catchments) |>
+  summarise(
+    max_streamflow = max(streamflow),
+    .by = gauge
+  ) 
+
 short_list_all_timeseries_plot <- all_timeseries_data |>
   filter(gauge %in% short_list_catchments) |>
   ggplot(aes(x = year, y = streamflow, colour = type)) +
   geom_line(alpha = 0.8) +
+  # geom_area() + 
   scale_colour_brewer(palette = "Set1") +
   labs(x = "Year", y = "Streamflow (mm)", colour = NULL) +
   theme_bw() +
