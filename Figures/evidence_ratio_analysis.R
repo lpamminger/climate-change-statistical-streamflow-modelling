@@ -346,6 +346,13 @@ single_map_aus <- aus_map |>
     drop = FALSE
   ) +
   scale_shape_manual(
+    labels = c(
+      bquote("No"~CO[2]~"Term"), 
+      "Negative-Intercept", 
+      "Positive-Intercept", 
+      "Negative-Slope", 
+      "Positive-Slope"
+    ),
     values = c(21, 22, 23, 25, 24),
     drop = FALSE
   ) +
@@ -400,7 +407,7 @@ single_map_aus <- aus_map |>
     x = NULL, # "Latitude",
     y = NULL, # "Longitude",
     fill = "Evidence Ratio",
-    shape = bquote("Impact of " ~ CO[2] ~ "Term")
+    shape = bquote("Impact of"~CO[2]~"Term")
   ) +
   theme(
     legend.key = element_rect(fill = "grey80"),

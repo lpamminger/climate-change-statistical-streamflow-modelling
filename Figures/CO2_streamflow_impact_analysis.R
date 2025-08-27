@@ -1320,33 +1320,12 @@ ggsave(
 # short list - 230210, 415226, 617003, 701002, 235234, 231211, 303203, 407246, 407253, 208004, 406214, 614044, 405230, 227210, 606195
 short_list_catchments <- c("401210", "606195", "701002", "407246") # select 4
 
-# year x = 1990 to 1999 
-# streamflow y = cover everything (annotate does not work because y-axis flucuates)
-ribbon <- all_timeseries_data |> 
-  filter(gauge %in% short_list_catchments) |>
-  summarise(
-    max_streamflow = max(streamflow),
-    .by = gauge
-  ) 
-
-short_list_timeseries_data <- all_timeseries_data |> 
-  filter(gauge %in% short_list_catchments) |>
-  mutate(
-    period_1 = if_else(year %in% decade_1, year, NA),
-    period_2 = if_else(year %in% decade_2, year, NA)
-    ) |> 
-  left_join(
-    ribbon,
-    by = join_by(gauge)
-  ) |> 
-  select(!period_2)
 
 
 
 short_list_all_timeseries_plot <- short_list_timeseries_data |>
   ggplot(aes(x = year, y = streamflow, colour = type)) +
   geom_line(alpha = 0.8) +
-  #geom_area(aes(y = max_streamflow), alpha = 0.2) + 
   scale_colour_brewer(palette = "Set1") +
   labs(x = "Year", y = "Streamflow (mm)", colour = "Streamflow Timeseries") +
   theme_bw() +
@@ -1397,9 +1376,318 @@ ggsave(
 
 
 
+# Adding labels to percentage change maps --------------------------------------
+
+## Make label table
+map_label_table <- lat_lon_gauge |> 
+  filter(gauge %in% short_list_catchments) |> 
+  mutate(label_name = LETTERS[1:4])
+
+
+font_size <- 3L # default size is GeomLabel$default_aes$size = 3.88
+## Manually add labels in the correct spots
+
+make_CO2_streamflow_percentage_change_map <- function(data, title) {
+  
+  ## Generate Insets ===========================================================
+  QLD_data <- data |>
+    filter(state == "QLD")
+  
+  NSW_data <- data |>
+    filter(state == "NSW")
+  
+  VIC_data <- data |>
+    filter(state == "VIC")
+  
+  WA_data <- data |>
+    filter(state == "WA")
+  
+  TAS_data <- data |>
+    filter(state == "TAS")
+  
+  
+  
+  ### Generate inset plots #######################################################
+  inset_dot_size <- 1.8
+  
+  inset_plot_QLD <- aus_map |>
+    filter(state == "QLD") |>
+    ggplot() +
+    geom_sf() +
+    geom_point(
+      data = QLD_data,
+      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent, size = IQR_CO2_impact_on_streamflow_percentage),
+      show.legend = FALSE,
+      alpha = dot_transparency,
+      colour = "black",
+      stroke = 0.1,
+      shape = 21
+    ) +
+    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+      aesthetics = "fill",
+      palette = big_palette,
+      breaks = hard_coded_breaks_CO2_impact_of_streamflow,
+      limits = CO2_impact_on_streamflow_percent_limits,
+      show.limits = TRUE,
+      guide = "colorsteps"
+    ) +
+    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    guides(size = guide_bins(show.limits = TRUE)) +
+    theme_void()
+  
+  
+  inset_plot_NSW <- aus_map |>
+    filter(state == "NSW") |>
+    ggplot() +
+    geom_sf() +
+    geom_point(
+      data = NSW_data,
+      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent, size = IQR_CO2_impact_on_streamflow_percentage),
+      show.legend = FALSE,
+      alpha = dot_transparency,
+      colour = "black",
+      stroke = 0.1,
+      shape = 21
+    ) +
+    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+      aesthetics = "fill",
+      palette = big_palette,
+      breaks = hard_coded_breaks_CO2_impact_of_streamflow,
+      limits = CO2_impact_on_streamflow_percent_limits,
+      show.limits = TRUE,
+      guide = "colorsteps"
+    ) +
+    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    guides(size = guide_bins(show.limits = TRUE)) +
+    theme_void()
+  
+  
+  # Labels for VIC
+  VIC_map_label_table <- map_label_table |> 
+    filter(state == "VIC")
+  
+  inset_plot_VIC <- aus_map |>
+    filter(state == "VIC") |>
+    ggplot() +
+    geom_sf() +
+    geom_point(
+      data = VIC_data,
+      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent, size = IQR_CO2_impact_on_streamflow_percentage),
+      show.legend = FALSE,
+      alpha = dot_transparency,
+      colour = "black",
+      stroke = 0.1,
+      shape = 21
+    ) +
+    geom_text(
+      data = VIC_map_label_table,
+      aes(x = lon, y = lat, label = label_name),
+      nudge_x = -0.35,
+      size = font_size
+    ) +
+    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+      aesthetics = "fill",
+      palette = big_palette,
+      breaks = hard_coded_breaks_CO2_impact_of_streamflow,
+      limits = CO2_impact_on_streamflow_percent_limits,
+      show.limits = TRUE,
+      guide = "colorsteps"
+    ) +
+    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    guides(size = guide_bins(show.limits = TRUE)) +
+    theme_void()
+  
+  
+  # Labels for WA
+  WA_map_label_table <- map_label_table |> 
+    filter(gauge == "606195") # 701002 not in subset plot so exclude
+  
+  inset_plot_WA <- aus_map |>
+    filter(state == "WA") |>
+    ggplot() +
+    geom_sf() +
+    geom_point(
+      data = WA_data,
+      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent, size = IQR_CO2_impact_on_streamflow_percentage),
+      show.legend = FALSE,
+      alpha = dot_transparency,
+      colour = "black",
+      stroke = 0.1,
+      shape = 21
+    ) +
+    geom_text(
+      data = WA_map_label_table,
+      aes(x = lon, y = lat, label = label_name),
+      nudge_y = -0.25,
+      size = font_size
+    ) +
+    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+      aesthetics = "fill",
+      palette = big_palette,
+      breaks = hard_coded_breaks_CO2_impact_of_streamflow,
+      limits = CO2_impact_on_streamflow_percent_limits,
+      show.limits = TRUE,
+      guide = "colorsteps"
+    ) +
+    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    guides(size = guide_bins(show.limits = TRUE)) +
+    theme_void()
+  
+  
+  
+  inset_plot_TAS <- aus_map |>
+    filter(state == "TAS") |>
+    ggplot() +
+    geom_sf() +
+    geom_point(
+      data = TAS_data,
+      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent, size = IQR_CO2_impact_on_streamflow_percentage),
+      show.legend = FALSE,
+      alpha = dot_transparency,
+      colour = "black",
+      stroke = 0.1,
+      shape = 21
+    ) +
+    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+      aesthetics = "fill",
+      palette = big_palette,
+      breaks = hard_coded_breaks_CO2_impact_of_streamflow,
+      limits = CO2_impact_on_streamflow_percent_limits,
+      show.limits = TRUE,
+      guide = "colorsteps"
+    ) +
+    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    guides(size = guide_bins(show.limits = TRUE)) +
+    theme_void()
+  
+  
+  
+  ## Put it together =============================================================
+  
+  # Big map label table
+  big_map_label_table <- map_label_table |> 
+    filter(gauge == "701002")
+  
+  single_map_aus <- aus_map |>
+    ggplot() +
+    geom_sf() +
+    geom_point(
+      data = data,
+      mapping = aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent, size = IQR_CO2_impact_on_streamflow_percentage),
+      alpha = dot_transparency,
+      colour = "black",
+      shape = 21,
+      inherit.aes = FALSE,
+      stroke = 0.1
+    ) +
+    geom_text(
+      data = big_map_label_table,
+      aes(x = lon, y = lat, label = label_name),
+      nudge_y = 2,
+      size = font_size
+    ) +
+    theme_bw() +
+    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+      aesthetics = "fill",
+      palette = big_palette,
+      breaks = hard_coded_breaks_CO2_impact_of_streamflow,
+      limits = CO2_impact_on_streamflow_percent_limits,
+      show.limits = TRUE,
+      guide = "colorsteps"
+    ) +
+    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    # expand map
+    coord_sf(xlim = c(95, 176), ylim = c(-60, 0)) +
+    # magnify WA
+    geom_magnify(
+      from = c(114, 118, -35.5, -30),
+      to = c(93, 112, -36, -10),
+      shadow = FALSE,
+      expand = 0,
+      plot = inset_plot_WA,
+      proj = "single"
+    ) +
+    # magnify VIC
+    geom_magnify(
+      # aes(from = state == "VIC"), # use aes rather than manually selecting area
+      from = c(141, 149.5, -39, -34),
+      to = c(95, 136, -38, -60),
+      shadow = FALSE,
+      plot = inset_plot_VIC,
+      proj = "single"
+    ) +
+    # magnify QLD
+    geom_magnify(
+      from = c(145, 155, -29.2, -15),
+      to = c(157, 178, -29.5, 1.5),
+      shadow = FALSE,
+      expand = 0,
+      plot = inset_plot_QLD,
+      proj = "single"
+    ) +
+    # magnify NSW
+    geom_magnify(
+      from = c(146.5, 154, -38, -28.1),
+      to = c(157, 178, -61, -30.5),
+      shadow = FALSE,
+      expand = 0,
+      plot = inset_plot_NSW,
+      proj = "single"
+    ) +
+    # magnify TAS
+    geom_magnify(
+      from = c(144, 149, -40, -44),
+      to = c(140, 155, -45, -61),
+      shadow = FALSE,
+      expand = 0,
+      plot = inset_plot_TAS,
+      proj = "single"
+    ) +
+    labs(
+      x = NULL, # "Latitude",
+      y = NULL, # "Longitude",
+      fill = bquote('Average Impact of'~CO[2]~'on Streamflow (%)'), 
+      size = "Percentage Impact Uncertainty (IQR)",
+      title = {{ title }}
+    ) +
+    theme(
+      legend.key = element_rect(fill = "white"),
+      legend.title = element_text(hjust = 0.5),
+      # legend.background = element_rect(colour = "black"), #this cuts off the negative sign
+      axis.text = element_blank(),
+      legend.position = "inside",
+      legend.position.inside = c(0.351, 0.9),
+      legend.box = "horizontal", # side-by-side legends
+      panel.grid = element_blank(),
+      axis.ticks = element_blank(),
+      plot.title = element_text(margin = margin(l = 25, r = 0, t = 30, b = -30), size = 18) # push title into plot
+    ) +
+    guides(
+      fill = guide_coloursteps(
+        barwidth = unit(10, "cm"),
+        show.limits = TRUE,
+        even.steps = TRUE,
+        title.position = "top",
+        direction = "horizontal"
+      ),
+      size = guide_bins(
+        override.aes = aes(stroke = 0.5),
+        show.limits = TRUE,
+        direction = "horizontal",
+        title.position = "top", # warnings says its ignore these parameter - The warnings are wrong
+        barwidth = unit(1, "cm")
+      )
+    )
+  
+  return(single_map_aus)
+}
+
+
+
+
+
 
 # Combining percentage change and timeseries plots -----------------------------
-# streamflow_percentage_difference_with_timeseries.pdf
 
 ## Percentage change components ================================================
 percent_change_1990 <- make_CO2_streamflow_percentage_change_map(
@@ -1419,8 +1707,7 @@ top <- (percent_change_1990 | percent_change_2012) +
 
 ## timeseries components =======================================================
 
-# annotating facets
-
+### annotating facets
 facet_annotation <- all_timeseries_data |> 
   filter(gauge %in% short_list_catchments) |>
   summarise(
@@ -1432,9 +1719,60 @@ facet_annotation <- all_timeseries_data |>
     label_name = LETTERS[1:4]
   )
 
+
+### Shading decades 
+shade_decade_1 <- all_timeseries_data |> 
+  filter(gauge %in% short_list_catchments) |>
+  group_by(gauge) |> 
+  mutate(upper = max(streamflow) * 1.2) |> 
+  filter(year %in% decade_1)
+
+shade_decade_2 <- all_timeseries_data |> 
+  filter(gauge %in% short_list_catchments) |>
+  group_by(gauge) |> 
+  mutate(upper = max(streamflow) * 1.2) |> 
+  filter(year %in% decade_2) 
+# 606195 is missing 2021
+# 407246 is missing 2020 and 2021
+
+# easiest solution is extract a year - replace year and streamflow and rbind
+missing_years_606195 <- shade_decade_2 |> 
+  filter(gauge == "606195") |> 
+  filter(year == 2020) |> 
+  mutate(
+    year = 2021,
+    precipitation = NA,
+    streamflow = NA
+  )
+
+missing_years_407246 <- shade_decade_2 |> 
+  filter(gauge == "407246") |> 
+  filter(year %in% c(2018, 2019)) |> 
+  mutate(
+    year = if_else(year == 2018, 2020, 2021),
+    precipitation = NA,
+    streamflow = NA
+  )
+
+shade_decade_2 <- rbind(shade_decade_2, missing_years_606195, missing_years_407246)
+
+
+### Plotting
 bottom <- all_timeseries_data |>
   filter(gauge %in% short_list_catchments) |>
   ggplot(aes(x = year, y = streamflow, colour = type)) +
+  geom_area(
+    aes(x = year, y = upper),
+    inherit.aes = FALSE,
+    data = shade_decade_1,
+    alpha = 0.08
+  ) +
+  geom_area(
+    aes(x = year, y = upper),
+    inherit.aes = FALSE,
+    data = shade_decade_2,
+    alpha = 0.08
+  ) +
   geom_line(alpha = 0.8) +
   geom_label(
     aes(x = year, y = streamflow, label = label_name),
@@ -1443,16 +1781,30 @@ bottom <- all_timeseries_data |>
     fill = NA,
     label.size = NA
     ) +
-  scale_colour_brewer(palette = "Set1") +
+  #scale_colour_brewer(palette = "Set1") +
+  scale_colour_brewer(
+    labels = c(
+      "Observed",
+      bquote(~CO[2]~"Model"),
+      "Counterfactual",
+      bquote("non-"*CO[2]~"Model")
+    ),
+    palette = "Set1"
+    #values = c("red", "green", "blue", "orange")
+  ) +
   labs(x = "Year", y = "Streamflow (mm)", colour = "Streamflow Timeseries") +
   theme_bw() +
   theme(
     legend.position = "bottom",
     strip.background = element_blank(), # remove strip labels from faceting
-    strip.text = element_blank() # remove strip labels from faceting
+    strip.text = element_blank(), # remove strip labels from faceting
+    panel.grid.minor = element_blank(), # remove minor gridlines
+    axis.title = element_text(size = 10)
     ) +
+  scale_y_continuous(expand = c(0, 0)) + # remove y-axis padding
   facet_wrap(~gauge, scales = "free_y", ncol = 2)
 
+bottom
 
 x <- top / bottom / plot_spacer() / plot_spacer() +
   plot_layout(heights = c(3, 1, 1, 1))
@@ -1488,11 +1840,11 @@ plot(layout) # check the patches are working
 y <- (percent_change_1990 + percent_change_2012 + bottom) + 
   plot_layout(design = layout, guides = "collect") & 
   theme(legend.position = "bottom") &
-  guides(colour = guide_legend(title.position = "top", ncol = 2))
+  guides(colour = guide_legend(title.hjust = 0.5, title.position = "top", ncol = 2))
 # This seems like the best option right now
 
 ggsave(
-  filename = "./Figures/Testing/mockup_streamflow_percentage_difference_with_timeseries.pdf",
+  filename = "./Figures/Main/streamflow_percentage_difference_with_timeseries.pdf",
   plot = y,
   device = "pdf",
   width = 297,
