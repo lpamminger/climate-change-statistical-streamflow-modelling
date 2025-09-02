@@ -125,7 +125,7 @@ compare_equivalent_models <- only_gauge_model_best_CO2_non_CO2_per_gauge |>
 
 
 
-### Comparison table ###
+### Comparison table ### -> match.fun would probably be a better solution
 streamflow_model_equivalent_comparison_table <- tribble(
   ~non_CO2_model,                                        ~CO2_model,
   "streamflow_model_precip_only",                        "streamflow_model_intercept_shifted_CO2",
@@ -1636,6 +1636,14 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
 
 
 ## Combining percentage change and timeseries plots ============================
+
+### Order percentage impact uncertainty ########################################
+# force small dots to be on top and large dots on the bottom
+plot_ready_percentage_difference_a3_on_off_1990s <- plot_ready_percentage_difference_a3_on_off_1990s |> 
+  arrange(desc(IQR_CO2_impact_on_streamflow_percentage))
+
+plot_ready_percentage_difference_a3_on_off_2010s <- plot_ready_percentage_difference_a3_on_off_2010s |> 
+  arrange(desc(IQR_CO2_impact_on_streamflow_percentage))
 
 ### Percentage change components ###############################################
 percent_change_1990 <- make_CO2_streamflow_percentage_change_map(
