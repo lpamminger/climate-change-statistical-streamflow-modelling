@@ -541,7 +541,7 @@ ToE_map_aus <- aus_map |>
     panel.grid = element_blank(),
     axis.ticks = element_blank(),
     legend.position = "inside",
-    legend.position.inside = c(0.325, 0.9),
+    legend.position.inside = c(0.346, 0.9),
     legend.box = "horizontal" # , # side-by-side legends
   ) +
   guides(

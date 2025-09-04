@@ -415,7 +415,7 @@ single_map_aus <- aus_map |>
     legend.background = element_rect(colour = "black"),
     axis.text = element_blank(),
     legend.position = "inside",
-    legend.position.inside = c(0.351, 0.9),
+    legend.position.inside = c(0.346, 0.9), # constants used to move the legend in the right place
     legend.box = "horizontal", # side-by-side legends
     panel.border = element_blank(),
     panel.grid = element_blank(),
