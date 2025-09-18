@@ -13,6 +13,7 @@
 # 9. Supplementary --> complete_timeseries_plot.pdf (combined plot 4 and plot 7 into a single plot)
 # 10. Main --> short_list_all_timeseries_plot (select handful of catchments from plot 9)
 # 11. Testing --> streamflow_percentage_difference_with_timeseries.pdf 
+# 12. Supplementary --> streamflow_timeseries_data.pdf and captions
 
 
 
@@ -830,14 +831,14 @@ patchwork_percentage_differences <- (make_CO2_streamflow_percentage_change_map(p
   plot_layout(guides = "collect") & theme(legend.position = "bottom")
 
 
-ggsave(
-  filename = "./Figures/Main/streamflow_percentage_difference_CO2_on_off.pdf",
-  plot = patchwork_percentage_differences,
-  device = "pdf",
-  width = 297,
-  height = 210,
-  units = "mm"
-)
+#ggsave(
+#  filename = "./Figures/Main/streamflow_percentage_difference_CO2_on_off.pdf",
+#  plot = patchwork_percentage_differences,
+#  device = "pdf",
+#  width = 297,
+#  height = 210,
+#  units = "mm"
+#)
 
 
 
@@ -873,15 +874,16 @@ plot_ready_percentage_difference_a3_on_off_data |>
     .by = decade
   )
 
-ggsave(
-  filename = "CO2_on_off_decade_histogram.pdf",
-  plot = CO2_on_off_decade_histogram,
-  device = "pdf",
-  path = "Figures/Supplementary",
-  width = 297,
-  height = 210,
-  units = "mm"
-)
+# Add back in after clean up
+#ggsave(
+#  filename = "CO2_on_off_decade_histogram.pdf",
+#  plot = CO2_on_off_decade_histogram,
+#  device = "pdf",
+#  path = "Figures/Supplementary",
+#  width = 297,
+#  height = 210,
+#  units = "mm"
+#)
 
 
 
@@ -915,15 +917,15 @@ mega_timeseries_plot <- timeseries_plotting_data |>
   theme(legend.position = "bottom") +
   facet_wrap(~gauge, scales = "free_y")
 
-ggsave(
-  filename = "CO2_on_off_streamflow_time_comparison.pdf",
-  path = "Figures/Supplementary",
-  device = "pdf",
-  plot = mega_timeseries_plot,
-  width = 1189,
-  height = 841,
-  units = "mm"
-)
+#ggsave(
+#  filename = "CO2_on_off_streamflow_time_comparison.pdf",
+#  path = "Figures/Supplementary",
+#  device = "pdf",
+#  plot = mega_timeseries_plot,
+#  width = 1189,
+#  height = 841,
+#  units = "mm"
+#)
 
 
 
@@ -941,15 +943,15 @@ mega_rainfall_runoff_plot <- rainfall_runoff_plotting_data |>
   facet_wrap(~gauge, scales = "free")
 
 
-ggsave(
-  filename = "CO2_on_off_rainfall_runoff_comparison.pdf",
-  path = "Figures/Supplementary",
-  device = "pdf",
-  plot = mega_rainfall_runoff_plot,
-  width = 1189,
-  height = 841,
-  units = "mm"
-)
+#ggsave(
+#  filename = "CO2_on_off_rainfall_runoff_comparison.pdf",
+#  path = "Figures/Supplementary",
+#  device = "pdf",
+#  plot = mega_rainfall_runoff_plot,
+#  width = 1189,
+#  height = 841,
+#  units = "mm"
+#)
 
 
 
@@ -993,15 +995,15 @@ streamflow_CO2_percentage_change_vs_prop_forested <- all_years_percentage_differ
   theme_bw()
 
 
-ggsave(
-  filename = "streamflow_CO2_percentage_change_vs_prop_forested.pdf",
-  path = "Figures/Supplementary",
-  device = "pdf",
-  plot = streamflow_CO2_percentage_change_vs_prop_forested,
-  width = 297,
-  height = 210,
-  units = "mm"
-)
+#ggsave(
+#  filename = "streamflow_CO2_percentage_change_vs_prop_forested.pdf",
+#  path = "Figures/Supplementary",
+#  device = "pdf",
+#  plot = streamflow_CO2_percentage_change_vs_prop_forested,
+#  width = 297,
+#  height = 210,
+#  units = "mm"
+#)
 
 
 
@@ -1094,16 +1096,16 @@ percentage_difference_CO2_model_non_CO2_model_2010s <- plotting_best_CO2_non_CO2
 patchwork_CO2_model_and_non_CO2_model_percentage_differences <- (make_CO2_streamflow_percentage_change_map(percentage_difference_CO2_model_non_CO2_model_1990s, "1990-1999") | make_CO2_streamflow_percentage_change_map(percentage_difference_CO2_model_non_CO2_model_2010s, "2012-2021")) +
   plot_layout(guides = "collect") & theme(legend.position = "bottom")
 
-patchwork_CO2_model_and_non_CO2_model_percentage_differences
+#patchwork_CO2_model_and_non_CO2_model_percentage_differences
 
-ggsave(
-  filename = "./Figures/Supplementary/streamflow_percentage_difference_best_CO2_model_vs_best_non_CO2_model.pdf",
-  plot = patchwork_CO2_model_and_non_CO2_model_percentage_differences,
-  device = "pdf",
-  width = 297,
-  height = 210,
-  units = "mm"
-)
+#ggsave(
+#  filename = "./Figures/Supplementary/streamflow_percentage_difference_best_CO2_model_vs_best_non_CO2_model.pdf",
+#  plot = patchwork_CO2_model_and_non_CO2_model_percentage_differences,
+#  device = "pdf",
+#  width = 297,
+#  height = 210,
+#  units = "mm"
+#)
 
 
 plotting_best_CO2_non_CO2_streamflow |>
@@ -1161,15 +1163,15 @@ plot_streamflow_time_best_CO2_non_CO2 <- best_CO2_non_CO2_streamflow |>
   facet_wrap(~gauge, scales = "free_y")
 
 
-ggsave(
-  filename = "CO2_model_vs_non_CO2_model_streamflow_time.pdf",
-  path = "Figures/Supplementary",
-  device = "pdf",
-  plot = plot_streamflow_time_best_CO2_non_CO2,
-  width = 1189,
-  height = 841,
-  units = "mm"
-)
+#ggsave(
+#  filename = "CO2_model_vs_non_CO2_model_streamflow_time.pdf",
+#  path = "Figures/Supplementary",
+#  device = "pdf",
+#  plot = plot_streamflow_time_best_CO2_non_CO2,
+#  width = 1189,
+#  height = 841,
+#  units = "mm"
+#)
 
 
 
@@ -1221,15 +1223,15 @@ plot_rainfall_runoff_best_CO2_non_CO2 <- best_CO2_non_CO2_streamflow |>
 
 
 
-ggsave(
-  filename = "CO2_model_vs_non_CO2_model_rainfall_runoff.pdf",
-  path = "Figures/Supplementary",
-  device = "pdf",
-  plot = plot_rainfall_runoff_best_CO2_non_CO2,
-  width = 1189,
-  height = 841,
-  units = "mm"
-)
+#ggsave(
+#  filename = "CO2_model_vs_non_CO2_model_rainfall_runoff.pdf",
+##  path = "Figures/Supplementary",
+#  device = "pdf",
+#  plot = plot_rainfall_runoff_best_CO2_non_CO2,
+#  width = 1189,
+#  height = 841,
+#  units = "mm"
+#)
 
 
 
@@ -1297,24 +1299,187 @@ all_timeseries_data <- timeseries_data_obs_CO2_off_CO2_on |>
   )
 
 
-plot_all_timeseries_data <- all_timeseries_data |>
-  ggplot(aes(x = year, y = streamflow, colour = type)) +
-  geom_line(alpha = 0.8) +
-  scale_colour_brewer(palette = "Set1") +
-  labs(x = "Year", y = "Streamflow (mm)", colour = NULL) +
-  theme_bw() +
-  facet_wrap(~gauge, scales = "free_y")
+# Split up into a4 size and repeat
+# Here
+# It needs to be A, B, C, D labels rather than facet_labels
+# A, B, C and D must be in the same relative location for all plots
+# Save A, B, C and D catchments. Print out caption
+# Colours are not good - need colour blind safe selection
+
+make_facet_labels <- function(data, facet_column, x_axis_column, y_axis_column, label_type = LETTERS, hjust = 0, vjust = 0) {
+  
+  # The embrace operator does not work correctly in summarise i.e., max({{ y_axis_column }})
+  # Link: https://forum.posit.co/t/embrace-operator-for-tidy-selection-vs-data-masking/173084
+  # Possible cause: {{ y_axis_column }} isn't unquoting when it's doing the mutate 
+  # Work around using rlang::ensym
+  col <- rlang::ensym(y_axis_column)
+  
+  data |> 
+    summarise(
+      ylab = max(!!col),
+      .by = {{ facet_column }}
+    ) |> 
+    # Add xlab - constant x-axis
+    add_column(
+      xlab = data |> pull(x_axis_column) |> min(),
+      .before = 2
+    ) |>  # add row numbers to tibble
+    mutate(
+      row_number = row_number(),
+      .before = 1
+    ) |>  # add label type based on row number
+    mutate(
+      label_name = label_type[row_number]
+    ) |> 
+    # apply hjust and vjust
+    mutate(
+      xlab = xlab + (xlab * hjust),
+      ylab = ylab + (ylab * vjust)
+    )
+
+}
 
 
-ggsave(
-  filename = "complete_timeseries_plot.pdf",
-  path = "Figures/Supplementary",
-  device = "pdf",
-  plot = plot_all_timeseries_data,
-  width = 1189,
-  height = 841,
-  units = "mm"
+
+
+
+plot_and_save_timeseries_data <- function(plotting_data, label_data, identifier) {
+  
+  plot <- plotting_data |> 
+    ggplot(aes(x = year, y = streamflow, colour = type, shape = type)) +
+    geom_line(alpha = 0.8) +
+    geom_point() +
+    geom_text(
+      mapping = aes(x = xlab, y = ylab, label = label_name),
+      data = label_data,
+      inherit.aes = FALSE,
+      fontface = "bold",
+      size = 10,
+      size.unit = "pt"
+    ) +
+    scale_colour_brewer(palette = "Set1") +
+    labs(
+      x = "Time (Year)", 
+      y = "Streamflow (mm)", 
+      colour = NULL, 
+      shape = NULL
+    ) +
+    scale_x_continuous(expand = c(0.01,0.01)) +
+    theme_bw() +
+    theme(
+      legend.position = "bottom",
+      text = element_text(family = "sans", size = 9), # default fonts are serif, sans and mono, text size is in pt
+      strip.background = element_blank(), # remove facet_strip gauge numbers
+      strip.text = element_blank() # remove facet_strip gauge numbers
+    ) +
+    facet_wrap(~gauge, ncol = 1, scales = "free_y") 
+  
+  ggsave(
+    filename = paste0("streamflow_timeseries_supp_plot_",identifier,".pdf"),
+    path = "Figures/Testing",
+    device = "pdf",
+    plot = plot,
+    width = 183,
+    height = 197,
+    units = "mm"
+  )
+}
+
+
+
+
+
+# create txt file with figure captions for overleaf
+create_caption <- function(label_data, identifier) {
+  
+  abc <- label_data |> pull(label_name)
+  gauge <- label_data |> pull(gauge)
+  gauge_abc <- paste0(gauge, " (", abc, ")")
+  # concatenate everything but last value
+  start_gauge_abc <- paste0(gauge_abc[1:(length(gauge_abc) - 2)], ", ", collapse = "")
+  end_gauge_abc <- paste0(gauge_abc[(length(gauge_abc) - 1)], " and ", gauge_abc[length(gauge_abc)], ".")
+  gauge_text <- paste(c(start_gauge_abc, end_gauge_abc), collapse = "")
+  
+  cat("\\begin{figure}") 
+  cat("\n")
+  cat("\t\\centering")
+  cat("\n")
+  cat(paste0("\t\\includegraphics[width=\\textwidth]{Figures/streamflow_timeseries_supp_plot_", identifier, ".pdf}"))
+  cat("\t\n")
+  # The line below must change
+  cat(paste0("\t\\caption{\\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges ", gauge_text, "}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}"))
+  cat("\n")
+  # The line below must change
+  cat(paste0("\t\\label{fig:supp_streamflow_timeseries_", identifier, "}")) 
+  cat("\n")
+  cat("\\end{figure}")
+  cat("\n")
+  cat("\n")
+
+}
+
+
+
+save_plot_and_caption_timeseries_data <- function(data_chunk, identifier) {
+  
+  label_data <- make_facet_labels(
+    data = data_chunk,
+    facet_column = "gauge",
+    x_axis_column = "year",
+    y_axis_column = "streamflow",
+    label_type = LETTERS,
+    hjust = 0.0005,
+    vjust = -0.05
+  )
+  
+  plot_and_save_timeseries_data(
+    plotting_data = data_chunk, 
+    label_data = label_data, 
+    identifier = identifier
+    )
+  
+  create_caption(
+    label_data = label_data,
+    identifier = identifier
+  )
+  
+}
+
+# divide all_timeseries_data into lots of 7 using split
+chunk <- 7
+n <- length(CO2_gauges)
+split_group <- rep(rep(1:ceiling(n/chunk), each = chunk))[1:n]
+split_tibble <- tibble(
+  "gauge" = CO2_gauges,
+  "split" = split_group
 )
+
+# left_join and split
+all_timeseries_data <- all_timeseries_data |> 
+  left_join(
+    split_tibble,
+    by = join_by(gauge)
+  )
+
+chunked_timeseries_data <- all_timeseries_data |> # converting table to list by groups https://stackoverflow.com/questions/7060272/split-up-a-dataframe-by-number-of-rows
+  group_by(split) |> 
+  group_map(~ .x)
+
+
+
+sink(file = "Figures/Testing/streamflow_time_captions_supp.txt") # filename must change
+iwalk(
+  .x = chunked_timeseries_data,
+  .f = save_plot_and_caption_timeseries_data
+)
+sink()
+stop_here()
+
+
+
+
+
+
 
 
 # Combine percentage change map with timeseries --------------------------------
