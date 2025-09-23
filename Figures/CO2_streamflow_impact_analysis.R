@@ -1,19 +1,15 @@
 # CO2 streamflow impact analysis
 
 # Figures produced in this R file ----------------------------------------------
+# 1. Main --> streamflow_percentage_difference_with_timeseries.pdf
+# 2. Supplementary --> streamflow_timeseries_data.pdf and captions
+# 3. Supplementary --> streamflow_percentage_difference_best_CO2_model_vs_best_non_CO2_model.pdf
+# 4. Other --> CO2_on_off_decade_histogram.pdf
+# 5. Other --> CO2_on_off_rainfall_runoff_comparison.pdf (mega) -  only catchments where CO2 model is better than non-CO2 model (evidence ratio > 0)
+# 6. Other --> streamflow_CO2_percentage_change_vs_prop_forested.pdf
+# 7. Other --> CO2_model_vs_non_CO2_model_rainfall_runoff.pdf - The transformed_realspace is different depending on model used. This means 2 observed transformed streamflow is required.
+# 8. Other --> complete_timeseries_plot.pdf
 
-# 1. Main --> CO2_streamflow_on_off_decade_comparison.pdf
-# 2. Supplementary --> CO2_on_off_decade_histogram.pdf
-# 3. Supplementary --> CO2_on_off_rainfall_runoff_comparison.pdf (mega) -  only catchments where CO2 model is better than non-CO2 model (evidence ratio > 0)
-# 4. Supplementary --> CO2_on_off_streamflow_time_comparison.pdf (mega) -  only catchments where CO2 model is better than non-CO2 model (evidence ratio > 0)
-# 5. Supplementary --> streamflow_CO2_percentage_change_vs_prop_forested.pdf
-# 6. Supplementary --> streamflow_percentage_difference_best_CO2_model_vs_best_non_CO2_model.pdf
-# 7. Supplementary --> CO2_model_vs_non_CO2_model_streamflow_time.pdf -  only catchments where CO2 model is better than non-CO2 model (evidence ratio > 0)
-# 8. Supplementary --> CO2_model_vs_non_CO2_model_rainfall_runoff.pdf - The transformed_realspace is different depending on model used. This means 2 observed transformed streamflow is required.
-# 9. Supplementary --> complete_timeseries_plot.pdf (combined plot 4 and plot 7 into a single plot)
-# 10. Main --> short_list_all_timeseries_plot (select handful of catchments from plot 9)
-# 11. Testing --> streamflow_percentage_difference_with_timeseries.pdf 
-# 12. Supplementary --> streamflow_timeseries_data.pdf and captions
 
 
 
@@ -126,7 +122,7 @@ compare_equivalent_models <- only_gauge_model_best_CO2_non_CO2_per_gauge |>
 
 
 
-### Comparison table ### -> match.fun would probably be a better solution
+### Comparison table ### --> match equivalent models one with CO2 one without
 streamflow_model_equivalent_comparison_table <- tribble(
   ~non_CO2_model,                                        ~CO2_model,
   "streamflow_model_precip_only",                        "streamflow_model_intercept_shifted_CO2",
@@ -538,7 +534,7 @@ big_palette <- function(x) {
 
 
 # Get shapefiles for Australia ------------------------------------------------
-aus_map <- generate_aus_map_sf()
+aus_map <- generate_aus_map_sf() 
 
 ## Breaks for DREAM uncertainty IQR
 scale_size_limits <- plot_ready_percentage_difference_a3_on_off_data |>
@@ -551,6 +547,9 @@ percentage_IQR_breaks <- c(0, 2.5, 5, 10, 15, 50, 100) # custom breaks
 dot_transparency <- 0.8
 
 # Plotting function ============================================================
+
+# I not convinced this function is required
+
 make_CO2_streamflow_percentage_change_map <- function(data, title) {
   ## Generate Insets ===========================================================
   QLD_data <- data |>
@@ -579,8 +578,9 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
     geom_sf() +
     geom_point(
       data = QLD_data,
-      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent, size = IQR_CO2_impact_on_streamflow_percentage),
+      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
       show.legend = FALSE,
+      size = inset_dot_size,
       alpha = dot_transparency,
       colour = "black",
       stroke = 0.1,
@@ -605,8 +605,9 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
     geom_sf() +
     geom_point(
       data = NSW_data,
-      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent, size = IQR_CO2_impact_on_streamflow_percentage),
+      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
       show.legend = FALSE,
+      size = inset_dot_size,
       alpha = dot_transparency,
       colour = "black",
       stroke = 0.1,
@@ -632,8 +633,9 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
     geom_sf() +
     geom_point(
       data = VIC_data,
-      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent, size = IQR_CO2_impact_on_streamflow_percentage),
+      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
       show.legend = FALSE,
+      size = inset_dot_size,
       alpha = dot_transparency,
       colour = "black",
       stroke = 0.1,
@@ -659,8 +661,9 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
     geom_sf() +
     geom_point(
       data = WA_data,
-      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent, size = IQR_CO2_impact_on_streamflow_percentage),
+      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
       show.legend = FALSE,
+      size = inset_dot_size,
       alpha = dot_transparency,
       colour = "black",
       stroke = 0.1,
@@ -686,8 +689,9 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
     geom_sf() +
     geom_point(
       data = TAS_data,
-      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent, size = IQR_CO2_impact_on_streamflow_percentage),
+      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
       show.legend = FALSE,
+      size = inset_dot_size,
       alpha = dot_transparency,
       colour = "black",
       stroke = 0.1,
@@ -713,8 +717,9 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
     geom_sf() +
     geom_point(
       data = data,
-      mapping = aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent, size = IQR_CO2_impact_on_streamflow_percentage),
+      mapping = aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
       alpha = dot_transparency,
+      size = inset_dot_size,
       colour = "black",
       shape = 21,
       inherit.aes = FALSE,
@@ -780,7 +785,7 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
     labs(
       x = NULL, # "Latitude",
       y = NULL, # "Longitude",
-      fill = "Average impact of CO2 on streamflow (%)",
+      fill = bquote('Average Impact of'~CO[2]~'on Streamflow (%)'), 
       size = "Percentage Impact Uncertainty (IQR)",
       title = {{ title }}
     ) +
@@ -818,27 +823,6 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
 
 
 
-# Patchwork results
-plot_ready_percentage_difference_a3_on_off_1990s <- plot_ready_percentage_difference_a3_on_off_data |>
-  filter(decade == 1) |>
-  filter(evidence_ratio > 100) # 100 is moderately strong
-
-plot_ready_percentage_difference_a3_on_off_2010s <- plot_ready_percentage_difference_a3_on_off_data |>
-  filter(decade == 2) |>
-  filter(evidence_ratio > 100) # 100 is moderately strong
-
-patchwork_percentage_differences <- (make_CO2_streamflow_percentage_change_map(plot_ready_percentage_difference_a3_on_off_1990s, "1990-1999") | make_CO2_streamflow_percentage_change_map(plot_ready_percentage_difference_a3_on_off_2010s, "2012-2021")) +
-  plot_layout(guides = "collect") & theme(legend.position = "bottom")
-
-
-#ggsave(
-#  filename = "./Figures/Main/streamflow_percentage_difference_CO2_on_off.pdf",
-#  plot = patchwork_percentage_differences,
-#  device = "pdf",
-#  width = 297,
-#  height = 210,
-#  units = "mm"
-#)
 
 
 
@@ -874,16 +858,7 @@ plot_ready_percentage_difference_a3_on_off_data |>
     .by = decade
   )
 
-# Add back in after clean up
-#ggsave(
-#  filename = "CO2_on_off_decade_histogram.pdf",
-#  plot = CO2_on_off_decade_histogram,
-#  device = "pdf",
-#  path = "Figures/Supplementary",
-#  width = 297,
-#  height = 210,
-#  units = "mm"
-#)
+
 
 
 
@@ -917,15 +892,7 @@ mega_timeseries_plot <- timeseries_plotting_data |>
   theme(legend.position = "bottom") +
   facet_wrap(~gauge, scales = "free_y")
 
-#ggsave(
-#  filename = "CO2_on_off_streamflow_time_comparison.pdf",
-#  path = "Figures/Supplementary",
-#  device = "pdf",
-#  plot = mega_timeseries_plot,
-#  width = 1189,
-#  height = 841,
-#  units = "mm"
-#)
+
 
 
 
@@ -943,15 +910,7 @@ mega_rainfall_runoff_plot <- rainfall_runoff_plotting_data |>
   facet_wrap(~gauge, scales = "free")
 
 
-#ggsave(
-#  filename = "CO2_on_off_rainfall_runoff_comparison.pdf",
-#  path = "Figures/Supplementary",
-#  device = "pdf",
-#  plot = mega_rainfall_runoff_plot,
-#  width = 1189,
-#  height = 841,
-#  units = "mm"
-#)
+
 
 
 
@@ -995,15 +954,7 @@ streamflow_CO2_percentage_change_vs_prop_forested <- all_years_percentage_differ
   theme_bw()
 
 
-#ggsave(
-#  filename = "streamflow_CO2_percentage_change_vs_prop_forested.pdf",
-#  path = "Figures/Supplementary",
-#  device = "pdf",
-#  plot = streamflow_CO2_percentage_change_vs_prop_forested,
-#  width = 297,
-#  height = 210,
-#  units = "mm"
-#)
+
 
 
 
@@ -1096,17 +1047,6 @@ percentage_difference_CO2_model_non_CO2_model_2010s <- plotting_best_CO2_non_CO2
 patchwork_CO2_model_and_non_CO2_model_percentage_differences <- (make_CO2_streamflow_percentage_change_map(percentage_difference_CO2_model_non_CO2_model_1990s, "1990-1999") | make_CO2_streamflow_percentage_change_map(percentage_difference_CO2_model_non_CO2_model_2010s, "2012-2021")) +
   plot_layout(guides = "collect") & theme(legend.position = "bottom")
 
-#patchwork_CO2_model_and_non_CO2_model_percentage_differences
-
-#ggsave(
-#  filename = "./Figures/Supplementary/streamflow_percentage_difference_best_CO2_model_vs_best_non_CO2_model.pdf",
-#  plot = patchwork_CO2_model_and_non_CO2_model_percentage_differences,
-#  device = "pdf",
-#  width = 297,
-#  height = 210,
-#  units = "mm"
-#)
-
 
 plotting_best_CO2_non_CO2_streamflow |>
   summarise(
@@ -1163,15 +1103,7 @@ plot_streamflow_time_best_CO2_non_CO2 <- best_CO2_non_CO2_streamflow |>
   facet_wrap(~gauge, scales = "free_y")
 
 
-#ggsave(
-#  filename = "CO2_model_vs_non_CO2_model_streamflow_time.pdf",
-#  path = "Figures/Supplementary",
-#  device = "pdf",
-#  plot = plot_streamflow_time_best_CO2_non_CO2,
-#  width = 1189,
-#  height = 841,
-#  units = "mm"
-#)
+
 
 
 
@@ -1223,15 +1155,6 @@ plot_rainfall_runoff_best_CO2_non_CO2 <- best_CO2_non_CO2_streamflow |>
 
 
 
-#ggsave(
-#  filename = "CO2_model_vs_non_CO2_model_rainfall_runoff.pdf",
-##  path = "Figures/Supplementary",
-#  device = "pdf",
-#  plot = plot_rainfall_runoff_best_CO2_non_CO2,
-#  width = 1189,
-#  height = 841,
-#  units = "mm"
-#)
 
 
 
@@ -1376,7 +1299,7 @@ plot_and_save_timeseries_data <- function(plotting_data, label_data, identifier)
   
   ggsave(
     filename = paste0("streamflow_timeseries_supp_plot_",identifier,".pdf"),
-    path = "Figures/Testing",
+    path = "Figures/Supplementary",
     device = "pdf",
     plot = plot,
     width = 183,
@@ -1407,7 +1330,7 @@ create_caption <- function(label_data, identifier) {
   cat(paste0("\t\\includegraphics[width=\\textwidth]{Figures/streamflow_timeseries_supp_plot_", identifier, ".pdf}"))
   cat("\t\n")
   # The line below must change
-  cat(paste0("\t\\caption{\\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges ", gauge_text, "}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}"))
+  cat(paste0("\t\\caption{\\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges ", gauge_text, "} The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}"))
   cat("\n")
   # The line below must change
   cat(paste0("\t\\label{fig:supp_streamflow_timeseries_", identifier, "}")) 
@@ -1467,16 +1390,6 @@ chunked_timeseries_data <- all_timeseries_data |> # converting table to list by 
 
 
 
-sink(file = "Figures/Testing/streamflow_time_captions_supp.txt") # filename must change
-iwalk(
-  .x = chunked_timeseries_data,
-  .f = save_plot_and_caption_timeseries_data
-)
-sink()
-stop_here()
-
-
-
 
 
 
@@ -1500,7 +1413,7 @@ font_size <- 3L # default size is GeomLabel$default_aes$size = 3.88
 
 
 ## Manually add labels in the correct spots in function
-make_CO2_streamflow_percentage_change_map <- function(data, title) {
+make_CO2_streamflow_percentage_change_map_uncertainty <- function(data, title) {
   
   ## Generate Insets ===========================================================
   QLD_data <- data |>
@@ -1804,19 +1717,26 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
 
 ### Order percentage impact uncertainty ########################################
 # force small dots to be on top and large dots on the bottom
-plot_ready_percentage_difference_a3_on_off_1990s <- plot_ready_percentage_difference_a3_on_off_1990s |> 
+
+plot_ready_percentage_difference_a3_on_off_1990s <- plot_ready_percentage_difference_a3_on_off_data |>
+  filter(decade == 1) |>
+  filter(evidence_ratio > 100) |>  # 100 is moderately strong
   arrange(desc(IQR_CO2_impact_on_streamflow_percentage))
 
-plot_ready_percentage_difference_a3_on_off_2010s <- plot_ready_percentage_difference_a3_on_off_2010s |> 
+plot_ready_percentage_difference_a3_on_off_2010s <- plot_ready_percentage_difference_a3_on_off_data |>
+  filter(decade == 2) |>
+  filter(evidence_ratio > 100) |>  # 100 is moderately strong
   arrange(desc(IQR_CO2_impact_on_streamflow_percentage))
+
+  
 
 ### Percentage change components ###############################################
-percent_change_1990 <- make_CO2_streamflow_percentage_change_map(
+percent_change_1990 <- make_CO2_streamflow_percentage_change_map_uncertainty(
   plot_ready_percentage_difference_a3_on_off_1990s, 
   "1990-1999"
   )
 
-percent_change_2012 <- make_CO2_streamflow_percentage_change_map(
+percent_change_2012 <- make_CO2_streamflow_percentage_change_map_uncertainty(
   plot_ready_percentage_difference_a3_on_off_2010s, 
   "2012-2021"
   )
@@ -1947,6 +1867,30 @@ streamflow_percentage_difference_with_timeseries <- (percent_change_1990 + perce
   guides(colour = guide_legend(title.hjust = 0.5, title.position = "top", ncol = 2))
 
 
+
+# Instead of having timeseries spread across multiple pages - stick em together ---
+plot_all_timeseries_data <- all_timeseries_data |>
+  ggplot(aes(x = year, y = streamflow, colour = type)) +
+  geom_line(alpha = 0.8) +
+  scale_colour_brewer(palette = "Set1") +
+  labs(x = "Year", y = "Streamflow (mm)", colour = NULL) +
+  theme_bw() +
+  facet_wrap(~gauge, scales = "free_y")
+
+
+
+
+# Saving all figures here ------------------------------------------------------
+# 1. Main --> streamflow_percentage_difference_with_timeseries.pdf
+# 2. Supplementary --> streamflow_timeseries_data.pdf and captions
+# 3. Supplementary --> streamflow_percentage_difference_best_CO2_model_vs_best_non_CO2_model.pdf
+# 4. Other --> CO2_on_off_decade_histogram.pdf
+# 5. Other --> CO2_on_off_rainfall_runoff_comparison.pdf (mega) -  only catchments where CO2 model is better than non-CO2 model (evidence ratio > 0)
+# 6. Other --> streamflow_CO2_percentage_change_vs_prop_forested.pdf
+# 7. Other --> CO2_model_vs_non_CO2_model_rainfall_runoff.pdf - The transformed_realspace is different depending on model used. This means 2 observed transformed streamflow is required.
+# 8. Other --> complete_timeseries_plot.pdf
+
+# 1.
 ggsave(
   filename = "./Figures/Main/streamflow_percentage_difference_with_timeseries.pdf",
   plot = streamflow_percentage_difference_with_timeseries,
@@ -1956,595 +1900,83 @@ ggsave(
   units = "mm"
 )
 
+# 2.
+# Supplementary time series figures and captions:
+sink(file = "Figures/Supplementary/streamflow_time_captions_supp.txt") # filename must change
+iwalk(
+  .x = chunked_timeseries_data,
+  .f = save_plot_and_caption_timeseries_data
+)
+sink()
+stop_here()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Other ideas ------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# TIM CURVES
-
-
-
-
-# Ignore this bit here ------------
-
-# Sanity check the rainfall-runoff and streamflow-time of large differences
-# from decade comparison
-# Input: gauge
-# Output: rainfall-runoff and streamflow time
-# test_gauge 207015
-# get gauges from --> average_percent_diff_by_decade
-
-tims_curves_data <- altered_realspace_streamflow_data_a3_off |>
-  left_join(
-    observed_streamflow,
-    by = join_by(gauge, precipitation)
-  ) |>
-  select(gauge, year, precipitation, observed_boxcox_streamflow, a3_off_modelled_boxcox_streamflow, modelled_boxcox_streamflow, realspace_a3_on, realspace_a3_off, q_mm) |>
-  rename(
-    boxcox_a3_on = modelled_boxcox_streamflow,
-    boxcox_a3_off = a3_off_modelled_boxcox_streamflow,
-    observed_realspace_streamflow = q_mm
-  ) |>
-  mutate(
-    a3_on_off_diff = realspace_a3_on - realspace_a3_off,
-    standardised_a3_on_off_diff = a3_on_off_diff / observed_realspace_streamflow,
-    standardised_precipitation = precipitation / mean(precipitation),
-    .by = gauge
-  )
-
-
-# Do for all catchments with CO2 as best model
-# Would be good to colour the dots based on type of change (neg-slope, pos-slope etc)
-type_of_CO2_change <- best_model_per_gauge |>
-  filter(contains_CO2) |>
-  filter(str_detect(parameter, "a3")) |>
-  mutate(
-    a3_sign = if_else(sign(parameter_value) == -1, "negative", "positive"),
-    change_type_no_sign = str_remove(parameter, "a3_")
-  ) |>
-  # make new column joining sign of parameter and type of parameter
-  unite(
-    col = change_type,
-    a3_sign, change_type_no_sign
-  ) |>
-  select(gauge, change_type)
-
-# Check if a3 off is larger than precipitation - mark this on the graphs
-check_precip_and_a3_values <- tims_curves_data |>
-  mutate(
-    a3_off_bigger_than_precip = realspace_a3_off > precipitation
-  ) |>
-  summarise(
-    streamflow_bigger_than_precip = any(a3_off_bigger_than_precip),
-    .by = gauge
-  )
-
-# Join back together for plotting
-tims_curves_data <- tims_curves_data |>
-  left_join(
-    type_of_CO2_change,
-    by = join_by(gauge)
-  ) |>
-  left_join(
-    check_precip_and_a3_values,
-    by = join_by(gauge)
-  ) |>
-  mutate(
-    change_type = factor(change_type, levels = c("negative_intercept", "positive_intercept", "negative_slope", "positive_slope"))
-  )
-
-
-
-
-
-absolute_curves <- tims_curves_data |>
-  ggplot(aes(x = precipitation, y = a3_on_off_diff, colour = change_type, shape = streamflow_bigger_than_precip)) +
-  geom_point() +
-  labs(x = "Precipitation", y = "Q_CO2_on - Q_CO2_off") +
-  theme_bw() +
-  facet_wrap(~gauge, scales = "free") +
-  theme(
-    legend.position = "top"
-  )
-
-standardised_curves <- tims_curves_data |>
-  # filter(gauge %in% c("112101B", "405228", "610001", "116011A")) |>
-  ggplot(aes(x = standardised_precipitation, y = standardised_a3_on_off_diff, colour = change_type, shape = streamflow_bigger_than_precip)) + #
-  geom_point() +
-  labs(x = "P / P_ave", y = "(Q_CO2_on - Q_CO2_off) / Q_obs") +
-  theme_bw() +
-  facet_wrap(~gauge, scales = "free") +
-  theme(
-    legend.position = "top"
-  )
-
-
-
+# 3.
 ggsave(
-  filename = "tim_curves_absolute.pdf",
-  plot = absolute_curves,
+  filename = "streamflow_percentage_difference_best_CO2_model_vs_best_non_CO2_model.pdf",
+  path = "Figures/Supplementary",
+  plot = patchwork_CO2_model_and_non_CO2_model_percentage_differences,
   device = "pdf",
-  path = "Graphs/Supplementary_Figures",
-  width = 1189,
-  height = 841,
+  width = 297,
+  height = 210,
   units = "mm"
 )
 
+# 4.
 ggsave(
-  filename = "tim_curves_standardised.pdf",
-  plot = standardised_curves,
+  filename = "CO2_on_off_decade_histogram.pdf",
+  plot = CO2_on_off_decade_histogram,
   device = "pdf",
-  path = "Graphs/Supplementary_Figures",
+  path = "Figures/Other",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
+
+# 5.
+ggsave(
+  filename = "CO2_on_off_rainfall_runoff_comparison.pdf",
+  path = "Figures/Other",
+  device = "pdf",
+  plot = mega_rainfall_runoff_plot,
   width = 1189,
   height = 841,
   units = "mm"
 )
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# SENS SLOPE ANALYSIS
-
-
-
-
-
-# Rate of change CO2-on vs CO2-off using sens slope ----------------------------
-rate_of_change <- altered_realspace_streamflow_data_a3_off |>
-  select(gauge, year, realspace_a3_on, realspace_a3_off) |> # real space
-  # select(gauge, year, a3_off_modelled_boxcox_streamflow, modelled_boxcox_streamflow) |> # boxcox
-  mutate(
-    relative_difference = realspace_a3_on - realspace_a3_off, # real space
-    # relative_difference = modelled_boxcox_streamflow - a3_off_modelled_boxcox_streamflow
-  ) |>
-  # check for missing years - there are missing years - use my sen's slope to account for missing
-  mutate(
-    n = max(year) - year,
-    .by = gauge
-  ) |>
-  mutate(
-    n_1 = lag(n - 1),
-    .by = gauge
-  ) |>
-  mutate(
-    check = if_else(n - n_1 == 0, TRUE, FALSE)
-  ) |>
-  # I am not subtracting negatives
-  mutate(
-    is_negative_a3_on = realspace_a3_on < 0,
-    is_negative_a3_off = realspace_a3_off < 0
-  )
-
-# If there is only a single occurrence then the following code errors
-remove_single_entires <- rate_of_change |>
-  summarise(
-    n = n(),
-    .by = gauge
-  ) |>
-  filter(n == 1)
-
-rate_of_change <- rate_of_change |>
-  anti_join(
-    remove_single_entires,
-    by = join_by(gauge)
-  )
-
-
-
-# Vectors into sens.slope must be:
-# - in chronological order
-# - be a timeseries object
-# - make two checks
-# - I think this is already being done - the rate of change is in gauge and year order
-
-# Problem - deleting rows
-# some things are not in order
-
-
-# Prove to Tim I am correct
-# - Excel
-# - My own sen slope
-# - Show him on powerpoint
-
-
-
-sens_slope_estimator <- function(x) { # function(x, t)
-  sens.slope(x)$estimates |> unname()
-}
-
-
-test_flow <- rate_of_change |>
-  filter(gauge == "407253") |>
-  pull(relative_difference)
-
-test_year <- rate_of_change |>
-  filter(gauge == "407253") |>
-  pull(year)
-
-
-sum(1:(length(test) - 1))
-
-
-# My own sen slope function
-my_sens_slope <- function(x, t) {
-  # the length of x and t must be the same
-  stopifnot(length(x) == length(t))
-
-  # t must be continuous
-  t_lag_1 <- lag(t, n = 1L)
-  diff_t <- t - t_lag_1
-  stopifnot(any(diff_t[-1] == 1))
-
-  # pre-allocate array
-  length_pre_allocation <- sum(1:(length(x) - 1))
-  d <- numeric(length = length_pre_allocation)
-  seperate_index <- 1
-
-  for (j in 2:length(x)) {
-    for (i in j:length(x)) {
-      d[seperate_index] <- (x[i] - x[j - 1]) / (t[i] - t[j - 1])
-      seperate_index <- seperate_index + 1
-    }
-  }
-
-  # return(d)
-  return(median(d, na.rm = TRUE))
-}
-
-
-
-my_sens_slope(x = test_flow, t = test_year)
-sens_slope_estimator(test) # there is a non-continuous year. Does this matter?
-sens.slope(test)
-
-
-gauge_rate_of_change <- rate_of_change |>
-  summarise(
-    sens_slope = my_sens_slope(x = relative_difference, t = year),
-    n = n(),
-    .by = gauge
-  ) |>
-  arrange(sens_slope) |>
-  left_join(
-    lat_lon_gauge,
-    by = join_by(gauge)
-  )
-
-# Put the sens_slope on a map mm/year ------------------------------------------
-sens_slope_palette <- function(x) {
-  c(
-    "#67001f",
-    "#b2182b",
-    "#d6604d",
-    "#f4a582",
-    "#fddbc7",
-    "white",
-    "#d1e5f0",
-    "#92c5de",
-    "#4393c3",
-    "#2166ac",
-    "#053061"
-  )
-}
-
-gauge_rate_of_change |>
-  pull(sens_slope) |>
-  quantile()
-
-## Generate Insets =============================================================
-### Filter data by state #######################################################
-
-QLD_data <- gauge_rate_of_change |>
-  filter(state == "QLD")
-
-NSW_data <- gauge_rate_of_change |>
-  filter(state == "NSW")
-
-VIC_data <- gauge_rate_of_change |>
-  filter(state == "VIC")
-
-WA_data <- gauge_rate_of_change |>
-  filter(state == "WA")
-
-TAS_data <- gauge_rate_of_change |>
-  filter(state == "TAS")
-
-
-### Generate inset plots #######################################################
-
-inset_plot_QLD <- aus_map |>
-  filter(state == "QLD") |>
-  ggplot() +
-  geom_sf() +
-  geom_point(
-    data = QLD_data,
-    aes(x = lon, y = lat, fill = sens_slope),
-    show.legend = FALSE,
-    size = 2.5,
-    colour = "black",
-    stroke = 0.1,
-    shape = 21
-  ) +
-  binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
-    aesthetics = "fill",
-    palette = sens_slope_palette,
-    breaks = c(-5, -2.5, -1, -0.5, -0.001, 0.001, 0.5, 1, 2.5, 5), # range()
-    limits = c(-15, 10),
-    show.limits = TRUE,
-    guide = "colorsteps"
-  ) +
-  theme_void()
-
-
-inset_plot_NSW <- aus_map |>
-  filter(state == "NSW") |>
-  ggplot() +
-  geom_sf() +
-  geom_point(
-    data = NSW_data,
-    aes(x = lon, y = lat, fill = sens_slope),
-    show.legend = FALSE,
-    size = 2.5,
-    colour = "black",
-    stroke = 0.1,
-    shape = 21
-  ) +
-  binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
-    aesthetics = "fill",
-    palette = sens_slope_palette,
-    breaks = c(-5, -2.5, -1, -0.5, -0.001, 0.001, 0.5, 1, 2.5, 5), # range()
-    limits = c(-15, 10),
-    show.limits = TRUE,
-    guide = "colorsteps"
-  ) +
-  theme_void()
-
-
-
-
-inset_plot_VIC <- aus_map |>
-  filter(state == "VIC") |>
-  ggplot() +
-  geom_sf() +
-  geom_point(
-    data = VIC_data,
-    aes(x = lon, y = lat, fill = sens_slope),
-    show.legend = FALSE,
-    size = 2.5,
-    colour = "black",
-    stroke = 0.1,
-    shape = 21
-  ) +
-  binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
-    aesthetics = "fill",
-    palette = sens_slope_palette,
-    breaks = c(-5, -2.5, -1, -0.5, -0.001, 0.001, 0.5, 1, 2.5, 5), # range()
-    limits = c(-15, 10),
-    show.limits = TRUE,
-    guide = "colorsteps"
-  ) +
-  theme_void()
-
-
-
-
-inset_plot_WA <- aus_map |>
-  filter(state == "WA") |>
-  ggplot() +
-  geom_sf() +
-  geom_point(
-    data = WA_data,
-    aes(x = lon, y = lat, fill = sens_slope),
-    show.legend = FALSE,
-    size = 2.5,
-    colour = "black",
-    stroke = 0.1,
-    shape = 21
-  ) +
-  binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
-    aesthetics = "fill",
-    palette = sens_slope_palette,
-    breaks = c(-5, -2.5, -1, -0.5, -0.001, 0.001, 0.5, 1, 2.5, 5), # range()
-    limits = c(-15, 10),
-    show.limits = TRUE,
-    guide = "colorsteps"
-  ) +
-  theme_void()
-
-
-
-
-inset_plot_TAS <- aus_map |>
-  filter(state == "TAS") |>
-  ggplot() +
-  geom_sf() +
-  geom_point(
-    data = TAS_data,
-    aes(x = lon, y = lat, fill = sens_slope),
-    show.legend = FALSE,
-    size = 2.5,
-    colour = "black",
-    stroke = 0.1,
-    shape = 21
-  ) +
-  binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
-    aesthetics = "fill",
-    palette = sens_slope_palette,
-    breaks = c(-5, -2.5, -1, -0.5, -0.001, 0.001, 0.5, 1, 2.5, 5), # range()
-    limits = c(-15, 10),
-    show.limits = TRUE,
-    guide = "colorsteps"
-  ) +
-  theme_void()
-
-
-
-
-## Put it together =============================================================
-
-sens_slope_map_aus <- aus_map |>
-  ggplot() +
-  geom_sf() +
-  geom_point(
-    data = gauge_rate_of_change,
-    mapping = aes(x = lon, y = lat, fill = sens_slope),
-    size = 3,
-    colour = "black",
-    shape = 21,
-    inherit.aes = FALSE,
-    stroke = 0.1
-  ) +
-  theme_bw() +
-  binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
-    aesthetics = "fill",
-    palette = sens_slope_palette,
-    breaks = c(-5, -2.5, -1, -0.5, -0.001, 0.001, 0.5, 1, 2.5, 5), # range()
-    limits = c(-15, 10),
-    show.limits = TRUE,
-    guide = "colorsteps"
-  ) +
-  # expand map
-  coord_sf(xlim = c(95, 176), ylim = c(-60, 0)) +
-  # magnify WA
-  geom_magnify(
-    from = c(114, 118, -35.5, -30),
-    to = c(93, 112, -36, -10),
-    shadow = FALSE,
-    expand = 0,
-    plot = inset_plot_WA,
-    proj = "single"
-  ) +
-  # magnify VIC
-  geom_magnify(
-    # aes(from = state == "VIC"), # use aes rather than manually selecting area
-    from = c(141, 149.5, -39, -34),
-    to = c(95, 136, -38, -60),
-    shadow = FALSE,
-    plot = inset_plot_VIC,
-    proj = "single"
-  ) +
-  # magnify QLD
-  geom_magnify(
-    from = c(145, 155, -29.2, -16),
-    to = c(157, 178, -29.5, 1.5),
-    shadow = FALSE,
-    expand = 0,
-    plot = inset_plot_QLD,
-    proj = "single"
-  ) +
-  # magnify NSW
-  geom_magnify(
-    from = c(146.5, 154, -38, -28.1),
-    to = c(157, 178, -61, -30.5),
-    shadow = FALSE,
-    expand = 0,
-    plot = inset_plot_NSW,
-    proj = "single"
-  ) +
-  # magnify TAS
-  geom_magnify(
-    from = c(144, 149, -40, -44),
-    to = c(140, 155, -45, -61),
-    shadow = FALSE,
-    expand = 0,
-    plot = inset_plot_TAS,
-    proj = "single"
-  ) +
-  labs(
-    x = NULL, # "Latitude",
-    y = NULL, # "Longitude",
-    fill = "Sen's Slope (mm/year)",
-  ) +
-  theme(
-    legend.key = element_rect(fill = "grey80"),
-    legend.title = element_text(hjust = 0.5),
-    legend.background = element_rect(colour = "black"),
-    legend.margin = margin(l = 10, r = 10, t = 5, b = 5), # add a bit more room to the left and right of the legend box
-    axis.text = element_blank(),
-    legend.position = "inside",
-    legend.position.inside = c(0.36, 0.91),
-    legend.box = "horizontal", # side-by-side legends
-    panel.grid = element_blank(),
-    axis.ticks = element_blank(),
-    plot.title = element_text(margin = margin(l = 25, r = 0, t = 30, b = -30), size = 22), # push title into plot
-    panel.border = element_blank()
-  ) +
-  guides(
-    fill = guide_coloursteps(
-      barwidth = unit(15, "cm"),
-      show.limits = TRUE,
-      even.steps = TRUE,
-      title.position = "top",
-      direction = "horizontal"
-    )
-  )
-
-
-sens_slope_map_aus
-
+# 6.
 ggsave(
-  filename = "./Graphs/Figures/sens_slope_map_2010_2021.pdf",
-  plot = sens_slope_map_aus,
+  filename = "streamflow_CO2_percentage_change_vs_prop_forested.pdf",
+  path = "Figures/Other",
   device = "pdf",
-  width = 232,
-  height = 200,
+  plot = streamflow_CO2_percentage_change_vs_prop_forested,
+  width = 297,
+  height = 210,
   units = "mm"
 )
 
 
+# 7.
+ggsave(
+  filename = "CO2_model_vs_non_CO2_model_rainfall_runoff.pdf",
+  path = "Figures/Other",
+  device = "pdf",
+  plot = plot_rainfall_runoff_best_CO2_non_CO2,
+  width = 1189,
+  height = 841,
+  units = "mm"
+)
+
+# 8.
+ggsave(
+  filename = "complete_timeseries_plot.pdf",
+  path = "Figures/Other",
+  device = "pdf",
+  plot = plot_all_timeseries_data,
+  width = 1189,
+  height = 841,
+  units = "mm"
+  )
 
 
 
@@ -2555,6 +1987,3 @@ ggsave(
 
 
 
-
-
-#
