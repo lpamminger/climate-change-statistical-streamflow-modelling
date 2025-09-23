@@ -190,7 +190,7 @@ chunk_DREAM <- function(single_chunk_numerical_optimiser, chunk_iter, DREAM_cont
       top = NULL
     ),
     device = "pdf",
-    path = "./Figures/Supplementary/",
+    path = "./Figures/Other/",
     width = 297,
     height = 210,
     units = "mm"
@@ -213,7 +213,7 @@ chunk_DREAM <- function(single_chunk_numerical_optimiser, chunk_iter, DREAM_cont
     ),
     # remove page numbers
     device = "pdf",
-    path = "./Figures/Supplementary/",
+    path = "./Figures/Other/",
     width = 297,
     height = 210,
     units = "mm"

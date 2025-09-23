@@ -120,7 +120,7 @@ rainfall_runoff_plots <- map(
 
 ggsave(
   filename = "all_rainfall_runoff_plots.pdf",
-  path = "./Figures/Supplementary/",
+  path = "./Figures/Other/",
   # used to append all plots into a single pdf
   plot = gridExtra::marrangeGrob(rainfall_runoff_plots, nrow = 1, ncol = 1),
   device = "pdf",
@@ -201,7 +201,7 @@ streamflow_time_plots <- map(
 
 ggsave(
   filename = "all_streamflow_time_plots.pdf",
-  path = "./Figures/Supplementary",
+  path = "./Figures/Other",
   # used to append all plots into a single pdf
   plot = gridExtra::marrangeGrob(streamflow_time_plots, nrow = 1, ncol = 1),
   device = "pdf",
