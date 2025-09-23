@@ -4,13 +4,12 @@
 
 # 1. Main --> ToE_map_aus_uncertainty.pdf (requires dream results - currently working without dream results)
 # 2. Supplementary --> time_of_emergence_decade_histogram.pdf
-# 3. Supplementary --> ToE_vs_uncertainty_and_evidence_ratio.pdf (requires dream results - called ToE_vs_uncertainty in old files)
-# 4. Supplementary --> ToE_vs_record_length.pdf 
-# 5. Supplementary --> ToE_vs_catchment_area.pdf
-# 6. Supplementary --> time_of_emergence_and_uncertainty_plot.pdf
-# 7. Supplementary --> time_of_emergence_uncertainty_vs_evidence_ratio.pdf
-# 8. Supplementary --> ToE_cdf.pdf 
-# X. Testing --> something related to climate types (not in file)
+# 3. Other --> ToE_vs_record_length.pdf 
+# 4. Other --> ToE_vs_catchment_area.pdf
+# 5. Other --> time_of_emergence_and_uncertainty_plot.pdf
+# 6. Other --> time_of_emergence_uncertainty_vs_evidence_ratio.pdf
+# 7. Supplementary --> ToE_cdf.pdf 
+
 
 
 
@@ -716,7 +715,7 @@ time_of_emergence_and_uncertainty_plot <- time_of_emergence_data |>
 
 
 ggsave(
-  filename = "./Figures/Supplementary/time_of_emergence_and_uncertainty_plot.pdf", 
+  filename = "./Figures/Other/time_of_emergence_and_uncertainty_plot.pdf", 
   plot = time_of_emergence_and_uncertainty_plot,
   device = "pdf",
   width = 297,
@@ -738,7 +737,7 @@ time_of_emergence_uncertainty_vs_evidence_ratio <- time_of_emergence_data |>
 
 
 ggsave(
-  filename = "./Figures/Supplementary/time_of_emergence_uncertainty_vs_evidence_ratio.pdf", 
+  filename = "./Figures/Other/time_of_emergence_uncertainty_vs_evidence_ratio.pdf", 
   plot = time_of_emergence_uncertainty_vs_evidence_ratio,
   device = "pdf",
   width = 297,
@@ -766,7 +765,7 @@ ToE_vs_record_length <- time_of_emergence_data |>
 
 
 ggsave(
-  filename = "./Figures/Supplementary/ToE_vs_record_length.pdf", #"./Graphs/CMAES_graphs/log_sinh_no_uncertainty_ToE_map_aus.pdf",
+  filename = "./Figures/Other/ToE_vs_record_length.pdf", #"./Graphs/CMAES_graphs/log_sinh_no_uncertainty_ToE_map_aus.pdf",
   plot = ToE_vs_record_length,
   device = "pdf",
   width = 297,
@@ -796,7 +795,7 @@ ToE_vs_catchment_area <- time_of_emergence_data |>
 
 
 ggsave(
-  filename = "./Figures/Supplementary/ToE_vs_catchment_area.pdf", #"./Graphs/CMAES_graphs/log_sinh_no_uncertainty_ToE_map_aus.pdf",
+  filename = "./Figures/Other/ToE_vs_catchment_area.pdf", #"./Graphs/CMAES_graphs/log_sinh_no_uncertainty_ToE_map_aus.pdf",
   plot = ToE_vs_catchment_area,
   device = "pdf",
   width = 297,
