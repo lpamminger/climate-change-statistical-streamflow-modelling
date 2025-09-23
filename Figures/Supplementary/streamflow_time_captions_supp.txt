@@ -1,0 +1,196 @@
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{Figures/streamflow_timeseries_supp_plot_1.pdf}	
+	\caption{\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges 108003A (A), 116012A (B), 117003A (C), 118106A (D), 235205 (E), 235210 (F) and 235211 (G).}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}
+	\label{fig:supp_streamflow_timeseries_1}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{Figures/streamflow_timeseries_supp_plot_2.pdf}	
+	\caption{\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges 235219 (A), 235233 (B), 235234 (C), 235237 (D), 236203 (E), 236213 (F) and 236216 (G).}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}
+	\label{fig:supp_streamflow_timeseries_2}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{Figures/streamflow_timeseries_supp_plot_3.pdf}	
+	\caption{\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges 237202 (A), 237205 (B), 237206 (C), 238204 (D), 238208 (E), 238229 (F) and 238230 (G).}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}
+	\label{fig:supp_streamflow_timeseries_3}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{Figures/streamflow_timeseries_supp_plot_4.pdf}	
+	\caption{\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges 238235 (A), 302200 (B), 303203 (C), 305202 (D), 306119 (E), 312061 (F) and 314207 (G).}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}
+	\label{fig:supp_streamflow_timeseries_4}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{Figures/streamflow_timeseries_supp_plot_5.pdf}	
+	\caption{\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges 317200 (A), 319204 (B), 401009 (C), 401210 (D), 401215 (E), 401217 (F) and 402213 (G).}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}
+	\label{fig:supp_streamflow_timeseries_5}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{Figures/streamflow_timeseries_supp_plot_6.pdf}	
+	\caption{\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges 403213 (A), 403226 (B), 405212 (C), 405226 (D), 405228 (E), 405230 (F) and 405231 (G).}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}
+	\label{fig:supp_streamflow_timeseries_6}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{Figures/streamflow_timeseries_supp_plot_7.pdf}	
+	\caption{\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges 405234 (A), 405237 (B), 405238 (C), 405240 (D), 405246 (E), 405248 (F) and 405251 (G).}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}
+	\label{fig:supp_streamflow_timeseries_7}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{Figures/streamflow_timeseries_supp_plot_8.pdf}	
+	\caption{\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges 405263 (A), 405274 (B), 406208 (C), 406213 (D), 406214 (E), 406224 (F) and 406226 (G).}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}
+	\label{fig:supp_streamflow_timeseries_8}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{Figures/streamflow_timeseries_supp_plot_9.pdf}	
+	\caption{\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges 406235 (A), 406250 (B), 407213 (C), 407214 (D), 407215 (E), 407217 (F) and 407220 (G).}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}
+	\label{fig:supp_streamflow_timeseries_9}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{Figures/streamflow_timeseries_supp_plot_10.pdf}	
+	\caption{\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges 407221 (A), 407230 (B), 407246 (C), 407253 (D), 408200 (E), 408202 (F) and 408206 (G).}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}
+	\label{fig:supp_streamflow_timeseries_10}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{Figures/streamflow_timeseries_supp_plot_11.pdf}	
+	\caption{\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges 410156 (A), 410713 (B), 411003 (C), 415201 (D), 415206 (E), 415220 (F) and 415223 (G).}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}
+	\label{fig:supp_streamflow_timeseries_11}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{Figures/streamflow_timeseries_supp_plot_12.pdf}	
+	\caption{\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges 415226 (A), 415237 (B), 415238 (C), 416016 (D), 416023 (E), 418014 (F) and 418017 (G).}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}
+	\label{fig:supp_streamflow_timeseries_12}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{Figures/streamflow_timeseries_supp_plot_13.pdf}	
+	\caption{\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges 418021 (A), 418027 (B), 419010 (C), 419029 (D), 421050 (E), 422313B (F) and 422334A (G).}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}
+	\label{fig:supp_streamflow_timeseries_13}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{Figures/streamflow_timeseries_supp_plot_14.pdf}	
+	\caption{\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges 422338A (A), 422394A (B), 603003 (C), 603005 (D), 603007 (E), 603190 (F) and 606001 (G).}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}
+	\label{fig:supp_streamflow_timeseries_14}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{Figures/streamflow_timeseries_supp_plot_15.pdf}	
+	\caption{\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges 606002 (A), 606185 (B), 606195 (C), 607144 (D), 607155 (E), 607220 (F) and 608151 (G).}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}
+	\label{fig:supp_streamflow_timeseries_15}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{Figures/streamflow_timeseries_supp_plot_16.pdf}	
+	\caption{\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges 121001A (A), 122004A (B), 130004A (C), 610008 (D), 612025 (E), 613002 (F) and 613146 (G).}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}
+	\label{fig:supp_streamflow_timeseries_16}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{Figures/streamflow_timeseries_supp_plot_17.pdf}	
+	\caption{\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges 614044 (A), 614196 (B), 616041 (C), 616065 (D), 616178 (E), 616216 (F) and 617002 (G).}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}
+	\label{fig:supp_streamflow_timeseries_17}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{Figures/streamflow_timeseries_supp_plot_18.pdf}	
+	\caption{\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges 617003 (A), 701002 (B), 809310 (C), A2390523 (D), A5040523 (E), A5050517 (F) and A5070500 (G).}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}
+	\label{fig:supp_streamflow_timeseries_18}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{Figures/streamflow_timeseries_supp_plot_19.pdf}	
+	\caption{\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges 138004B (A), 138113A (B), 141008A (C), A5070503 (D), G0050115 (E), G8140063 (F) and G8150180 (G).}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}
+	\label{fig:supp_streamflow_timeseries_19}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{Figures/streamflow_timeseries_supp_plot_20.pdf}	
+	\caption{\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges 146012A (A), 146014A (B), 146095A (C), 204034 (D), 204036 (E), 204039 (F) and 206009 (G).}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}
+	\label{fig:supp_streamflow_timeseries_20}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{Figures/streamflow_timeseries_supp_plot_21.pdf}	
+	\caption{\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges 207015 (A), 208004 (B), 208005 (C), 208009 (D), 208024 (E), 210011 (F) and 210016 (G).}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}
+	\label{fig:supp_streamflow_timeseries_21}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{Figures/streamflow_timeseries_supp_plot_22.pdf}	
+	\caption{\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges 210017 (A), 210022 (B), 210040 (C), 211009 (D), 211013 (E), 212260 (F) and 215002 (G).}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}
+	\label{fig:supp_streamflow_timeseries_22}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{Figures/streamflow_timeseries_supp_plot_23.pdf}	
+	\caption{\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges 216002 (A), 216009 (B), 218001 (C), 218005 (D), 219006 (E), 221208 (F) and 222016 (G).}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}
+	\label{fig:supp_streamflow_timeseries_23}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{Figures/streamflow_timeseries_supp_plot_24.pdf}	
+	\caption{\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges 222210 (A), 222213 (B), 223202 (C), 223205 (D), 224203 (E), 224213 (F) and 225201 (G).}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}
+	\label{fig:supp_streamflow_timeseries_24}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{Figures/streamflow_timeseries_supp_plot_25.pdf}	
+	\caption{\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges 226204 (A), 226205 (B), 226226 (C), 226410 (D), 227200 (E), 227205 (F) and 227210 (G).}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}
+	\label{fig:supp_streamflow_timeseries_25}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{Figures/streamflow_timeseries_supp_plot_26.pdf}	
+	\caption{\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges 227213 (A), 227226 (B), 230205 (C), 230209 (D), 230210 (E), 231211 (F) and 231213 (G).}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}
+	\label{fig:supp_streamflow_timeseries_26}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{Figures/streamflow_timeseries_supp_plot_27.pdf}	
+	\caption{\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges 231225 (A), 232214 (B), 233214 (C), 234200 (D), 234201 (E), 235203 (F) and 235204 (G).}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}
+	\label{fig:supp_streamflow_timeseries_27}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{Figures/streamflow_timeseries_supp_plot_28.pdf}	
+	\caption{\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges 302208 (A), 418005 (B), 419005 (C) and 419054 (D).}. The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}
+	\label{fig:supp_streamflow_timeseries_28}
+\end{figure}
+
