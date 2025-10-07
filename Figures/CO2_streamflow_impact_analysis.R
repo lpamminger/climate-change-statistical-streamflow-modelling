@@ -852,6 +852,8 @@ CO2_on_off_decade_histogram <- plot_ready_percentage_difference_a3_on_off_data |
   )
 
 
+
+# Average impact
 plot_ready_percentage_difference_a3_on_off_data |>
   summarise(
     mean = mean(CO2_impact_on_streamflow_percent),
@@ -859,6 +861,14 @@ plot_ready_percentage_difference_a3_on_off_data |>
     .by = decade
   )
 
+
+# Average uncertainty
+DREAM_CO2_impact_uncertainty_on_streamflow |> 
+  summarise(
+    mean = mean(IQR_CO2_impact_on_streamflow_percentage),
+    median = median(IQR_CO2_impact_on_streamflow_percentage),
+    .by = decade
+    )
 
 
 
@@ -1299,7 +1309,7 @@ plot_and_save_timeseries_data <- function(plotting_data, label_data, identifier)
     facet_wrap(~gauge, ncol = 1, scales = "free_y") 
   
   ggsave(
-    filename = paste0("streamflow_timeseries_supp_plot_",identifier,".pdf"),
+    filename = paste0("streamflow_timeseries_supp_plot_", identifier,".pdf"),
     path = "Figures/Supplementary",
     device = "pdf",
     plot = plot,
@@ -1407,14 +1417,15 @@ short_list_catchments <- c("401210", "606195", "701002", "407246") # select 4
 ## Make label table ============================================================
 map_label_table <- lat_lon_gauge |> 
   filter(gauge %in% short_list_catchments) |> 
-  mutate(label_name = LETTERS[1:4])
+  mutate(label_name = letters[1:4])
 
 
-font_size <- 3L # default size is GeomLabel$default_aes$size = 3.88
+font_size_pt <- 9L # default size is GeomLabel$default_aes$size = 3.88
 
 
 ## Manually add labels in the correct spots in function
-make_CO2_streamflow_percentage_change_map_uncertainty <- function(data, title) {
+
+make_CO2_streamflow_percentage_change_map_uncertainty <- function(data, title, A_or_B) {
   
   ## Generate Insets ===========================================================
   QLD_data <- data |>
@@ -1510,7 +1521,8 @@ make_CO2_streamflow_percentage_change_map_uncertainty <- function(data, title) {
       data = VIC_map_label_table,
       aes(x = lon, y = lat, label = label_name),
       nudge_x = -0.35,
-      size = font_size
+      size = font_size_pt,
+      size.unit = "pt"
     ) +
     binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
       aesthetics = "fill",
@@ -1546,7 +1558,8 @@ make_CO2_streamflow_percentage_change_map_uncertainty <- function(data, title) {
       data = WA_map_label_table,
       aes(x = lon, y = lat, label = label_name),
       nudge_y = -0.25,
-      size = font_size
+      size = font_size_pt,
+      size.unit = "pt"
     ) +
     binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
       aesthetics = "fill",
@@ -1595,6 +1608,16 @@ make_CO2_streamflow_percentage_change_map_uncertainty <- function(data, title) {
   big_map_label_table <- map_label_table |> 
     filter(gauge == "701002")
   
+  figure_label <- tribble(
+    ~lon, ~lat, ~label_name,
+    95,   0,   A_or_B
+  )
+  
+  decade_label <- tribble(
+    ~lon, ~lat, ~label_name,
+    105,   0,   title
+  )
+  
   single_map_aus <- aus_map |>
     ggplot() +
     geom_sf() +
@@ -1611,7 +1634,21 @@ make_CO2_streamflow_percentage_change_map_uncertainty <- function(data, title) {
       data = big_map_label_table,
       aes(x = lon, y = lat, label = label_name),
       nudge_y = 2,
-      size = font_size
+      size = 10,
+      size.unit = "pt"
+    ) +
+    geom_text(
+      data = figure_label,
+      aes(x = lon, y = lat, label = label_name),
+      fontface = "bold",
+      size = 10,
+      size.unit = "pt"
+    ) +
+    geom_text(
+      data = decade_label,
+      aes(x = lon, y = lat, label = label_name),
+      size = 10,
+      size.unit = "pt"
     ) +
     theme_bw() +
     binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
@@ -1674,20 +1711,19 @@ make_CO2_streamflow_percentage_change_map_uncertainty <- function(data, title) {
       x = NULL, # "Latitude",
       y = NULL, # "Longitude",
       fill = bquote('Average Impact of'~CO[2]~'on Streamflow (%)'), 
-      size = "Percentage Impact Uncertainty (IQR)",
-      title = {{ title }}
+      size = "Percentage Impact Uncertainty (IQR)"
     ) +
     theme(
       legend.key = element_rect(fill = "white"),
       legend.title = element_text(hjust = 0.5),
+      text = element_text(family = "sans"),
       # legend.background = element_rect(colour = "black"), #this cuts off the negative sign
       axis.text = element_blank(),
       legend.position = "inside",
       legend.position.inside = c(0.351, 0.9),
       legend.box = "horizontal", # side-by-side legends
       panel.grid = element_blank(),
-      axis.ticks = element_blank(),
-      plot.title = element_text(margin = margin(l = 25, r = 0, t = 30, b = -30), size = 18) # push title into plot
+      axis.ticks = element_blank()
     ) +
     guides(
       fill = guide_coloursteps(
@@ -1734,12 +1770,14 @@ plot_ready_percentage_difference_a3_on_off_2010s <- plot_ready_percentage_differ
 ### Percentage change components ###############################################
 percent_change_1990 <- make_CO2_streamflow_percentage_change_map_uncertainty(
   plot_ready_percentage_difference_a3_on_off_1990s, 
-  "1990-1999"
+  "1990-1999",
+  "A"
   )
 
 percent_change_2012 <- make_CO2_streamflow_percentage_change_map_uncertainty(
   plot_ready_percentage_difference_a3_on_off_2010s, 
-  "2012-2021"
+  "2012-2021",
+  "B"
   )
 
 
@@ -1754,7 +1792,7 @@ facet_annotation <- all_timeseries_data |>
   ) |> 
   add_column(
     year = 1960,
-    label_name = LETTERS[1:4]
+    label_name = paste0(LETTERS[3:6], "(", letters[1:4], ")")
   )
 
 
@@ -1798,7 +1836,7 @@ shade_decade_2 <- rbind(shade_decade_2, missing_years_606195, missing_years_4072
 ### Plotting ###################################################################
 bottom <- all_timeseries_data |>
   filter(gauge %in% short_list_catchments) |>
-  ggplot(aes(x = year, y = streamflow, colour = type)) +
+  ggplot(aes(x = year, y = streamflow, colour = type, shape = type)) +
   geom_area(
     aes(x = year, y = upper),
     inherit.aes = FALSE,
@@ -1812,12 +1850,16 @@ bottom <- all_timeseries_data |>
     alpha = 0.08
   ) +
   geom_line(alpha = 0.8) +
+  geom_point(size = 1) +
   geom_label(
     aes(x = year, y = streamflow, label = label_name),
     data = facet_annotation,
     inherit.aes = FALSE,
     fill = NA,
-    label.size = NA
+    label.size = NA,
+    fontface = "bold",
+    size = 10,
+    size.unit = "pt"
     ) +
   #scale_colour_brewer(palette = "Set1") +
   scale_colour_brewer(
@@ -1830,7 +1872,21 @@ bottom <- all_timeseries_data |>
     palette = "Set1"
     #values = c("red", "green", "blue", "orange")
   ) +
-  labs(x = "Year", y = "Streamflow (mm)", colour = "Streamflow Timeseries") +
+  scale_shape_manual(
+    labels = c(
+      "Observed",
+      bquote(~CO[2]~"Model"),
+      "Counterfactual",
+      bquote("non-"*CO[2]~"Model")
+    ),
+    values = c(16, 17, 15, 3)
+  ) +
+  labs(
+    x = "Year", 
+    y = "Streamflow (mm)", 
+    colour = "Streamflow Timeseries", 
+    shape = "Streamflow Timeseries"
+    ) +
   theme_bw() +
   theme(
     legend.position = "bottom",
@@ -1860,11 +1916,15 @@ layout <- c(
   area(t = 4, l = 1, b = 4, r = 6) # timeseries
 )
 
-plot(layout) # check the patches are working
+#plot(layout) # check the patches are working
 
 streamflow_percentage_difference_with_timeseries <- (percent_change_1990 + percent_change_2012 + bottom) + 
   plot_layout(design = layout, guides = "collect") & 
-  theme(legend.position = "bottom") &
+  theme(
+    legend.position = "bottom",
+    legend.title = element_text(size = 9),
+    legend.text = element_text(size = 8)
+    ) &
   guides(colour = guide_legend(title.hjust = 0.5, title.position = "top", ncol = 2))
 
 
@@ -1900,6 +1960,7 @@ ggsave(
   height = 210,
   units = "mm"
 )
+
 
 # 2.
 # Supplementary time series figures and captions:
