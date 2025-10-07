@@ -8,7 +8,7 @@
 # 4. Other --> ToE_vs_catchment_area.pdf
 # 5. Supplementary --> time_of_emergence_and_uncertainty_plot.pdf
 # 6. Other --> time_of_emergence_uncertainty_vs_evidence_ratio.pdf
-# 7. Other --> ToE_cdf.pdf 
+# 7. Supplementary --> ToE_cdf.pdf 
 
 
 
@@ -660,7 +660,7 @@ state_cdf_plot <- state_cdf_results |>
 
 
 ggsave(
-  filename = "./Figures/Other/ToE_cdf.pdf", 
+  filename = "./Figures/Supplementary/ToE_cdf.pdf", 
   plot = state_cdf_plot,
   device = "pdf",
   width = 297,
