@@ -503,14 +503,7 @@ make_limits <- function(timeseries) {
 }
 
 
-CO2_impact_on_streamflow_percent_limits <- plot_ready_percentage_difference_a3_on_off_data |>
-  pull(CO2_impact_on_streamflow_percent) |>
-  make_limits() |>
-  as.double() |>
-  round_any(accuracy = 10, f = ceiling) # round-up to nearest 10
 
-
-hard_coded_breaks_CO2_impact_of_streamflow <- c(-75, -50, -25, -10, -1, 0, 1, 10, 25, 50, 75)
 
 
 
@@ -853,23 +846,31 @@ CO2_on_off_decade_histogram <- plot_ready_percentage_difference_a3_on_off_data |
 
 
 
-# Average impact
+# Average impact - add to figure plots?
 plot_ready_percentage_difference_a3_on_off_data |>
+  drop_na() |> 
+  mutate(state = if_else(state == "ACT", "NSW", state)) |> 
   summarise(
     mean = mean(CO2_impact_on_streamflow_percent),
+    sd = sd(CO2_impact_on_streamflow_percent),
     median = median(CO2_impact_on_streamflow_percent),
-    .by = decade
-  )
+    .by = c(decade, state)
+  ) |> 
+  arrange(state, decade)
 
 
 # Average uncertainty
 DREAM_CO2_impact_uncertainty_on_streamflow |> 
+  left_join(
+    lat_lon_gauge,
+    by = join_by(gauge)
+  ) |> 
+  mutate(state = if_else(state == "ACT", "NSW", state)) |> 
   summarise(
     mean = mean(IQR_CO2_impact_on_streamflow_percentage),
     median = median(IQR_CO2_impact_on_streamflow_percentage),
-    .by = decade
+    .by = c(state, decade)
     )
-
 
 
 
@@ -1041,6 +1042,7 @@ plotting_best_CO2_non_CO2_streamflow <- difference_best_CO2_non_CO2_streamflow |
 
 ### redo limits
 CO2_impact_on_streamflow_percent_limits <- plotting_best_CO2_non_CO2_streamflow |>
+  drop_na() |> 
   pull(CO2_impact_on_streamflow_percent) |>
   make_limits() |>
   as.double()
@@ -1752,18 +1754,27 @@ make_CO2_streamflow_percentage_change_map_uncertainty <- function(data, title, A
 
 ## Combining percentage change and timeseries plots ============================
 
-### Order percentage impact uncertainty ########################################
-# force small dots to be on top and large dots on the bottom
+### Redo limits
+CO2_impact_on_streamflow_percent_limits <- plot_ready_percentage_difference_a3_on_off_data |>
+  drop_na() |> 
+  pull(CO2_impact_on_streamflow_percent) |>
+  make_limits() |>
+  as.double() 
+
+
+hard_coded_breaks_CO2_impact_of_streamflow <- c(-75, -50, -25, -10, -1, 0, 1, 10, 25, 50, 100)
+
+
 
 plot_ready_percentage_difference_a3_on_off_1990s <- plot_ready_percentage_difference_a3_on_off_data |>
   filter(decade == 1) |>
   filter(evidence_ratio > 100) |>  # 100 is moderately strong
-  arrange(desc(IQR_CO2_impact_on_streamflow_percentage))
+  arrange(desc(IQR_CO2_impact_on_streamflow_percentage)) # Order percentage impact uncertainty 
 
 plot_ready_percentage_difference_a3_on_off_2010s <- plot_ready_percentage_difference_a3_on_off_data |>
   filter(decade == 2) |>
   filter(evidence_ratio > 100) |>  # 100 is moderately strong
-  arrange(desc(IQR_CO2_impact_on_streamflow_percentage))
+  arrange(desc(IQR_CO2_impact_on_streamflow_percentage)) # Order percentage impact uncertainty 
 
   
 
@@ -1961,7 +1972,7 @@ ggsave(
   units = "mm"
 )
 
-
+stop_here()
 # 2.
 # Supplementary time series figures and captions:
 sink(file = "Figures/Supplementary/streamflow_time_captions_supp.txt") # filename must change
