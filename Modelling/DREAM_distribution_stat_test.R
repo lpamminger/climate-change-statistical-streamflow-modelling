@@ -251,5 +251,25 @@ wilcox_test_results <- adjusted_DREAM_sequence_data |>
     ),
     .by = c(gauge, parameter)
   )
-  
+
+
+# How many are statistically different from zero? = all (100 %)
+# How many are statistically less than zero? = 
+#  = 40 intercept and 35 slope (75/81) 92.6 % decrease in streamflow
+# How many are statistically greater than zero? 
+# = 5 intercept and 1 slope (6/81) 7.4 % increase
+
+wilcox_test_results |> 
+  mutate(
+    two_side_test = as.numeric(!two_side_test),
+    less_test = as.numeric(!less_test),
+    greater_test = as.numeric(!greater_test)
+  ) |> 
+  summarise(
+    sum_two_side = sum(two_side_test),
+    sum_less = sum(less_test),
+    sum_greater = sum(greater_test),
+    .by = parameter
+  )
+
 
