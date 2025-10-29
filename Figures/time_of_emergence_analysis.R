@@ -527,8 +527,8 @@ ToE_map_aus <- aus_map |>
   labs(
     x = NULL, # "Latitude",
     y = NULL, # "Longitude",
-    fill = "Time of Emergence",
-    size = "Time of Emergence Uncertainty Years (IQR)"
+    fill = "Time of Activation",
+    size = "Time of Activation Uncertainty Years (IQR)"
   ) +
   theme(
     #legend.key = element_rect(fill = "grey80"),
@@ -654,7 +654,7 @@ state_cdf_plot <- state_cdf_results |>
     colour = "red",
     inherit.aes = FALSE
   ) +
-  labs(x = "Time of Emergence (Year)", y = "Cumulative Probabiliy") +
+  labs(x = "Time of Activation (Year)", y = "Cumulative Probabiliy") +
   theme_bw() +
   facet_wrap(~state)
 
@@ -679,7 +679,7 @@ time_of_emergence_histogram <- time_of_emergence_data |>
   ggplot(aes(x = decade_time_of_emergence)) +
   geom_histogram(stat = "count") +
   labs(
-    x = "Time of Emergence Decade",
+    x = "Time of Activation Decade",
     y = "Frequency"
   ) +
   theme_bw()
@@ -708,8 +708,8 @@ time_of_emergence_and_uncertainty_plot <- time_of_emergence_data |>
   geom_point() +
   facet_wrap(~binned_evidence_ratio) +
   labs(
-    x = "Time of Emergence (Year)",
-    y = "Time of Emergence Interquantile Range"
+    x = "Time of Activation (Year)",
+    y = "Time of Activation Interquantile Range"
   ) +
   theme_bw()
 
@@ -731,7 +731,7 @@ time_of_emergence_uncertainty_vs_evidence_ratio <- time_of_emergence_data |>
   scale_x_log10() +
   labs(
     x = "Evidence Ratio",
-    y = "Time of Emergence Interquantile Range"
+    y = "Time of Activation Interquantile Range"
   ) +
   theme_bw()
 
