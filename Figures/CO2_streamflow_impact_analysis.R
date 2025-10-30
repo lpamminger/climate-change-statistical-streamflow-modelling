@@ -1040,6 +1040,20 @@ plotting_best_CO2_non_CO2_streamflow <- difference_best_CO2_non_CO2_streamflow |
   filter(evidence_ratio > 100)
 
 
+
+# jump to here
+plotting_best_CO2_non_CO2_streamflow |>
+  drop_na() |> 
+  mutate(state = if_else(state == "ACT", "NSW", state)) |> 
+  summarise(
+    mean = mean(CO2_impact_on_streamflow_percent),
+    sd = sd(CO2_impact_on_streamflow_percent),
+    median = median(CO2_impact_on_streamflow_percent),
+    .by = c(decade)
+  ) #|> 
+  #arrange(state, decade)
+
+
 ### redo limits
 CO2_impact_on_streamflow_percent_limits <- plotting_best_CO2_non_CO2_streamflow |>
   drop_na() |> 
