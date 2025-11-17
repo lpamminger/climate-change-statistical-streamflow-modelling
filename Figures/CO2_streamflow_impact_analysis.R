@@ -428,6 +428,18 @@ percentage_difference_a3_on_off_data <- a3_on_off_difference_data |>
 
 
 
+## Compare the change in a3_on vs a3_off trend =================================
+get_slope <- function(x, y, ...) {
+  lm(y ~ x, ...)$coefficients[2] |> unname() # position of slope
+}
+
+trends_in_counterfactual_flow <- a3_on_off_difference_data |> 
+  select(gauge, year, realspace_a3_off_streamflow, realspace_a3_on_streamflow)
+
+# This data will be analysed in ET_analysis
+write_csv(trends_in_counterfactual_flow, "./Modelling/Other/trends_in_counterfactual_flow.csv")
+
+
 
 ## Percentage difference plot ==================================================
 
