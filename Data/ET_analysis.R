@@ -410,6 +410,10 @@ correlation_APET_vs_P <- correlations_data |>
   mutate(
     R2_P_vs_APET = corr_P_vs_APET^2,
     R2_label = round(R2_P_vs_APET, digits = 2)
+  ) |> 
+  left_join(
+    lat_lon_gauge,
+    by = join_by(gauge)
   )
 
 APET_vs_P_plot <- correlations_data |>
@@ -440,6 +444,258 @@ ggsave(
   device = "pdf",
   width = 1189,
   height = 841,
+  units = "mm"
+)
+
+
+## Plot correlation on a map for the supp. =====================================
+## Generate Insets =============================================================
+### Filter data by state #######################################################
+
+QLD_data <- correlation_APET_vs_P |>
+  filter(state == "QLD")
+
+NSW_data <- correlation_APET_vs_P |>
+  filter(state == "NSW")
+
+VIC_data <- correlation_APET_vs_P |>
+  filter(state == "VIC")
+
+WA_data <- correlation_APET_vs_P |>
+  filter(state == "WA")
+
+TAS_data <- correlation_APET_vs_P |>
+  filter(state == "TAS")
+
+
+### All colour scales must be the same #########################################
+corr_range <- correlation_APET_vs_P |>
+  pull(corr_P_vs_APET) |>
+  range()
+
+# round by itself does not do a good job - a single variable outside of range
+corr_range <- c(
+  round_any(corr_range[1], accuracy = 0.01, f = floor),
+  round_any(corr_range[2], accuracy = 0.01, f = ceiling)
+)
+
+inbetween_breaks <- seq(from = corr_range[1], to = corr_range[2], length.out = 5) |> 
+  round(digits = 2)
+
+# corr_break limits cannot be rounded other risk of being NA as data is not within limits
+corr_breaks <- c(corr_range[1], inbetween_breaks, corr_range[2])  # need to to show nice breaks
+  
+
+### Generate inset plots #######################################################
+
+inset_plot_QLD <- aus_map |>
+  filter(state == "QLD") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = QLD_data,
+    aes(x = lon, y = lat, fill = corr_P_vs_APET),
+    show.legend = FALSE,
+    size = 2.5,
+    stroke = 0.1,
+    colour = "black",
+    shape = 21
+  ) +
+  scale_fill_distiller(
+    palette = "YlOrRd",
+    limits = corr_range,
+    breaks = corr_breaks
+  ) +
+  theme_void()
+
+
+inset_plot_NSW <- aus_map |>
+  filter(state == "NSW") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = NSW_data,
+    aes(x = lon, y = lat, fill = corr_P_vs_APET),
+    show.legend = FALSE,
+    size = 2.5,
+    stroke = 0.1,
+    colour = "black",
+    shape = 21
+  ) +
+  scale_fill_distiller(
+    palette = "YlOrRd",
+    limits = corr_range,
+    breaks = corr_breaks
+  ) +
+  theme_void()
+
+
+inset_plot_VIC <- aus_map |>
+  filter(state == "VIC") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = VIC_data,
+    aes(x = lon, y = lat, fill = corr_P_vs_APET),
+    show.legend = FALSE,
+    size = 2.5,
+    stroke = 0.1,
+    colour = "black",
+    shape = 21
+  ) +
+  scale_fill_distiller(
+    palette = "YlOrRd",
+    limits = corr_range,
+    breaks = corr_breaks
+  ) +
+  theme_void()
+
+
+
+inset_plot_WA <- aus_map |>
+  filter(state == "WA") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = WA_data,
+    aes(x = lon, y = lat, fill = corr_P_vs_APET),
+    show.legend = FALSE,
+    size = 2.5,
+    stroke = 0.1,
+    colour = "black",
+    shape = 21
+  ) +
+  scale_fill_distiller(
+    palette = "YlOrRd",
+    limits = corr_range,
+    breaks = corr_breaks
+  ) +
+  theme_void()
+
+
+
+inset_plot_TAS <- aus_map |>
+  filter(state == "TAS") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = TAS_data,
+    aes(x = lon, y = lat, fill = corr_P_vs_APET),
+    show.legend = FALSE,
+    size = 2.5,
+    stroke = 0.1,
+    colour = "black",
+    shape = 21
+  ) +
+  scale_fill_distiller(
+    palette = "YlOrRd",
+    limits = corr_range,
+    breaks = corr_breaks
+  ) +
+  theme_void()
+
+
+
+## Put it together =============================================================
+
+single_map_aus <- aus_map |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = correlation_APET_vs_P,
+    aes(x = lon, y = lat, fill = corr_P_vs_APET),
+    size = 2.5,
+    stroke = 0.1,
+    colour = "black",
+    shape = 21
+  ) +
+  scale_fill_distiller(
+    palette = "YlOrRd",
+    limits = corr_range,
+    breaks = corr_breaks
+  ) +
+  theme_bw() +
+  # expand map
+  coord_sf(xlim = c(95, 176), ylim = c(-60, 0)) +
+  # magnify WA
+  geom_magnify(
+    from = c(114, 118, -35.5, -30),
+    to = c(93, 112, -36, -10),
+    shadow = FALSE,
+    expand = 0,
+    plot = inset_plot_WA,
+    proj = "single"
+  ) +
+  # magnify VIC
+  geom_magnify(
+    # aes(from = state == "VIC"), # use aes rather than manually selecting area
+    from = c(141, 149.5, -39, -34),
+    to = c(95, 136, -38, -60),
+    shadow = FALSE,
+    plot = inset_plot_VIC,
+    proj = "single"
+  ) +
+  # magnify QLD
+  geom_magnify(
+    from = c(145, 155, -29.2, -15),
+    to = c(157, 178, -29.5, 1.5),
+    shadow = FALSE,
+    expand = 0,
+    plot = inset_plot_QLD,
+    proj = "single"
+  ) +
+  # magnify NSW
+  geom_magnify(
+    from = c(146.5, 154, -38, -28.1),
+    to = c(157, 178, -61, -30.5),
+    shadow = FALSE,
+    expand = 0,
+    plot = inset_plot_NSW,
+    proj = "single"
+  ) +
+  # magnify TAS
+  geom_magnify(
+    from = c(144, 149, -40, -44),
+    to = c(140, 155, -45, -61),
+    shadow = FALSE,
+    expand = 0,
+    plot = inset_plot_TAS,
+    proj = "single"
+  ) +
+  labs(
+    x = NULL, # "Latitude",
+    y = NULL, # "Longitude",
+    fill = "Correlation between annual precipitation and PET"
+  ) +
+  theme(
+    legend.title = element_text(hjust = 0.5),
+    legend.title.position = "top",
+    legend.background = element_rect(colour = "black"),
+    axis.text = element_blank(),
+    legend.position = "inside",
+    legend.position.inside = c(0.346, 0.9), # constants used to move the legend in the right place
+    legend.box = "horizontal", # side-by-side legends
+    panel.border = element_blank(),
+    panel.grid = element_blank(),
+    axis.ticks = element_blank(),
+    legend.margin = margin(t = 5, b = 5, r = 20, l = 20, unit = "pt") # add extra padding around legend box to avoid -1.6 intersecting with line
+  ) +
+  guides(
+    fill = guide_colourbar(
+      direction = "horizontal",
+      barwidth = unit(8, "cm")
+    )
+  )
+
+
+single_map_aus
+
+ggsave(
+  filename = "./Figures/Supplementary/correlation_P_and_PET.pdf",
+  plot = single_map_aus,
+  device = "pdf",
+  width = 232,
+  height = 200, # 210,
   units = "mm"
 )
 
