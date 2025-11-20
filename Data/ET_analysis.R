@@ -192,28 +192,19 @@ Q_PET_ratio <- APET_trends |>
     by = join_by(gauge)
   )
 
-Q_PET_ratio |>
-  summarise(
-    mean = mean(Q_PET_ratio),
-    max = max(Q_PET_ratio),
-    min = min(Q_PET_ratio),
-    .by = decade
-  )
-
-#  Q_PET_ratio needs to be log-scaled
-Q_PET_ratio |>
-  pull(Q_PET_ratio) |>
-  sort()
-# c(0, 0.01, 0.1, 0, 1, 10, 100, 1000)
 
 my_palette <- function(x) {
   rev(c(
+    "#a50026",
     "#d73027",
-    "#fc8d59",
+    "#f46d43",
+    "#fdae61",
     "#fee090",
     "#e0f3f8",
-    "#91bfdb",
-    "#4575b4"
+    "#abd9e9",
+    "#74add1",
+    "#4575b4",
+    "#313695"
   ))
 }
 
@@ -221,6 +212,8 @@ my_palette <- function(x) {
 map_plot <- function(plotting_variable, data, scale_range = NULL, scale_breaks = NULL, colour_palette, legend_title) {
   ## rename tibble columns for plotting
   ## This is more reliable than using braces {{ }}
+  colour_palette <- noquote(colour_palette)
+  
   data <- data |>
     rename(
       plotting_variable = {{ plotting_variable }}
@@ -481,7 +474,7 @@ map_plot <- function(plotting_variable, data, scale_range = NULL, scale_breaks =
     guides(
       fill = guide_coloursteps(
         direction = "horizontal",
-        barwidth = unit(8, "cm"),
+        barwidth = unit(12, "cm"),
         even.steps = TRUE
       )
     )
@@ -514,7 +507,7 @@ map_Q_PET_ratio_1990 <- map_plot(
   plotting_variable = Q_PET_ratio,
   data = Q_PET_ratio |> filter(decade == "1990-1999"),
   scale_range = scale_range,
-  scale_breaks = c(scale_range[1], 0.01, 0.1, 1, 10, 100, scale_range[2]),
+  scale_breaks = c(scale_range[1], 0.01, 0.1, 0.2, 0.5, 1, 2, 5, 10, 100, scale_range[2]),
   colour_palette = my_palette,
   legend_title = bquote("abs("~Delta ~ "Q/APET)")
 ) +
@@ -548,7 +541,7 @@ map_Q_PET_ratio_2012 <- map_plot(
   plotting_variable = Q_PET_ratio,
   data = Q_PET_ratio |> filter(decade == "2012-2021"),
   scale_range = scale_range,
-  scale_breaks = c(scale_range[1], 0.01, 0.1, 1, 10, 100, scale_range[2]),
+  scale_breaks = c(scale_range[1], 0.01, 0.1, 0.2, 0.5, 1, 2, 5, 10, 100, scale_range[2]),
   colour_palette = my_palette,
   legend_title = bquote("abs("~Delta ~ "Q/APET)")
 ) +
@@ -1080,7 +1073,7 @@ map_Q_AET_ratio_1990 <- map_plot(
   plotting_variable = Q_AET_wb_bd_ratio,
   data = deltaQ_AET_differene_wb_bd_ratio |> filter(decade == "1990-1999"),
   scale_range = scale_range,
-  scale_breaks = c(scale_range[1], 0.01, 0.1, 1, 10, 100, scale_range[2]),
+  scale_breaks = c(scale_range[1], 0.01, 0.1, 0.2, 0.5, 1, 2, 5, 10, 100, scale_range[2]),
   colour_palette = my_palette,
   legend_title = bquote("abs("~Delta ~ "Q/" ~ Delta ~ "AET)")
 ) +
@@ -1114,7 +1107,7 @@ map_Q_AET_ratio_2012 <- map_plot(
   plotting_variable = Q_AET_wb_bd_ratio,
   data =  deltaQ_AET_differene_wb_bd_ratio |> filter(decade == "2012-2021"),
   scale_range = scale_range,
-  scale_breaks = c(scale_range[1], 0.01, 0.1, 1, 10, 100, scale_range[2]),
+  scale_breaks = c(scale_range[1], 0.01, 0.1, 0.2, 0.5, 1, 2, 5, 10, 100, scale_range[2]),
   colour_palette = my_palette,
   legend_title = bquote("abs("~Delta ~ "Q/" ~ Delta ~ "AET)")
 ) +
@@ -1140,6 +1133,106 @@ final_plot_delta_Q_delta_AET_ratio <- (map_Q_AET_ratio_1990 | map_Q_AET_ratio_20
 ggsave(
   filename = "./Figures/Supplementary/delta_Q_delta_AET_ratio_map.pdf",
   plot = final_plot_delta_Q_delta_AET_ratio,
+  device = "pdf",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
+
+
+# Map delta_AET ----------------------------------------------------------------
+# custom range and breaks
+AET_comparison <- AET_comparison |> 
+  left_join(
+    lat_lon_gauge,
+    by = join_by(gauge)
+  )
+
+scale_range <- AET_comparison |>
+  pull(AET_waterbalance_minus_budyko_mm_per_decade) |>
+  range()
+
+# round by itself does not do a good job - a single variable outside of range
+scale_range <- c(
+  round_any(scale_range[1], accuracy = 0.01, f = floor),
+  round_any(scale_range[2], accuracy = 0.01, f = ceiling)
+)
+
+### Plot 1990-1999 #############################################################
+figure_label_1990 <- tribble(
+  ~lon, ~lat, ~label_name,
+  95, 0, "A"
+)
+
+decade_label_1990 <- tribble(
+  ~lon, ~lat, ~label_name,
+  105, 0, "1990-1999"
+)
+
+map_AET_ratio_1990 <- map_plot(
+  plotting_variable = AET_waterbalance_minus_budyko_mm_per_decade,
+  data = AET_comparison |> filter(decade == 1),
+  scale_range = scale_range,
+  scale_breaks = c(scale_range[1], -150, -100, -50, -25, 0, 25, 50, 100, 150, scale_range[2]),
+  colour_palette = my_palette,
+  legend_title = bquote(Delta ~ "AET")
+) +
+  geom_text(
+    data = figure_label_1990,
+    aes(x = lon, y = lat, label = label_name),
+    fontface = "bold",
+    size = 10,
+    size.unit = "pt"
+  ) +
+  geom_text(
+    data = decade_label_1990,
+    aes(x = lon, y = lat, label = label_name),
+    size = 10,
+    size.unit = "pt"
+  )
+
+
+### Plot 2012-2021 #############################################################
+figure_label_2012 <- tribble(
+  ~lon, ~lat, ~label_name,
+  95, 0, "B"
+)
+
+decade_label_2012 <- tribble(
+  ~lon, ~lat, ~label_name,
+  105, 0, "2012-2021"
+)
+
+map_AET_ratio_2012 <- map_plot(
+  plotting_variable = AET_waterbalance_minus_budyko_mm_per_decade,
+  data =  AET_comparison |> filter(decade == 2),
+  scale_range = scale_range,
+  scale_breaks = c(scale_range[1], -150, -100, -50, -25, 0, 25, 50, 100, 150, scale_range[2]),
+  colour_palette = my_palette,
+  legend_title = bquote(Delta ~ "AET")
+) +
+  geom_text(
+    data = figure_label_2012,
+    aes(x = lon, y = lat, label = label_name),
+    fontface = "bold",
+    size = 10,
+    size.unit = "pt"
+  ) +
+  geom_text(
+    data = decade_label_2012,
+    aes(x = lon, y = lat, label = label_name),
+    size = 10,
+    size.unit = "pt"
+  )
+
+### patchwork together and save ################################################
+final_plot_delta_AET_ratio <- (map_AET_ratio_1990 | map_AET_ratio_2012) +
+  plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
+
+ggsave(
+  filename = "./Figures/Supplementary/delta_AET_map.pdf",
+  plot = final_plot_delta_AET_ratio,
   device = "pdf",
   width = 297,
   height = 210,
