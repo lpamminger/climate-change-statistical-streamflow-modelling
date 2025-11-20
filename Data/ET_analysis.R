@@ -287,7 +287,7 @@ map_plot <- function(plotting_variable, data, scale_range = NULL, scale_breaks =
     ) +
     binned_scale(
       aesthetics = "fill",
-      palette = my_palette,
+      palette = colour_palette,
       breaks = scale_breaks,
       limits = scale_range,
       show.limits = TRUE,
@@ -310,7 +310,7 @@ map_plot <- function(plotting_variable, data, scale_range = NULL, scale_breaks =
     ) +
     binned_scale(
       aesthetics = "fill",
-      palette = my_palette,
+      palette = colour_palette,
       breaks = scale_breaks,
       limits = scale_range,
       show.limits = TRUE,
@@ -335,7 +335,7 @@ map_plot <- function(plotting_variable, data, scale_range = NULL, scale_breaks =
     # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
     binned_scale(
       aesthetics = "fill",
-      palette = my_palette,
+      palette = colour_palette,
       breaks = scale_breaks,
       limits = scale_range,
       show.limits = TRUE,
@@ -358,7 +358,7 @@ map_plot <- function(plotting_variable, data, scale_range = NULL, scale_breaks =
     ) +
     binned_scale(
       aesthetics = "fill",
-      palette = my_palette,
+      palette = colour_palette,
       breaks = scale_breaks,
       limits = scale_range,
       show.limits = TRUE,
@@ -383,7 +383,7 @@ map_plot <- function(plotting_variable, data, scale_range = NULL, scale_breaks =
     ) +
     binned_scale(
       aesthetics = "fill",
-      palette = my_palette,
+      palette = colour_palette,
       breaks = scale_breaks,
       limits = scale_range,
       show.limits = TRUE,
@@ -406,7 +406,7 @@ map_plot <- function(plotting_variable, data, scale_range = NULL, scale_breaks =
     ) +
     binned_scale(
       aesthetics = "fill",
-      palette = my_palette,
+      palette = colour_palette,
       breaks = scale_breaks,
       limits = scale_range,
       show.limits = TRUE,
@@ -502,12 +502,12 @@ scale_range <- c(
 ## Plot 1990-1999 ==============================================================
 figure_label_1990 <- tribble(
   ~lon, ~lat, ~label_name,
-  95,   0,   "A"
+  95, 0, "A"
 )
 
 decade_label_1990 <- tribble(
   ~lon, ~lat, ~label_name,
-  105,   0,   "1990-1999"
+  105, 0, "1990-1999"
 )
 
 map_Q_PET_ratio_1990 <- map_plot(
@@ -516,7 +516,7 @@ map_Q_PET_ratio_1990 <- map_plot(
   scale_range = scale_range,
   scale_breaks = c(scale_range[1], 0.01, 0.1, 1, 10, 100, scale_range[2]),
   colour_palette = my_palette,
-  legend_title = bquote(Delta ~ "Q/APET")
+  legend_title = bquote("abs("~Delta ~ "Q/APET)")
 ) +
   geom_text(
     data = figure_label_1990,
@@ -536,12 +536,12 @@ map_Q_PET_ratio_1990 <- map_plot(
 ## Plot 2012-2021 ==============================================================
 figure_label_2012 <- tribble(
   ~lon, ~lat, ~label_name,
-  95,   0,   "B"
+  95, 0, "B"
 )
 
 decade_label_2012 <- tribble(
   ~lon, ~lat, ~label_name,
-  105,   0,   "2012-2021"
+  105, 0, "2012-2021"
 )
 
 map_Q_PET_ratio_2012 <- map_plot(
@@ -550,7 +550,7 @@ map_Q_PET_ratio_2012 <- map_plot(
   scale_range = scale_range,
   scale_breaks = c(scale_range[1], 0.01, 0.1, 1, 10, 100, scale_range[2]),
   colour_palette = my_palette,
-  legend_title = bquote(Delta ~ "Q/APET")
+  legend_title = bquote("abs("~Delta ~ "Q/APET)")
 ) +
   geom_text(
     data = figure_label_2012,
@@ -653,9 +653,8 @@ ggsave(
 
 
 ## Plot correlation on a map for the supp. =====================================
-## Generate Insets =============================================================
-### Filter data by state #######################################################
-
+aus_map <- generate_aus_map_sf()
+# this needs to use my plotting function
 QLD_data <- correlation_APET_vs_P |>
   filter(state == "QLD")
 
@@ -963,26 +962,26 @@ AET_comparison_calc <- filtered_data_for_budyko |>
 AET_comparison <- AET_comparison_calc |>
   select(gauge, decade, ave_budyko_AET, ave_waterbalance_AET) |>
   mutate(
-    AET_waterbalance_minus_budyko = ave_waterbalance_AET - ave_budyko_AET
+    AET_waterbalance_minus_budyko_mm_per_decade = ave_waterbalance_AET - ave_budyko_AET
   )
 
 
 ecdf_AET_comparison_function_decade_1 <- AET_comparison |>
   filter(decade == 1) |>
-  pull(AET_waterbalance_minus_budyko) |>
+  pull(AET_waterbalance_minus_budyko_mm_per_decade) |>
   ecdf()
 
 ecdf_AET_comparison_function_decade_2 <- AET_comparison |>
   filter(decade == 2) |>
-  pull(AET_waterbalance_minus_budyko) |>
+  pull(AET_waterbalance_minus_budyko_mm_per_decade) |>
   ecdf()
 
 
 AET_comparison <- AET_comparison |>
   mutate(
     ecdf = case_when(
-      decade == 1 ~ ecdf_AET_comparison_function_decade_1(AET_waterbalance_minus_budyko),
-      decade == 2 ~ ecdf_AET_comparison_function_decade_2(AET_waterbalance_minus_budyko),
+      decade == 1 ~ ecdf_AET_comparison_function_decade_1(AET_waterbalance_minus_budyko_mm_per_decade),
+      decade == 2 ~ ecdf_AET_comparison_function_decade_2(AET_waterbalance_minus_budyko_mm_per_decade),
       .default = NA
     )
   ) |> # change tibble to make plotting nicer
@@ -993,7 +992,7 @@ AET_comparison <- AET_comparison |>
 
 
 AET_comparison_plot <- AET_comparison |>
-  ggplot(aes(x = AET_waterbalance_minus_budyko, y = ecdf, colour = Decade)) +
+  ggplot(aes(x = AET_waterbalance_minus_budyko_mm_per_decade, y = ecdf, colour = Decade)) +
   geom_step() +
   labs(
     x = bquote(Delta ~ "AET"), # bquote
@@ -1014,5 +1013,135 @@ ggsave(
   device = "pdf",
   width = 232,
   height = 200, # 210,
+  units = "mm"
+)
+
+
+# Repeat Q_PET_ratio_map but using Water balance and Budyko delta --------------
+CO2_partitioning_difference <- timeseries_APET_vs_partitioning |>
+  # remove missing years
+  drop_na() |>
+  summarise(
+    sum_a3_off = sum(realspace_a3_off_streamflow),
+    sum_a3_on = sum(realspace_a3_on_streamflow),
+    n = n(),
+    .by = c(gauge, decade)
+  ) |>
+  mutate(
+    Q_CO2_impact_mm_per_decade = sum_a3_off - sum_a3_on
+  )
+
+
+deltaQ_AET_differene_wb_bd_ratio <- AET_comparison |>
+  mutate(
+    decade = if_else(decade == 1, "1990-1999", "2012-2021")
+  ) |>
+  left_join(
+    CO2_partitioning_difference,
+    by = join_by(gauge, decade)
+  ) |>
+  # remove excess columns
+  select(gauge, decade, AET_waterbalance_minus_budyko_mm_per_decade, Q_CO2_impact_mm_per_decade) |>
+  # delta Q over AET difference
+  mutate(
+    Q_AET_wb_bd_ratio = abs(Q_CO2_impact_mm_per_decade) / abs(AET_waterbalance_minus_budyko_mm_per_decade)
+  ) |>
+  # add lat lon
+  left_join(
+    lat_lon_gauge,
+    by = join_by(gauge)
+  )
+
+
+## plotting ====================================================================
+# custom range and breaks
+scale_range <- deltaQ_AET_differene_wb_bd_ratio |>
+  pull(Q_AET_wb_bd_ratio) |>
+  range()
+
+# round by itself does not do a good job - a single variable outside of range
+scale_range <- c(
+  round_any(scale_range[1], accuracy = 0.01, f = floor),
+  round_any(scale_range[2], accuracy = 0.01, f = ceiling)
+)
+
+### Plot 1990-1999 #############################################################
+figure_label_1990 <- tribble(
+  ~lon, ~lat, ~label_name,
+  95, 0, "A"
+)
+
+decade_label_1990 <- tribble(
+  ~lon, ~lat, ~label_name,
+  105, 0, "1990-1999"
+)
+
+map_Q_AET_ratio_1990 <- map_plot(
+  plotting_variable = Q_AET_wb_bd_ratio,
+  data = deltaQ_AET_differene_wb_bd_ratio |> filter(decade == "1990-1999"),
+  scale_range = scale_range,
+  scale_breaks = c(scale_range[1], 0.01, 0.1, 1, 10, 100, scale_range[2]),
+  colour_palette = my_palette,
+  legend_title = bquote("abs("~Delta ~ "Q/" ~ Delta ~ "AET)")
+) +
+  geom_text(
+    data = figure_label_1990,
+    aes(x = lon, y = lat, label = label_name),
+    fontface = "bold",
+    size = 10,
+    size.unit = "pt"
+  ) +
+  geom_text(
+    data = decade_label_1990,
+    aes(x = lon, y = lat, label = label_name),
+    size = 10,
+    size.unit = "pt"
+  )
+
+
+### Plot 2012-2021 #############################################################
+figure_label_2012 <- tribble(
+  ~lon, ~lat, ~label_name,
+  95, 0, "B"
+)
+
+decade_label_2012 <- tribble(
+  ~lon, ~lat, ~label_name,
+  105, 0, "2012-2021"
+)
+
+map_Q_AET_ratio_2012 <- map_plot(
+  plotting_variable = Q_AET_wb_bd_ratio,
+  data =  deltaQ_AET_differene_wb_bd_ratio |> filter(decade == "2012-2021"),
+  scale_range = scale_range,
+  scale_breaks = c(scale_range[1], 0.01, 0.1, 1, 10, 100, scale_range[2]),
+  colour_palette = my_palette,
+  legend_title = bquote("abs("~Delta ~ "Q/" ~ Delta ~ "AET)")
+) +
+  geom_text(
+    data = figure_label_2012,
+    aes(x = lon, y = lat, label = label_name),
+    fontface = "bold",
+    size = 10,
+    size.unit = "pt"
+  ) +
+  geom_text(
+    data = decade_label_2012,
+    aes(x = lon, y = lat, label = label_name),
+    size = 10,
+    size.unit = "pt"
+  )
+
+### patchwork together and save ################################################
+final_plot_delta_Q_delta_AET_ratio <- (map_Q_AET_ratio_1990 | map_Q_AET_ratio_2012) +
+  plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
+
+ggsave(
+  filename = "./Figures/Supplementary/delta_Q_delta_AET_ratio_map.pdf",
+  plot = final_plot_delta_Q_delta_AET_ratio,
+  device = "pdf",
+  width = 297,
+  height = 210,
   units = "mm"
 )
