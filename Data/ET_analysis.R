@@ -1075,7 +1075,7 @@ map_Q_AET_ratio_1990 <- map_plot(
   scale_range = scale_range,
   scale_breaks = c(scale_range[1], 0.01, 0.1, 0.2, 0.5, 1, 2, 5, 10, 100, scale_range[2]),
   colour_palette = my_palette,
-  legend_title = bquote("abs("*Delta*"Q [ave mm/y] / "*Delta*"AET [ave mm/y])")
+  legend_title = bquote("abs(Mean"~Delta*"Q [mm/year] / Mean"~Delta*"AET [mm/year])")
 ) +
   geom_text(
     data = figure_label_1990,
@@ -1109,7 +1109,7 @@ map_Q_AET_ratio_2012 <- map_plot(
   scale_range = scale_range,
   scale_breaks = c(scale_range[1], 0.01, 0.1, 0.2, 0.5, 1, 2, 5, 10, 100, scale_range[2]),
   colour_palette = my_palette,
-  legend_title = bquote("abs("*Delta*"Q [ave mm/y] / "*Delta*"AET [ave mm/y])")
+  legend_title = bquote("abs(Mean"~Delta*"Q [mm/year] / Mean"~Delta*"AET [mm/year])")
 ) +
   geom_text(
     data = figure_label_2012,
@@ -1175,7 +1175,7 @@ map_AET_ratio_1990 <- map_plot(
   scale_range = scale_range,
   scale_breaks = c(scale_range[1], -150, -100, -50, -25, 0, 25, 50, 100, 150, scale_range[2]),
   colour_palette = my_palette,
-  legend_title = bquote(Delta*"AET [mm]")
+  legend_title = bquote("Mean"~Delta*"AET [mm/year]")
 ) +
   geom_text(
     data = figure_label_1990,
@@ -1209,7 +1209,7 @@ map_AET_ratio_2012 <- map_plot(
   scale_range = scale_range,
   scale_breaks = c(scale_range[1], -150, -100, -50, -25, 0, 25, 50, 100, 150, scale_range[2]),
   colour_palette = my_palette,
-  legend_title = bquote(Delta*"AET [mm]")
+  legend_title = bquote("Mean"~Delta*"AET [mm/year]")
 ) +
   geom_text(
     data = figure_label_2012,
