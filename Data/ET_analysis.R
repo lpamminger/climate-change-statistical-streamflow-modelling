@@ -509,7 +509,7 @@ map_Q_PET_ratio_1990 <- map_plot(
   scale_range = scale_range,
   scale_breaks = c(scale_range[1], 0.01, 0.1, 0.2, 0.5, 1, 2, 5, 10, 100, scale_range[2]),
   colour_palette = my_palette,
-  legend_title = bquote("abs("~Delta ~ "Q/"~Delta~"APET)")
+  legend_title = bquote("abs("*Delta*"Q [mm/y] / "*Delta*"APET [mm/y])")
 ) +
   geom_text(
     data = figure_label_1990,
@@ -543,7 +543,7 @@ map_Q_PET_ratio_2012 <- map_plot(
   scale_range = scale_range,
   scale_breaks = c(scale_range[1], 0.01, 0.1, 0.2, 0.5, 1, 2, 5, 10, 100, scale_range[2]),
   colour_palette = my_palette,
-  legend_title = bquote("abs("~Delta ~ "Q/"~Delta~"APET)")
+  legend_title = bquote("abs("*Delta*"Q [mm/y] / "*Delta*"APET [mm/y])")
 ) +
   geom_text(
     data = figure_label_2012,
@@ -988,7 +988,7 @@ AET_comparison_plot <- AET_comparison |>
   ggplot(aes(x = AET_waterbalance_minus_budyko_mm_per_decade, y = ecdf, colour = Decade)) +
   geom_step() +
   labs(
-    x = bquote(Delta ~ "AET"), # bquote
+    x = bquote(Delta*"AET [mm]"),
     y = "Cumulative Probability"
   ) +
   theme_bw() +
@@ -1075,7 +1075,7 @@ map_Q_AET_ratio_1990 <- map_plot(
   scale_range = scale_range,
   scale_breaks = c(scale_range[1], 0.01, 0.1, 0.2, 0.5, 1, 2, 5, 10, 100, scale_range[2]),
   colour_palette = my_palette,
-  legend_title = bquote("abs("~Delta ~ "Q/" ~ Delta ~ "AET)")
+  legend_title = bquote("abs("*Delta*"Q [mm] / "*Delta*"AET [mm])")
 ) +
   geom_text(
     data = figure_label_1990,
@@ -1109,7 +1109,7 @@ map_Q_AET_ratio_2012 <- map_plot(
   scale_range = scale_range,
   scale_breaks = c(scale_range[1], 0.01, 0.1, 0.2, 0.5, 1, 2, 5, 10, 100, scale_range[2]),
   colour_palette = my_palette,
-  legend_title = bquote("abs("~Delta ~ "Q/" ~ Delta ~ "AET)")
+  legend_title = bquote("abs("*Delta*"Q [mm] / "*Delta*"AET [mm])")
 ) +
   geom_text(
     data = figure_label_2012,
@@ -1175,7 +1175,7 @@ map_AET_ratio_1990 <- map_plot(
   scale_range = scale_range,
   scale_breaks = c(scale_range[1], -150, -100, -50, -25, 0, 25, 50, 100, 150, scale_range[2]),
   colour_palette = my_palette,
-  legend_title = bquote(Delta ~ "AET")
+  legend_title = bquote(Delta*"AET [mm]")
 ) +
   geom_text(
     data = figure_label_1990,
@@ -1209,7 +1209,7 @@ map_AET_ratio_2012 <- map_plot(
   scale_range = scale_range,
   scale_breaks = c(scale_range[1], -150, -100, -50, -25, 0, 25, 50, 100, 150, scale_range[2]),
   colour_palette = my_palette,
-  legend_title = bquote(Delta ~ "AET")
+  legend_title = bquote(Delta*"AET [mm]")
 ) +
   geom_text(
     data = figure_label_2012,
