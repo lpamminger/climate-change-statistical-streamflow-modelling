@@ -955,26 +955,26 @@ AET_comparison_calc <- filtered_data_for_budyko |>
 AET_comparison <- AET_comparison_calc |>
   select(gauge, decade, ave_budyko_AET, ave_waterbalance_AET) |>
   mutate(
-    AET_waterbalance_minus_budyko_mm_per_decade = ave_waterbalance_AET - ave_budyko_AET
+    AET_waterbalance_minus_budyko_ave = ave_waterbalance_AET - ave_budyko_AET
   )
 
 
 ecdf_AET_comparison_function_decade_1 <- AET_comparison |>
   filter(decade == 1) |>
-  pull(AET_waterbalance_minus_budyko_mm_per_decade) |>
+  pull(AET_waterbalance_minus_budyko_ave) |>
   ecdf()
 
 ecdf_AET_comparison_function_decade_2 <- AET_comparison |>
   filter(decade == 2) |>
-  pull(AET_waterbalance_minus_budyko_mm_per_decade) |>
+  pull(AET_waterbalance_minus_budyko_ave) |>
   ecdf()
 
 
 AET_comparison <- AET_comparison |>
   mutate(
     ecdf = case_when(
-      decade == 1 ~ ecdf_AET_comparison_function_decade_1(AET_waterbalance_minus_budyko_mm_per_decade),
-      decade == 2 ~ ecdf_AET_comparison_function_decade_2(AET_waterbalance_minus_budyko_mm_per_decade),
+      decade == 1 ~ ecdf_AET_comparison_function_decade_1(AET_waterbalance_minus_budyko_ave),
+      decade == 2 ~ ecdf_AET_comparison_function_decade_2(AET_waterbalance_minus_budyko_ave),
       .default = NA
     )
   ) |> # change tibble to make plotting nicer
@@ -985,7 +985,7 @@ AET_comparison <- AET_comparison |>
 
 
 AET_comparison_plot <- AET_comparison |>
-  ggplot(aes(x = AET_waterbalance_minus_budyko_mm_per_decade, y = ecdf, colour = Decade)) +
+  ggplot(aes(x = AET_waterbalance_minus_budyko_ave, y = ecdf, colour = Decade)) +
   geom_step() +
   labs(
     x = bquote(Delta*"AET [mm]"),
@@ -1021,7 +1021,7 @@ CO2_partitioning_difference <- timeseries_APET_vs_partitioning |>
     .by = c(gauge, decade)
   ) |>
   mutate(
-    Q_CO2_impact_mm_per_decade = sum_a3_off - sum_a3_on
+    Q_CO2_impact_ave = (sum_a3_off - sum_a3_on)/n # mm/y ave
   )
 
 
@@ -1034,10 +1034,10 @@ deltaQ_AET_differene_wb_bd_ratio <- AET_comparison |>
     by = join_by(gauge, decade)
   ) |>
   # remove excess columns
-  select(gauge, decade, AET_waterbalance_minus_budyko_mm_per_decade, Q_CO2_impact_mm_per_decade) |>
+  select(gauge, decade, AET_waterbalance_minus_budyko_ave, Q_CO2_impact_ave) |>
   # delta Q over AET difference
   mutate(
-    Q_AET_wb_bd_ratio = abs(Q_CO2_impact_mm_per_decade) / abs(AET_waterbalance_minus_budyko_mm_per_decade)
+    Q_AET_wb_bd_ratio = abs(Q_CO2_impact_ave) / abs(AET_waterbalance_minus_budyko_ave) # mm/y ave over mm/y ave
   ) |>
   # add lat lon
   left_join(
@@ -1075,7 +1075,7 @@ map_Q_AET_ratio_1990 <- map_plot(
   scale_range = scale_range,
   scale_breaks = c(scale_range[1], 0.01, 0.1, 0.2, 0.5, 1, 2, 5, 10, 100, scale_range[2]),
   colour_palette = my_palette,
-  legend_title = bquote("abs("*Delta*"Q [mm] / "*Delta*"AET [mm])")
+  legend_title = bquote("abs("*Delta*"Q [ave mm/y] / "*Delta*"AET [ave mm/y])")
 ) +
   geom_text(
     data = figure_label_1990,
@@ -1109,7 +1109,7 @@ map_Q_AET_ratio_2012 <- map_plot(
   scale_range = scale_range,
   scale_breaks = c(scale_range[1], 0.01, 0.1, 0.2, 0.5, 1, 2, 5, 10, 100, scale_range[2]),
   colour_palette = my_palette,
-  legend_title = bquote("abs("*Delta*"Q [mm] / "*Delta*"AET [mm])")
+  legend_title = bquote("abs("*Delta*"Q [ave mm/y] / "*Delta*"AET [ave mm/y])")
 ) +
   geom_text(
     data = figure_label_2012,
@@ -1149,7 +1149,7 @@ AET_comparison <- AET_comparison |>
   )
 
 scale_range <- AET_comparison |>
-  pull(AET_waterbalance_minus_budyko_mm_per_decade) |>
+  pull(AET_waterbalance_minus_budyko_ave) |>
   range()
 
 # round by itself does not do a good job - a single variable outside of range
@@ -1170,7 +1170,7 @@ decade_label_1990 <- tribble(
 )
 
 map_AET_ratio_1990 <- map_plot(
-  plotting_variable = AET_waterbalance_minus_budyko_mm_per_decade,
+  plotting_variable = AET_waterbalance_minus_budyko_ave,
   data = AET_comparison |> filter(decade == 1),
   scale_range = scale_range,
   scale_breaks = c(scale_range[1], -150, -100, -50, -25, 0, 25, 50, 100, 150, scale_range[2]),
@@ -1204,7 +1204,7 @@ decade_label_2012 <- tribble(
 )
 
 map_AET_ratio_2012 <- map_plot(
-  plotting_variable = AET_waterbalance_minus_budyko_mm_per_decade,
+  plotting_variable = AET_waterbalance_minus_budyko_ave,
   data =  AET_comparison |> filter(decade == 2),
   scale_range = scale_range,
   scale_breaks = c(scale_range[1], -150, -100, -50, -25, 0, 25, 50, 100, 150, scale_range[2]),
