@@ -1,4 +1,10 @@
 # Examine PET
+# Figures/Other/Q_PET_ratio_map.pdf
+# Figures/Supplementary/AET_estimates_waterbalance_vs_budyko.pdf
+# Figures/Supplementary/delta_AET_map.pdf
+# Figures/Other/delta_Q_delta_AET_ratio_map.pdf
+
+
 
 
 # Import libraries required ----------------------------------------------------
@@ -466,7 +472,7 @@ map_plot <- function(plotting_variable, data, scale_range = NULL, scale_breaks =
       legend.position = "inside",
       legend.position.inside = c(0.346, 0.9), # constants used to move the legend in the right place
       legend.box = "horizontal", # side-by-side legends
-      panel.border = element_blank(),
+      #panel.border = element_blank(),
       panel.grid = element_blank(),
       axis.ticks = element_blank(),
       legend.margin = margin(t = 5, b = 5, r = 20, l = 20, unit = "pt") # add extra padding around legend box to avoid -1.6 intersecting with line
@@ -565,7 +571,7 @@ final_plot_Q_PET_ratio <- (map_Q_PET_ratio_1990 | map_Q_PET_ratio_2012) +
   theme(legend.position = "bottom")
 
 ggsave(
-  filename = "./Figures/Supplementary/Q_PET_ratio_map.pdf",
+  filename = "./Figures/Other/Q_PET_ratio_map.pdf",
   plot = final_plot_Q_PET_ratio,
   device = "pdf",
   width = 297,
@@ -928,6 +934,22 @@ budyko_curve <- function(P, PET) {
   sqrt(PET / P * tanh(P / PET) * (1 - exp(-PET / P)))
 }
 
+# testing - couple mm's different if taking means
+# i don't know which way is correct?
+# more correct to do it mean(evapotranspiration_ratio) * mean(p_mm) 
+# because it is more similar to the water balance approach
+filtered_data_for_budyko |> 
+  filter(gauge == "138004B") |> 
+  drop_na() |> 
+  summarise(
+    mean_PET = mean(annual_APET_mm),
+    mean_P = mean(p_mm),
+    .by = c(decade)
+  ) |> 
+  mutate(
+    ave_budyko_AET = budyko_curve(P = mean_P, PET = mean_PET) * mean_P
+  )
+
 
 ### This does not AET per changes in rainfall
 AET_comparison_calc <- filtered_data_for_budyko |>
@@ -1131,7 +1153,7 @@ final_plot_delta_Q_delta_AET_ratio <- (map_Q_AET_ratio_1990 | map_Q_AET_ratio_20
   theme(legend.position = "bottom")
 
 ggsave(
-  filename = "./Figures/Supplementary/delta_Q_delta_AET_ratio_map.pdf",
+  filename = "./Figures/Other/delta_Q_delta_AET_ratio_map.pdf",
   plot = final_plot_delta_Q_delta_AET_ratio,
   device = "pdf",
   width = 297,
@@ -1238,3 +1260,4 @@ ggsave(
   height = 210,
   units = "mm"
 )
+
