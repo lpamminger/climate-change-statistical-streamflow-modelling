@@ -233,21 +233,21 @@ wilcox_test_results <- adjusted_DREAM_sequence_data |>
       x = transformed_parameter_value, 
       mu = transformed_zero,
       alternative = "two.sided",
-      conf.level = 0.95
+      conf.level = 0.99
       ),
     # left sided test
     less_test = wilcox_test(
       x = transformed_parameter_value, 
       mu = transformed_zero,
       alternative = "less",
-      conf.level = 0.95
+      conf.level = 0.99
     ),
     # right sided test
     greater_test = wilcox_test(
       x = transformed_parameter_value, 
       mu = transformed_zero,
       alternative = "greater",
-      conf.level = 0.95
+      conf.level = 0.99
     ),
     .by = c(gauge, parameter)
   )
