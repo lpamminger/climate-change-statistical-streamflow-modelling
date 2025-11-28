@@ -4,9 +4,9 @@
 
 # 1. Main --> ToE_map_aus_uncertainty.pdf (requires dream results - currently working without dream results)
 # 2. Supplementary --> time_of_emergence_decade_histogram.pdf
-# 3. Other --> ToE_vs_record_length.pdf 
-# 4. Other --> ToE_vs_catchment_area.pdf
-# 5. Supplementary --> time_of_emergence_and_uncertainty_plot.pdf
+# 3. Supplementary --> ToE_vs_record_length.pdf 
+# 4. Supplementary --> ToE_vs_catchment_area.pdf
+# 5. other --> time_of_emergence_and_uncertainty_plot.pdf
 # 6. Other --> time_of_emergence_uncertainty_vs_evidence_ratio.pdf
 # 7. Supplementary --> ToE_cdf.pdf 
 
@@ -760,12 +760,16 @@ time_of_emergence_data <- time_of_emergence_data |>
 ToE_vs_record_length <- time_of_emergence_data |> 
   ggplot(aes(x = record_length, y = year_time_of_emergence)) +
   geom_point() +
+  labs(
+    x = "Record Length (Year)",
+    y = "Time of Activation (Year)"
+  ) +
   theme_bw()
 
 
 
 ggsave(
-  filename = "./Figures/Other/ToE_vs_record_length.pdf", #"./Graphs/CMAES_graphs/log_sinh_no_uncertainty_ToE_map_aus.pdf",
+  filename = "./Figures/Supplementary/ToE_vs_record_length.pdf", #"./Graphs/CMAES_graphs/log_sinh_no_uncertainty_ToE_map_aus.pdf",
   plot = ToE_vs_record_length,
   device = "pdf",
   width = 297,
@@ -791,11 +795,15 @@ ToE_vs_catchment_area <- time_of_emergence_data |>
   ggplot(aes(x = catchment_area_sq_km, y = year_time_of_emergence)) +
   geom_point() +
   scale_x_log10() +
+  labs(
+    x = "Catchment Area (km2)",
+    y = "Time of Activation (Year)"
+  ) +
   theme_bw()
 
 
 ggsave(
-  filename = "./Figures/Other/ToE_vs_catchment_area.pdf", #"./Graphs/CMAES_graphs/log_sinh_no_uncertainty_ToE_map_aus.pdf",
+  filename = "./Figures/Supplementary/ToE_vs_catchment_area.pdf", #"./Graphs/CMAES_graphs/log_sinh_no_uncertainty_ToE_map_aus.pdf",
   plot = ToE_vs_catchment_area,
   device = "pdf",
   width = 297,
@@ -803,10 +811,38 @@ ggsave(
   units = "mm"
 )
 
+## Time of activation vs. prop forested ========================================
+prop_forested_data <- gauge_information |> 
+  select(gauge, prop_forested)
 
 
+time_of_emergence_data <- time_of_emergence_data |> 
+  left_join(
+    prop_forested_data,
+    by = join_by(gauge)
+  )
 
 
+ToE_vs_prop_forested <- time_of_emergence_data |> 
+  mutate(prop_forested = prop_forested * 100) |> 
+  ggplot(aes(x = prop_forested, y = year_time_of_emergence)) +
+  geom_point() +
+  #scale_x_log10() +
+  labs(
+    x = "Proportion of Catchment Forested (%)",
+    y = "Time of Activation (Year)"
+  ) +
+  theme_bw()
+
+
+ggsave(
+  filename = "./Figures/Supplementary/ToE_vs_prop_forested.pdf", #"./Graphs/CMAES_graphs/log_sinh_no_uncertainty_ToE_map_aus.pdf",
+  plot = ToE_vs_catchment_area,
+  device = "pdf",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
 
 
 
