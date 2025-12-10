@@ -20,7 +20,7 @@
 
 
 # Import libraries -------------------------------------------------------------
-pacman::p_load(tidyverse, ozmaps, sf, ggmagnify)
+pacman::p_load(tidyverse, ozmaps, sf, ggmagnify, trend)
 
 
 
@@ -45,11 +45,11 @@ data <- readr::read_csv(
   "./Data/Tidy/with_NA_yearly_data_CAMELS.csv",
   show_col_types = FALSE
 ) |>
-  mutate(year = as.integer(year)) |> 
-  # required for log-sinh. Log-sinh current formulation has asymptote of zero. 
+  mutate(year = as.integer(year)) |>
+  # required for log-sinh. Log-sinh current formulation has asymptote of zero.
   # This means zero flows of ephemeral catchments cannot be transformed
   # add a really small value
-  mutate(q_mm = q_mm + .Machine$double.eps^0.5) 
+  mutate(q_mm = q_mm + .Machine$double.eps^0.5)
 
 
 gauge_information <- readr::read_csv(
@@ -347,10 +347,10 @@ single_map_aus <- aus_map |>
   ) +
   scale_shape_manual(
     labels = c(
-      bquote("No"~CO[2]~"Term"), 
-      "Negative-Intercept", 
-      "Positive-Intercept", 
-      "Negative-Slope", 
+      bquote("No" ~ CO[2] ~ "Term"),
+      "Negative-Intercept",
+      "Positive-Intercept",
+      "Negative-Slope",
       "Positive-Slope"
     ),
     values = c(21, 22, 23, 25, 24),
@@ -407,10 +407,10 @@ single_map_aus <- aus_map |>
     x = NULL, # "Latitude",
     y = NULL, # "Longitude",
     fill = "Evidence Ratio",
-    shape = bquote("Impact of"~CO[2]~"Term")
+    shape = bquote("Impact of" ~ CO[2] ~ "Term")
   ) +
   theme(
-    #legend.key = element_rect(fill = "grey80"),
+    # legend.key = element_rect(fill = "grey80"),
     legend.title = element_text(hjust = 0.5),
     legend.background = element_rect(colour = "black"),
     axis.text = element_blank(),
@@ -444,12 +444,12 @@ ggsave(
 
 # Relationship between evidence ratio and catchment area -----------------------
 ## Get catchment area and record length from gauge data
-gauge_area_and_record_length <- gauge_information |> 
+gauge_area_and_record_length <- gauge_information |>
   select(gauge, catchment_area_sq_km, record_length, prop_forested)
 
 
 ## Add gauge information to a3_direction_binned_lat_lon_evidence_ratio
-additional_info_a3_direction_binned_evidence_ratio <- a3_direction_binned_lat_lon_evidence_ratio |> 
+additional_info_a3_direction_binned_evidence_ratio <- a3_direction_binned_lat_lon_evidence_ratio |>
   left_join(
     gauge_area_and_record_length,
     by = join_by(gauge)
@@ -457,7 +457,7 @@ additional_info_a3_direction_binned_evidence_ratio <- a3_direction_binned_lat_lo
 
 
 evidence_ratio_vs_catchment_area <- additional_info_a3_direction_binned_evidence_ratio |>
-  filter(evidence_ratio > 0) |> 
+  filter(evidence_ratio > 0) |>
   ggplot(aes(x = catchment_area_sq_km, evidence_ratio)) +
   geom_point() +
   scale_y_log10() +
@@ -481,7 +481,7 @@ ggsave(
 
 # Relationship between evidence ratio and record length ------------------------
 evidence_ratio_vs_record_length <- additional_info_a3_direction_binned_evidence_ratio |>
-  filter(evidence_ratio > 0) |> 
+  filter(evidence_ratio > 0) |>
   ggplot(aes(x = record_length, evidence_ratio)) +
   geom_jitter() + # stop dots overlapping
   scale_y_log10() +
@@ -502,7 +502,7 @@ ggsave(
 
 # Relationship between evidence ratio and forested catchment -------------------
 evidence_ratio_vs_prop_forested <- additional_info_a3_direction_binned_evidence_ratio |>
-  filter(evidence_ratio > 0) |> 
+  filter(evidence_ratio > 0) |>
   ggplot(aes(x = prop_forested, evidence_ratio)) +
   geom_point() +
   scale_y_log10() +
@@ -519,3 +519,138 @@ ggsave(
   height = 210,
   units = "mm"
 )
+
+
+# Relationship between evidence ratio and sens slope of annual rainfall --------
+
+## Calculate sen's slope of rainfall ===========================================
+my_sens_slope <- function(x) {
+  result <- x |>
+    as.ts() |>
+    sens.slope()
+
+  return(unname(result$estimates))
+}
+
+
+rainfall_sens_slope_data <- data |>
+  summarise(
+    sens_slope = my_sens_slope(p_mm),
+    mean_annual_rainfall = mean(p_mm),
+    .by = gauge
+  )
+
+
+all_evidence_ratio_information <- additional_info_a3_direction_binned_evidence_ratio |>
+  left_join(
+    rainfall_sens_slope_data,
+    by = join_by(gauge)
+  )
+
+
+## Plot  =======================================================================
+
+### Custom scale for annual rainfall ###########################################
+mean_annual_rainfall_limits <- all_evidence_ratio_information |> 
+  filter(evidence_ratio > 0) |> 
+  pull(mean_annual_rainfall) |> 
+  range() 
+
+mean_annual_rainfall_limits <- c(floor(mean_annual_rainfall_limits[1]), ceiling(mean_annual_rainfall_limits[2]))
+
+mean_annual_rainfall_breaks <- all_evidence_ratio_information |>
+  filter(evidence_ratio > 0) |> 
+  pull(mean_annual_rainfall) |>
+  quantile(probs = seq(0, 1, length.out = 8L)) |>
+  unname() |> 
+  round_any(accuracy = 100, f = round)
+
+mean_annual_rainfall_breaks <- mean_annual_rainfall_breaks[-c(1, length(mean_annual_rainfall_breaks))]
+
+mean_annual_rainfall_palette <- function(x) {
+  c("#f7fcfd", "#e0ecf4", "#bfd3e6", "#9ebcda", "#8c96c6", "#8c6bb1", "#88419d", "#810f7c", "#4d004b")
+}
+
+
+sens_slope_evidence_ratio_plot <- all_evidence_ratio_information |>
+  filter(evidence_ratio > 0) |>
+  ggplot(aes(x = sens_slope, y = evidence_ratio, fill = mean_annual_rainfall)) +
+  geom_point(
+    colour = "black",
+    stroke = 0.1,
+    shape = 21,
+    size = 3
+  ) +
+  scale_y_log10() +
+  binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+    aesthetics = "fill",
+    palette = mean_annual_rainfall_palette,
+    breaks = mean_annual_rainfall_breaks,
+    limits = mean_annual_rainfall_limits,
+    show.limits = TRUE,
+    guide = "colorsteps"
+  ) +
+  labs(
+    x = "Annual Rainfall Sen's Slope",
+    y = "Evidence Ratio",
+    fill = "Mean Annual Rainfall (mm)"
+  ) +
+  theme_bw() +
+  theme(
+    legend.position = "inside",
+    legend.position.inside = c(0.75, 0.9),
+    legend.background = element_rect(colour = "black", fill = NULL),
+    legend.title = element_text(hjust = 0.5),
+    legend.margin = margin(t = 10, r = 20, b = 10, l = 20, unit = "pt"),
+  ) +
+  guides(
+    fill = guide_coloursteps(
+      barwidth = unit(10, "cm"),
+      show.limits = TRUE,
+      even.steps = TRUE,
+      title.position = "top",
+      direction = "horizontal"
+    )
+  )
+
+x
+
+
+
+
+
+
+
+
+# My own sen slope function - same as function from package
+#my_sens_slope <- function(x, t) {
+  # the length of x and t must be the same
+ # stopifnot(length(x) == length(t))
+  
+  # t must be continuous
+  #t_lag_1 <- lag(t, n = 1L)
+  #diff_t <- t - t_lag_1
+  #stopifnot(any(diff_t[-1] == 1))
+  
+  # pre-allocate array
+  #length_pre_allocation <- sum(1:(length(x) - 1))
+  #d <- numeric(length = length_pre_allocation)
+  #seperate_index <- 1
+  
+  #for (j in 2:length(x)) {
+  #  for (i in j:length(x)) {
+  #    d[seperate_index] <- (x[i] - x[j - 1]) / (t[i] - t[j - 1])
+  #    seperate_index <- seperate_index + 1
+  #  }
+  #}
+  
+  # return(d)
+  #return(median(d, na.rm = TRUE))
+#}
+
+#x <- data |> 
+  #filter(gauge == "314213")
+
+# check sens slope values
+#my_sens_slope(x = x$p_mm, t = x$year)
+
