@@ -524,7 +524,7 @@ ggsave(
 # Relationship between evidence ratio and sens slope of annual rainfall --------
 
 ## Calculate sen's slope of rainfall ===========================================
-my_sens_slope <- function(x) {
+simple_sens_slope <- function(x) {
   result <- x |>
     as.ts() |>
     sens.slope()
@@ -532,40 +532,71 @@ my_sens_slope <- function(x) {
   return(unname(result$estimates))
 }
 
+get_slope <- function(x, y, ...) {
+  lm(y ~ x, ...)$coefficients[2] |> unname() # position of slope
+}
 
 rainfall_sens_slope_data <- data |>
   summarise(
-    sens_slope = my_sens_slope(p_mm),
+    sens_slope = simple_sens_slope(p_mm),
     mean_annual_rainfall = mean(p_mm),
+    lin_reg_slope = get_slope(x = year, y = p_mm),
     .by = gauge
   )
+
+# Test decade changes
+#rainfall_sens_slope_data <- data |>
+#  mutate(decade = year - year %% 10 ) |> 
+#  summarise(
+#    mean_decade_rainfall = mean(p_mm),
+#    .by = c(decade, gauge)
+#  ) |> 
+#  summarise(
+#    sens_slope = simple_sens_slope(mean_decade_rainfall),
+#    mean_decade_rainfall = mean(mean_decade_rainfall),
+#    .by = gauge
+#  )
 
 
 all_evidence_ratio_information <- additional_info_a3_direction_binned_evidence_ratio |>
   left_join(
     rainfall_sens_slope_data,
     by = join_by(gauge)
-  )
+  ) |>
+  filter(evidence_ratio > 0) |>
+  arrange(sens_slope) 
+  
+
+# test decade changes
+#all_evidence_ratio_information |> 
+#  ggplot(aes(x = sens_slope, y = evidence_ratio)) + 
+#  geom_point() + 
+#  theme_bw() + 
+#  scale_y_log10()
+
+# Sen's slope/trend of rainfall is standardised
+# You get the same result if you compare against the anomaly
+
 
 
 ## Plot  =======================================================================
 
 ### Custom scale for annual rainfall ###########################################
-mean_annual_rainfall_limits <- all_evidence_ratio_information |> 
-  filter(evidence_ratio > 0) |> 
-  pull(mean_annual_rainfall) |> 
-  range() 
+mean_annual_rainfall_limits <- all_evidence_ratio_information |>
+  pull(mean_annual_rainfall) |>
+  range()
 
 mean_annual_rainfall_limits <- c(floor(mean_annual_rainfall_limits[1]), ceiling(mean_annual_rainfall_limits[2]))
 
 mean_annual_rainfall_breaks <- all_evidence_ratio_information |>
-  filter(evidence_ratio > 0) |> 
   pull(mean_annual_rainfall) |>
   quantile(probs = seq(0, 1, length.out = 8L)) |>
-  unname() |> 
+  unname() |>
   round_any(accuracy = 100, f = round)
 
-mean_annual_rainfall_breaks <- mean_annual_rainfall_breaks[-c(1, length(mean_annual_rainfall_breaks))]
+mean_annual_rainfall_breaks <- seq(from = 600, to = 1100, by = 100)
+
+#mean_annual_rainfall_breaks <- mean_annual_rainfall_breaks[-c(1, length(mean_annual_rainfall_breaks))]
 
 mean_annual_rainfall_palette <- function(x) {
   c("#f7fcfd", "#e0ecf4", "#bfd3e6", "#9ebcda", "#8c96c6", "#8c6bb1", "#88419d", "#810f7c", "#4d004b")
@@ -573,7 +604,6 @@ mean_annual_rainfall_palette <- function(x) {
 
 
 sens_slope_evidence_ratio_plot <- all_evidence_ratio_information |>
-  filter(evidence_ratio > 0) |>
   ggplot(aes(x = sens_slope, y = evidence_ratio, fill = mean_annual_rainfall)) +
   geom_point(
     colour = "black",
@@ -613,44 +643,330 @@ sens_slope_evidence_ratio_plot <- all_evidence_ratio_information |>
     )
   )
 
-x
+
+ggsave(
+  filename = "sens_slope_evidence_ratio_plot.pdf",
+  plot = sens_slope_evidence_ratio_plot,
+  path = "Figures/Supplementary",
+  device = "pdf",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
 
 
-
-
-
-
+x <- all_evidence_ratio_information |> 
+  filter(evidence_ratio > 1000)
 
 
 # My own sen slope function - same as function from package
-#my_sens_slope <- function(x, t) {
-  # the length of x and t must be the same
- # stopifnot(length(x) == length(t))
-  
-  # t must be continuous
-  #t_lag_1 <- lag(t, n = 1L)
-  #diff_t <- t - t_lag_1
-  #stopifnot(any(diff_t[-1] == 1))
-  
-  # pre-allocate array
-  #length_pre_allocation <- sum(1:(length(x) - 1))
-  #d <- numeric(length = length_pre_allocation)
-  #seperate_index <- 1
-  
-  #for (j in 2:length(x)) {
-  #  for (i in j:length(x)) {
-  #    d[seperate_index] <- (x[i] - x[j - 1]) / (t[i] - t[j - 1])
-  #    seperate_index <- seperate_index + 1
-  #  }
-  #}
-  
-  # return(d)
-  #return(median(d, na.rm = TRUE))
-#}
+# my_sens_slope <- function(x, t) {
+# the length of x and t must be the same
+# stopifnot(length(x) == length(t))
 
-#x <- data |> 
-  #filter(gauge == "314213")
+# t must be continuous
+# t_lag_1 <- lag(t, n = 1L)
+# diff_t <- t - t_lag_1
+# stopifnot(any(diff_t[-1] == 1))
+
+# pre-allocate array
+# length_pre_allocation <- sum(1:(length(x) - 1))
+# d <- numeric(length = length_pre_allocation)
+# seperate_index <- 1
+
+# for (j in 2:length(x)) {
+#  for (i in j:length(x)) {
+#    d[seperate_index] <- (x[i] - x[j - 1]) / (t[i] - t[j - 1])
+#    seperate_index <- seperate_index + 1
+#  }
+# }
+
+# return(d)
+# return(median(d, na.rm = TRUE))
+# }
+
+# x <- data |>
+# filter(gauge == "314213")
 
 # check sens slope values
-#my_sens_slope(x = x$p_mm, t = x$year)
+# my_sens_slope(x = x$p_mm, t = x$year)
 
+
+
+## Map =========================================================================
+QLD_data <- all_evidence_ratio_information |>
+  filter(state == "QLD")
+
+NSW_data <- all_evidence_ratio_information |>
+  filter(state == "NSW")
+
+VIC_data <- all_evidence_ratio_information |>
+  filter(state == "VIC")
+
+WA_data <- all_evidence_ratio_information |>
+  filter(state == "WA")
+
+TAS_data <- all_evidence_ratio_information |>
+  filter(state == "TAS")
+
+
+### All colour scales must be the same #########################################
+sens_range <- all_evidence_ratio_information |>
+  pull(sens_slope) |>
+  range()
+
+# round by itself does not do a good job - a single variable outside of range
+sens_range <- c(
+  round_any(sens_range[1], accuracy = 0.01, f = floor),
+  round_any(sens_range[2], accuracy = 0.01, f = ceiling)
+)
+
+sens_breaks <- c(sens_range[1], -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, sens_range[2]) # need to to show nice breaks
+# fix this up later
+
+### Generate inset plots #######################################################
+sens_palette <- function(x) {
+  c(
+    "#67001f",
+    "#b2182b",
+    "#d6604d",
+    "#f4a582",
+    "#fddbc7",
+    "#d1e5f0",
+    "#92c5de",
+    "#4393c3",
+    "#2166ac",
+    "#053061"
+  )
+}
+
+inset_plot_QLD <- aus_map |>
+  filter(state == "QLD") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = QLD_data,
+    aes(x = lon, y = lat, fill = sens_slope),
+    show.legend = FALSE,
+    size = 2.5,
+    stroke = 0.1,
+    colour = "black",
+    shape = 21
+  ) +
+  binned_scale(
+    aesthetics = "fill",
+    palette = sens_palette,
+    breaks = sens_breaks,
+    limits = sens_range,
+    show.limits = TRUE,
+    guide = "colorsteps"
+  ) +
+  theme_void()
+
+
+inset_plot_NSW <- aus_map |>
+  filter(state == "NSW") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = NSW_data,
+    aes(x = lon, y = lat, fill = sens_slope),
+    show.legend = FALSE,
+    size = 2.5,
+    stroke = 0.1,
+    colour = "black",
+    shape = 21
+  ) +
+  binned_scale(
+    aesthetics = "fill",
+    palette = sens_palette,
+    breaks = sens_breaks,
+    limits = sens_range,
+    show.limits = TRUE,
+    guide = "colorsteps"
+  ) +
+  theme_void()
+
+
+inset_plot_VIC <- aus_map |>
+  filter(state == "VIC") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = VIC_data,
+    aes(x = lon, y = lat, fill = sens_slope),
+    show.legend = FALSE,
+    size = 2.5,
+    stroke = 0.1,
+    colour = "black",
+    shape = 21
+  ) +
+  binned_scale(
+    aesthetics = "fill",
+    palette = sens_palette,
+    breaks = sens_breaks,
+    limits = sens_range,
+    show.limits = TRUE,
+    guide = "colorsteps"
+  ) +
+  theme_void()
+
+
+
+inset_plot_WA <- aus_map |>
+  filter(state == "WA") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = WA_data,
+    aes(x = lon, y = lat, fill = sens_slope),
+    show.legend = FALSE,
+    size = 2.5,
+    stroke = 0.1,
+    colour = "black",
+    shape = 21
+  ) +
+  binned_scale(
+    aesthetics = "fill",
+    palette = sens_palette,
+    breaks = sens_breaks,
+    limits = sens_range,
+    show.limits = TRUE,
+    guide = "colorsteps"
+  ) +
+  theme_void()
+
+
+
+inset_plot_TAS <- aus_map |>
+  filter(state == "TAS") |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = TAS_data,
+    aes(x = lon, y = lat, fill = sens_slope),
+    show.legend = FALSE,
+    size = 2.5,
+    stroke = 0.1,
+    colour = "black",
+    shape = 21
+  ) +
+  binned_scale(
+    aesthetics = "fill",
+    palette = sens_palette,
+    breaks = sens_breaks,
+    limits = sens_range,
+    show.limits = TRUE,
+    guide = "colorsteps"
+  ) +
+  theme_void()
+
+
+
+## Put it together =============================================================
+
+sens_slope_map <- aus_map |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    data = all_evidence_ratio_information,
+    aes(x = lon, y = lat, fill = sens_slope),
+    size = 2.5,
+    stroke = 0.1,
+    colour = "black",
+    shape = 21
+  ) +
+  binned_scale(
+    aesthetics = "fill",
+    palette = sens_palette,
+    breaks = sens_breaks,
+    limits = sens_range,
+    show.limits = TRUE,
+    guide = "colorsteps"
+  ) +
+  theme_bw() +
+  # expand map
+  coord_sf(xlim = c(95, 176), ylim = c(-60, 0)) +
+  # magnify WA
+  geom_magnify(
+    from = c(114, 118, -35.5, -30),
+    to = c(93, 112, -36, -10),
+    shadow = FALSE,
+    expand = 0,
+    plot = inset_plot_WA,
+    proj = "single"
+  ) +
+  # magnify VIC
+  geom_magnify(
+    # aes(from = state == "VIC"), # use aes rather than manually selecting area
+    from = c(141, 149.5, -39, -34),
+    to = c(95, 136, -38, -60),
+    shadow = FALSE,
+    plot = inset_plot_VIC,
+    proj = "single"
+  ) +
+  # magnify QLD
+  geom_magnify(
+    from = c(145, 155, -29.2, -15),
+    to = c(157, 178, -29.5, 1.5),
+    shadow = FALSE,
+    expand = 0,
+    plot = inset_plot_QLD,
+    proj = "single"
+  ) +
+  # magnify NSW
+  geom_magnify(
+    from = c(146.5, 154, -38, -28.1),
+    to = c(157, 178, -61, -30.5),
+    shadow = FALSE,
+    expand = 0,
+    plot = inset_plot_NSW,
+    proj = "single"
+  ) +
+  # magnify TAS
+  geom_magnify(
+    from = c(144, 149, -40, -44),
+    to = c(140, 155, -45, -61),
+    shadow = FALSE,
+    expand = 0,
+    plot = inset_plot_TAS,
+    proj = "single"
+  ) +
+  labs(
+    x = NULL, # "Latitude",
+    y = NULL, # "Longitude",
+    fill = "Annual Precipitation Sen's Slope"
+  ) +
+  theme(
+    legend.title = element_text(hjust = 0.5),
+    legend.title.position = "top",
+    legend.background = element_rect(colour = "black"),
+    axis.text = element_blank(),
+    legend.position = "inside",
+    legend.position.inside = c(0.346, 0.9), # constants used to move the legend in the right place
+    legend.box = "horizontal", # side-by-side legends
+    panel.border = element_blank(),
+    panel.grid = element_blank(),
+    axis.ticks = element_blank(),
+    legend.margin = margin(t = 5, b = 5, r = 20, l = 20, unit = "pt") # add extra padding around legend box to avoid -1.6 intersecting with line
+  ) +
+  guides(
+    fill = guide_coloursteps(
+      barwidth = unit(10, "cm"),
+      show.limits = TRUE,
+      even.steps = TRUE,
+      title.position = "top",
+      direction = "horizontal"
+    )
+  )
+
+
+
+ggsave(
+  filename = "./Figures/Supplementary/sens_slope_map.pdf",
+  plot = sens_slope_map,
+  device = "pdf",
+  width = 232,
+  height = 200, # 210,
+  units = "mm"
+)
