@@ -6,6 +6,8 @@
 # 2. Supplementary --> evidence_ratio_vs_catchment_area.pdf
 # 3. Supplementary --> evidence_ratio_vs_record_length.pdf
 # 4. Supplementary --> evidence_ratio_vs_prop_forested.pdf
+# 5. Supplementary --> sens_slope_evidence_ratio.pdf
+# 6. Other --> sens_slope_map.pdf
 
 
 
@@ -37,6 +39,7 @@ source("./Functions/DREAM.R")
 source("./Functions/objective_function_setup.R")
 source("./Functions/result_set.R")
 source("./Functions/boxcox_logsinh_transforms.R")
+
 
 
 
@@ -542,6 +545,9 @@ rainfall_sens_slope_data <- data |>
     mean_annual_rainfall = mean(p_mm),
     lin_reg_slope = get_slope(x = year, y = p_mm),
     .by = gauge
+  ) |>
+  mutate(
+    standard_sens_slope = sens_slope / mean_annual_rainfall
   )
 
 # Test decade changes
@@ -564,7 +570,7 @@ all_evidence_ratio_information <- additional_info_a3_direction_binned_evidence_r
     by = join_by(gauge)
   ) |>
   filter(evidence_ratio > 0) |>
-  arrange(sens_slope) 
+  arrange(standard_sens_slope) 
   
 
 # test decade changes
@@ -604,7 +610,7 @@ mean_annual_rainfall_palette <- function(x) {
 
 
 sens_slope_evidence_ratio_plot <- all_evidence_ratio_information |>
-  ggplot(aes(x = sens_slope, y = evidence_ratio, fill = mean_annual_rainfall)) +
+  ggplot(aes(x = standard_sens_slope, y = evidence_ratio, fill = mean_annual_rainfall)) +
   geom_point(
     colour = "black",
     stroke = 0.1,
@@ -621,7 +627,7 @@ sens_slope_evidence_ratio_plot <- all_evidence_ratio_information |>
     guide = "colorsteps"
   ) +
   labs(
-    x = "Annual Rainfall Sen's Slope",
+    x = "Normalized Annual Rainfall Sen's Slope",
     y = "Evidence Ratio",
     fill = "Mean Annual Rainfall (mm)"
   ) +
@@ -655,8 +661,6 @@ ggsave(
 )
 
 
-x <- all_evidence_ratio_information |> 
-  filter(evidence_ratio > 1000)
 
 
 # My own sen slope function - same as function from package
@@ -692,7 +696,7 @@ x <- all_evidence_ratio_information |>
 # my_sens_slope(x = x$p_mm, t = x$year)
 
 
-
+# This can be deleted ...
 ## Map =========================================================================
 QLD_data <- all_evidence_ratio_information |>
   filter(state == "QLD")
@@ -712,33 +716,18 @@ TAS_data <- all_evidence_ratio_information |>
 
 ### All colour scales must be the same #########################################
 sens_range <- all_evidence_ratio_information |>
-  pull(sens_slope) |>
+  pull(standard_sens_slope) |>
   range()
 
 # round by itself does not do a good job - a single variable outside of range
 sens_range <- c(
-  round_any(sens_range[1], accuracy = 0.01, f = floor),
-  round_any(sens_range[2], accuracy = 0.01, f = ceiling)
+  round_any(sens_range[1], accuracy = 0.001, f = floor),
+  round_any(sens_range[2], accuracy = 0.001, f = ceiling)
 )
 
-sens_breaks <- c(sens_range[1], -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, sens_range[2]) # need to to show nice breaks
-# fix this up later
+
 
 ### Generate inset plots #######################################################
-sens_palette <- function(x) {
-  c(
-    "#67001f",
-    "#b2182b",
-    "#d6604d",
-    "#f4a582",
-    "#fddbc7",
-    "#d1e5f0",
-    "#92c5de",
-    "#4393c3",
-    "#2166ac",
-    "#053061"
-  )
-}
 
 inset_plot_QLD <- aus_map |>
   filter(state == "QLD") |>
@@ -746,20 +735,17 @@ inset_plot_QLD <- aus_map |>
   geom_sf() +
   geom_point(
     data = QLD_data,
-    aes(x = lon, y = lat, fill = sens_slope),
+    aes(x = lon, y = lat, fill = standard_sens_slope),
     show.legend = FALSE,
     size = 2.5,
     stroke = 0.1,
     colour = "black",
     shape = 21
   ) +
-  binned_scale(
-    aesthetics = "fill",
-    palette = sens_palette,
-    breaks = sens_breaks,
+  scale_fill_distiller(
+    palette = "RdBu",
     limits = sens_range,
-    show.limits = TRUE,
-    guide = "colorsteps"
+    direction = 1
   ) +
   theme_void()
 
@@ -770,20 +756,17 @@ inset_plot_NSW <- aus_map |>
   geom_sf() +
   geom_point(
     data = NSW_data,
-    aes(x = lon, y = lat, fill = sens_slope),
+    aes(x = lon, y = lat, fill = standard_sens_slope),
     show.legend = FALSE,
     size = 2.5,
     stroke = 0.1,
     colour = "black",
     shape = 21
   ) +
-  binned_scale(
-    aesthetics = "fill",
-    palette = sens_palette,
-    breaks = sens_breaks,
+  scale_fill_distiller(
+    palette = "RdBu",
     limits = sens_range,
-    show.limits = TRUE,
-    guide = "colorsteps"
+    direction = 1
   ) +
   theme_void()
 
@@ -794,20 +777,17 @@ inset_plot_VIC <- aus_map |>
   geom_sf() +
   geom_point(
     data = VIC_data,
-    aes(x = lon, y = lat, fill = sens_slope),
+    aes(x = lon, y = lat, fill = standard_sens_slope),
     show.legend = FALSE,
     size = 2.5,
     stroke = 0.1,
     colour = "black",
     shape = 21
   ) +
-  binned_scale(
-    aesthetics = "fill",
-    palette = sens_palette,
-    breaks = sens_breaks,
+  scale_fill_distiller(
+    palette = "RdBu",
     limits = sens_range,
-    show.limits = TRUE,
-    guide = "colorsteps"
+    direction = 1
   ) +
   theme_void()
 
@@ -819,20 +799,17 @@ inset_plot_WA <- aus_map |>
   geom_sf() +
   geom_point(
     data = WA_data,
-    aes(x = lon, y = lat, fill = sens_slope),
+    aes(x = lon, y = lat, fill = standard_sens_slope),
     show.legend = FALSE,
     size = 2.5,
     stroke = 0.1,
     colour = "black",
     shape = 21
   ) +
-  binned_scale(
-    aesthetics = "fill",
-    palette = sens_palette,
-    breaks = sens_breaks,
+  scale_fill_distiller(
+    palette = "RdBu",
     limits = sens_range,
-    show.limits = TRUE,
-    guide = "colorsteps"
+    direction = 1
   ) +
   theme_void()
 
@@ -844,20 +821,17 @@ inset_plot_TAS <- aus_map |>
   geom_sf() +
   geom_point(
     data = TAS_data,
-    aes(x = lon, y = lat, fill = sens_slope),
+    aes(x = lon, y = lat, fill = standard_sens_slope),
     show.legend = FALSE,
     size = 2.5,
     stroke = 0.1,
     colour = "black",
     shape = 21
   ) +
-  binned_scale(
-    aesthetics = "fill",
-    palette = sens_palette,
-    breaks = sens_breaks,
+  scale_fill_distiller(
+    palette = "RdBu",
     limits = sens_range,
-    show.limits = TRUE,
-    guide = "colorsteps"
+    direction = 1
   ) +
   theme_void()
 
@@ -870,19 +844,16 @@ sens_slope_map <- aus_map |>
   geom_sf() +
   geom_point(
     data = all_evidence_ratio_information,
-    aes(x = lon, y = lat, fill = sens_slope),
+    aes(x = lon, y = lat, fill = standard_sens_slope),
     size = 2.5,
     stroke = 0.1,
     colour = "black",
     shape = 21
   ) +
-  binned_scale(
-    aesthetics = "fill",
-    palette = sens_palette,
-    breaks = sens_breaks,
+  scale_fill_distiller(
+    palette = "RdBu",
     limits = sens_range,
-    show.limits = TRUE,
-    guide = "colorsteps"
+    direction = 1
   ) +
   theme_bw() +
   # expand map
@@ -935,7 +906,7 @@ sens_slope_map <- aus_map |>
   labs(
     x = NULL, # "Latitude",
     y = NULL, # "Longitude",
-    fill = "Annual Precipitation Sen's Slope"
+    fill = "Normalized Annual Rainfall Sen's Slope"
   ) +
   theme(
     legend.title = element_text(hjust = 0.5),
@@ -951,19 +922,17 @@ sens_slope_map <- aus_map |>
     legend.margin = margin(t = 5, b = 5, r = 20, l = 20, unit = "pt") # add extra padding around legend box to avoid -1.6 intersecting with line
   ) +
   guides(
-    fill = guide_coloursteps(
+    fill = guide_colourbar(
+      direction = "horizontal",
       barwidth = unit(10, "cm"),
-      show.limits = TRUE,
-      even.steps = TRUE,
-      title.position = "top",
-      direction = "horizontal"
+      show.limits = TRUE
     )
   )
-
+  
 
 
 ggsave(
-  filename = "./Figures/Supplementary/sens_slope_map.pdf",
+  filename = "./Figures/Other/sens_slope_map.pdf",
   plot = sens_slope_map,
   device = "pdf",
   width = 232,
