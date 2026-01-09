@@ -1,7 +1,7 @@
 # Illustration of rainfall-runoff changes
 
 # Figures produced in this R file ----------------------------------------------
-# - add something here
+# - Figures/Main/illustration.pdf
 
 
 # CODE
@@ -107,63 +107,61 @@ best_CO2_model_gauge |>
 # 235219 = not as clear as 614044
 
 
-
 rearrange_catchment_data_blueprint <- function(observed_data, gauge_ID, start_stop_indexes) {
   catchment_data_blueprint(
-    gauge_ID = gauge_ID, 
-    observed_data = observed_data, 
+    gauge_ID = gauge_ID,
+    observed_data = observed_data,
     start_stop_indexes = start_stop_indexes
   )
 }
 
 replace_CO2_in_data <- function(new_CO2, data) {
-  data |> 
+  data |>
     mutate(
       CO2 = new_CO2
     )
 }
 
 
-illustration_plots <- function(gauge) {
-  
+illustration_plots <- function(gauge, plot_label) {
   b <- best_CO2_and_non_CO2_model_and_params_per_gauge |>
     filter(contains_CO2) |>
     filter(gauge == {{ gauge }}) |>
     filter(parameter == "b") |>
     pull(parameter_value)
-  
-  
+
+
   modified_data <- data |>
     filter(gauge == {{ gauge }}) |>
     mutate(
       q_log_sinh = log_sinh_transform(b = b, y = q_mm, offset = 0)
     )
-  
-  
+
+
   # Plotting lines for the illustration
   CO2_for_selected_years <- modified_data |>
     filter(year %in% c(1960, 1990, 2010)) |>
     pull(CO2)
-  
-  
+
+
   different_CO2_modified_data <- map(
     .x = CO2_for_selected_years,
     .f = replace_CO2_in_data,
     data = modified_data
   )
-  
-  
+
+
   different_CO2_catchment_data <- map(
     .x = different_CO2_modified_data,
     .f = rearrange_catchment_data_blueprint,
     gauge = gauge,
     start_stop_indexes = start_stop_indexes
   )
-  
-  
+
+
   parameter_set <- best_CO2_and_non_CO2_model_and_params_per_gauge |>
     filter(contains_CO2) |>
-    filter(gauge == {{ gauge }}) |> 
+    filter(gauge == {{ gauge }}) |>
     # make sure we get a straight line by turning off a2, a4 etc.
     mutate(
       parameter_value = case_when(
@@ -171,57 +169,71 @@ illustration_plots <- function(gauge) {
         parameter == "a4" ~ 0,
         .default = parameter_value
       )
-    ) |> 
+    ) |>
     pull(parameter_value)
-  
-  
-  streamflow_model <- best_CO2_model_gauge |> 
-    filter(gauge == {{ gauge }}) |> 
-    pull(streamflow_model) |> 
+
+
+  streamflow_model <- best_CO2_model_gauge |>
+    filter(gauge == {{ gauge }}) |>
+    pull(streamflow_model) |>
     match.fun()
-  
-  
-  
+
+
   different_CO2_streamflow <- map(
     .x = different_CO2_catchment_data,
     .f = streamflow_model,
     parameter = parameter_set
-  ) 
-  
-  
-  streamflow_1 <- different_CO2_streamflow[[1]] |> 
-    select(year, precipitation, streamflow_results) |> 
+  )
+
+
+  streamflow_1 <- different_CO2_streamflow[[1]] |>
+    select(year, precipitation, streamflow_results) |>
     rename(streamflow_1960 = streamflow_results)
-  
-  streamflow_2 <- different_CO2_streamflow[[2]] |> 
-    select(year, precipitation, streamflow_results) |> 
+
+  streamflow_2 <- different_CO2_streamflow[[2]] |>
+    select(year, precipitation, streamflow_results) |>
     rename(streamflow_1990 = streamflow_results)
-  
-  streamflow_3 <- different_CO2_streamflow[[3]] |> 
-    select(year, precipitation, streamflow_results) |> 
+
+  streamflow_3 <- different_CO2_streamflow[[3]] |>
+    select(year, precipitation, streamflow_results) |>
     rename(streamflow_2010 = streamflow_results)
-  
-  rainfall_runoff_relationship <- streamflow_1 |> 
+
+  rainfall_runoff_relationship <- streamflow_1 |>
     left_join(
       streamflow_2,
       by = join_by(year, precipitation)
-    ) |> 
+    ) |>
     left_join(
       streamflow_3,
       by = join_by(year, precipitation)
-    ) |> 
+    ) |>
     pivot_longer(
       cols = starts_with("streamflow"),
       names_to = "rainfall_runoff_year",
       values_to = "streamflow"
+    ) |> # rename streamflow_1960
+    mutate(
+      rainfall_runoff_year = case_when(
+        rainfall_runoff_year == "streamflow_1960" ~ "Modelled Year 1960",
+        rainfall_runoff_year == "streamflow_1990" ~ "Modelled Year 1990",
+        rainfall_runoff_year == "streamflow_2010" ~ "Modelled Year 2010",
+        .default = NA
+      )
     )
-  
-  
-  rainfall_runoff_relationship |> 
+
+
+  rainfall_runoff_relationship |>
     ggplot(aes(x = precipitation, y = streamflow, colour = rainfall_runoff_year)) +
     geom_line()
-  
-  
+
+  if (plot_label == "B") {
+    y_axis_exclude <- element_blank()
+    arrow_aes <- aes(x = 980, y = 180, xend = 980, yend = 60)
+  } else {
+    y_axis_exclude <- element_text()
+    arrow_aes <- aes(x = 1310, y = 100, xend = 1310, yend = 25)
+  }
+
   # put it together now
   plot <- modified_data |>
     ggplot(aes(x = p_mm, y = q_log_sinh, fill = year)) +
@@ -235,28 +247,51 @@ illustration_plots <- function(gauge) {
       shape = 21,
       size = 3
     ) +
+    geom_segment(
+      mapping = arrow_aes,
+      arrow = arrow(type = "closed", length = unit(2, "mm"))
+    ) +
     labs(
       x = "Annual Precipitation (mm)",
-      y = "Log-sinh Annual Streamflow (mm)",
-      title = gauge
+      y = "Log-sinh Annual Streamflow",
+      fill = "Observed Rainfall-Runoff Year",
+      colour = "Change in Rainfall-Runoff Relationship",
+      title = plot_label
     ) +
     scale_colour_manual(values = c("#440154FF", "#33638DFF", "#B8DE29FF")) +
-    scale_fill_continuous(palette = "viridis") + # options: viridis, plasma
-    theme_bw()
-  
+    scale_fill_continuous(palette = "viridis") + # options: viridis, plasma, RdYlBu
+    theme_bw() +
+    theme(
+      legend.title.position = "top",
+      legend.title = element_text(hjust = 0.5),
+      plot.title = element_text(vjust = -8, hjust = 0.05, face = "bold"),
+      axis.title.y = y_axis_exclude,
+      text = element_text(size = 9)
+    ) +
+    guides(
+      fill = guide_colourbar(
+        barwidth = unit(6, "cm")
+      ),
+      colour = guide_legend(
+        nrow = 2,
+        override.aes = aes(linewidth = 1)
+        )
+    )
+
   return(plot)
 }
 
 # plots
-illustration <- illustration_plots(gauge = "614044") | illustration_plots(gauge = "238235")
+illustration <- illustration_plots(gauge = "614044", plot_label = "A") | illustration_plots(gauge = "238235", plot_label = "B")
 final_illustration <- illustration + plot_layout(guides = "collect") & theme(legend.position = "bottom")
 
 ggsave(
   filename = "illustration.pdf",
   plot = final_illustration,
   device = "pdf",
-  path = "Figures/Other",
-  width = 297,
-  height = 180,
+  path = "Figures/Main",
+  width = 180,
+  height = 130,
   units = "mm"
 )
+
