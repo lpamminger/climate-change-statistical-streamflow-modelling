@@ -140,7 +140,7 @@ illustration_plots <- function(gauge, plot_label) {
 
   # Plotting lines for the illustration
   CO2_for_selected_years <- modified_data |>
-    filter(year %in% c(1960, 1990, 2010)) |>
+    filter(year %in% c(1959, 1979, 1999, 2019)) |>
     pull(CO2)
 
 
@@ -197,6 +197,10 @@ illustration_plots <- function(gauge, plot_label) {
   streamflow_3 <- different_CO2_streamflow[[3]] |>
     select(year, precipitation, streamflow_results) |>
     rename(streamflow_2010 = streamflow_results)
+  
+  streamflow_4 <- different_CO2_streamflow[[4]] |>
+    select(year, precipitation, streamflow_results) |>
+    rename(streamflow_2020 = streamflow_results)
 
   rainfall_runoff_relationship <- streamflow_1 |>
     left_join(
@@ -207,6 +211,10 @@ illustration_plots <- function(gauge, plot_label) {
       streamflow_3,
       by = join_by(year, precipitation)
     ) |>
+    left_join(
+      streamflow_4,
+      by = join_by(year, precipitation)
+    ) |>
     pivot_longer(
       cols = starts_with("streamflow"),
       names_to = "rainfall_runoff_year",
@@ -214,9 +222,10 @@ illustration_plots <- function(gauge, plot_label) {
     ) |> # rename streamflow_1960
     mutate(
       rainfall_runoff_year = case_when(
-        rainfall_runoff_year == "streamflow_1960" ~ "Modelled Year 1960",
-        rainfall_runoff_year == "streamflow_1990" ~ "Modelled Year 1990",
-        rainfall_runoff_year == "streamflow_2010" ~ "Modelled Year 2010",
+        rainfall_runoff_year == "streamflow_1960" ~ "Estimated Relationship 1959",
+        rainfall_runoff_year == "streamflow_1990" ~ "Estimated Relationship 1979",
+        rainfall_runoff_year == "streamflow_2010" ~ "Estimated Relationship 1999",
+        rainfall_runoff_year == "streamflow_2020" ~ "Estimated Relationship 2019",
         .default = NA
       )
     )
@@ -255,10 +264,10 @@ illustration_plots <- function(gauge, plot_label) {
       x = "Annual Precipitation (mm)",
       y = "Log-sinh Annual Streamflow",
       fill = "Observed Rainfall-Runoff Year",
-      colour = "Change in Rainfall-Runoff Relationship",
+      colour = "Modelled Rainfall-Runoff Relationship",
       title = plot_label
     ) +
-    scale_colour_manual(values = c("#440154FF", "#33638DFF", "#B8DE29FF")) +
+    scale_colour_manual(values = c("#440154FF", "#33638DFF", "#55C667FF", "#B8DE29FF")) +
     scale_fill_continuous(palette = "viridis") + # options: viridis, plasma, RdYlBu
     theme_bw() +
     theme(
@@ -274,6 +283,7 @@ illustration_plots <- function(gauge, plot_label) {
       ),
       colour = guide_legend(
         nrow = 2,
+        ncol = 2,
         override.aes = aes(linewidth = 1)
         )
     )
