@@ -305,3 +305,100 @@ ggsave(
   units = "mm"
 )
 
+# add % change for the paragraph -----------------------------------------------
+## mean annual rainfall ========================================================
+mean_annual_rainfall <- data |> 
+  filter(gauge %in% c("614044", "238235")) #|> 
+  summarise(
+    mean_annual_rainfall = mean(p_mm),
+    .by = gauge
+  ) 
+
+## use mean annual rainfall to find streamflow % change ========================
+### modify illustration plots function to find % change
+percentage_change_based_on_rainfall <- function(gauge, mean_annual_rainfall_data) {
+  b <- best_CO2_and_non_CO2_model_and_params_per_gauge |>
+    filter(contains_CO2) |>
+    filter(gauge == {{ gauge }}) |>
+    filter(parameter == "b") |>
+    pull(parameter_value)
+  
+  
+  mean_annual_rainfall <- mean_annual_rainfall_data |> 
+    filter(gauge == {{ gauge }}) |> 
+    pull(mean_annual_rainfall)
+    
+  
+  modified_data <- data |>
+    filter(gauge == {{ gauge }}) |>
+    mutate(
+      q_log_sinh = log_sinh_transform(b = b, y = q_mm, offset = 0)
+    ) |> 
+    mutate(
+      p_mm = mean_annual_rainfall
+    )
+  
+  
+  # Plotting lines for the illustration
+  CO2_for_selected_years <- modified_data |>
+    filter(year %in% c(1959, 1979, 1999, 2019)) |>
+    pull(CO2)
+  
+  
+  different_CO2_modified_data <- map(
+    .x = CO2_for_selected_years,
+    .f = replace_CO2_in_data,
+    data = modified_data
+  )
+  
+  
+  different_CO2_catchment_data <- map(
+    .x = different_CO2_modified_data,
+    .f = rearrange_catchment_data_blueprint,
+    gauge = gauge,
+    start_stop_indexes = start_stop_indexes
+  )
+  
+  
+  parameter_set <- best_CO2_and_non_CO2_model_and_params_per_gauge |>
+    filter(contains_CO2) |>
+    filter(gauge == {{ gauge }}) |>
+    # make sure we get a straight line by turning off a2, a4 etc.
+    mutate(
+      parameter_value = case_when(
+        parameter == "a2" ~ 0,
+        parameter == "a4" ~ 0,
+        .default = parameter_value
+      )
+    ) |>
+    pull(parameter_value)
+  
+  
+  streamflow_model <- best_CO2_model_gauge |>
+    filter(gauge == {{ gauge }}) |>
+    pull(streamflow_model) |>
+    match.fun()
+  
+  
+  different_CO2_streamflow <- map(
+    .x = different_CO2_catchment_data,
+    .f = streamflow_model,
+    parameter = parameter_set
+  ) |> 
+    # extract streamflow for each of the results
+    list_rbind() |> 
+    select(precipitation, CO2, streamflow_results) |> 
+    distinct() |> 
+    # transform streamflow results into realspace
+    mutate(
+      realspace_streamflow = inverse_log_sinh_transform(b = b, z = streamflow_results, offset = 0)
+    )
+  
+}
+
+model_fit_gauge_614044 <- percentage_change_based_on_rainfall(gauge = "614044", mean_annual_rainfall_data = mean_annual_rainfall)
+(model_fit_gauge_614044$realspace_streamflow[1] - model_fit_gauge_614044$realspace_streamflow[4]) / model_fit_gauge_614044$realspace_streamflow[4]
+
+model_fit_gauge_238235 <- percentage_change_based_on_rainfall(gauge = "238235", mean_annual_rainfall_data = mean_annual_rainfall)
+(model_fit_gauge_238235$realspace_streamflow[1] - model_fit_gauge_238235$realspace_streamflow[4]) / model_fit_gauge_238235$realspace_streamflow[1]
+
