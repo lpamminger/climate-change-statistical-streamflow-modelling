@@ -99,12 +99,8 @@ best_CO2_model_gauge <- best_CO2_and_non_CO2_model_and_params_per_gauge |>
 
 
 best_CO2_model_gauge |>
-  filter(streamflow_model == "streamflow_model_slope_shifted_CO2")
+  filter(streamflow_model == "streamflow_model_intercept_shifted_CO2")
 
-# try 614044 for intercept shifted - this looks good
-
-# 614044 = great
-# 235219 = not as clear as 614044
 
 
 rearrange_catchment_data_blueprint <- function(observed_data, gauge_ID, start_stop_indexes) {
@@ -240,7 +236,7 @@ illustration_plots <- function(gauge, plot_label) {
     arrow_aes <- aes(x = 980, y = 180, xend = 980, yend = 60)
   } else {
     y_axis_exclude <- element_text()
-    arrow_aes <- aes(x = 1310, y = 100, xend = 1310, yend = 25)
+    arrow_aes <- aes(x = 1340, y = 350, xend = 1340, yend = 120)
   }
 
   # put it together now
@@ -291,8 +287,8 @@ illustration_plots <- function(gauge, plot_label) {
   return(plot)
 }
 
-# plots
-illustration <- illustration_plots(gauge = "614044", plot_label = "A") | illustration_plots(gauge = "238235", plot_label = "B")
+# plots - pick two gauges to illustration (intercept, slope)
+illustration <- illustration_plots(gauge = "606195", plot_label = "A") | illustration_plots(gauge = "238235", plot_label = "B")
 final_illustration <- illustration + plot_layout(guides = "collect") & theme(legend.position = "bottom")
 
 ggsave(
@@ -308,9 +304,10 @@ ggsave(
 # add % change for the paragraph -----------------------------------------------
 ## mean annual rainfall ========================================================
 mean_annual_rainfall <- data |> 
-  filter(gauge %in% c("614044", "238235")) #|> 
+  filter(gauge %in% c("606195", "238235")) |> 
   summarise(
     mean_annual_rainfall = mean(p_mm),
+    max_annual_rainfall = max(p_mm),
     .by = gauge
   ) 
 
@@ -396,9 +393,9 @@ percentage_change_based_on_rainfall <- function(gauge, mean_annual_rainfall_data
   
 }
 
-model_fit_gauge_614044 <- percentage_change_based_on_rainfall(gauge = "614044", mean_annual_rainfall_data = mean_annual_rainfall)
-(model_fit_gauge_614044$realspace_streamflow[1] - model_fit_gauge_614044$realspace_streamflow[4]) / model_fit_gauge_614044$realspace_streamflow[4]
+model_fit_gauge_A <- percentage_change_based_on_rainfall(gauge = "606195", mean_annual_rainfall_data = mean_annual_rainfall)
+(model_fit_gauge_A$realspace_streamflow[1] - model_fit_gauge_A$realspace_streamflow[4]) / model_fit_gauge_A$realspace_streamflow[1]
 
-model_fit_gauge_238235 <- percentage_change_based_on_rainfall(gauge = "238235", mean_annual_rainfall_data = mean_annual_rainfall)
-(model_fit_gauge_238235$realspace_streamflow[1] - model_fit_gauge_238235$realspace_streamflow[4]) / model_fit_gauge_238235$realspace_streamflow[1]
+model_fit_gauge_B <- percentage_change_based_on_rainfall(gauge = "238235", mean_annual_rainfall_data = mean_annual_rainfall)
+(model_fit_gauge_B$realspace_streamflow[1] - model_fit_gauge_B$realspace_streamflow[4]) / model_fit_gauge_B$realspace_streamflow[1]
 
