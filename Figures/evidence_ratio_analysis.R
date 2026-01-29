@@ -10,20 +10,11 @@
 # 6. Other --> sens_slope_map.pdf
 
 
-
-
-
-
 # CODE
 
 
-
-
-
-
 # Import libraries -------------------------------------------------------------
-pacman::p_load(tidyverse, ozmaps, sf, ggmagnify, trend)
-
+pacman::p_load(tidyverse, ozmaps, sf, ggmagnify, trend, patchwork)
 
 
 # Import functions -------------------------------------------------------------
@@ -39,8 +30,6 @@ source("./Functions/DREAM.R")
 source("./Functions/objective_function_setup.R")
 source("./Functions/result_set.R")
 source("./Functions/boxcox_logsinh_transforms.R")
-
-
 
 
 # Import data ------------------------------------------------------------------
@@ -68,8 +57,6 @@ best_CO2_non_CO2_per_gauge <- read_csv(
   "./Modelling/Results/CMAES/best_CO2_non_CO2_per_catchment_CMAES.csv",
   show_col_types = FALSE
 )
-
-
 
 
 # Calculate evidence ratio -----------------------------------------------------
@@ -134,7 +121,6 @@ binned_lat_lon_evidence_ratio <- lat_long_evidence_ratio |>
   )
 
 
-
 ### Add direction of change and whether the slope/intercept changed ############
 best_model_per_gauge <- best_CO2_non_CO2_per_gauge |>
   slice_min(
@@ -154,7 +140,6 @@ direction_of_a3_change <- best_model_per_gauge |>
     CO2_direction = if_else(parameter_value < 0, "Negative", "Positive")
   ) |>
   select(gauge, CO2_direction, intercept_or_slope)
-
 
 
 a3_direction_binned_lat_lon_evidence_ratio <- binned_lat_lon_evidence_ratio |>
@@ -178,11 +163,6 @@ a3_direction_binned_lat_lon_evidence_ratio <- binned_lat_lon_evidence_ratio |>
       levels = c("No CO2 Term", "Negative-Intercept", "Positive-Intercept", "Negative-Slope", "Positive-Slope")
     )
   )
-
-
-
-
-
 
 
 # Make final plot --------------------------------------------------------------
@@ -261,7 +241,6 @@ inset_plot_NSW <- aus_map |>
   theme_void()
 
 
-
 inset_plot_VIC <- aus_map |>
   filter(state == "VIC") |>
   ggplot() +
@@ -282,7 +261,6 @@ inset_plot_VIC <- aus_map |>
     drop = FALSE
   ) +
   theme_void()
-
 
 
 inset_plot_WA <- aus_map |>
@@ -307,7 +285,6 @@ inset_plot_WA <- aus_map |>
   theme_void()
 
 
-
 inset_plot_TAS <- aus_map |>
   filter(state == "TAS") |>
   ggplot() +
@@ -328,7 +305,6 @@ inset_plot_TAS <- aus_map |>
     drop = FALSE
   ) +
   theme_void()
-
 
 
 ## Put it together =============================================================
@@ -430,7 +406,6 @@ single_map_aus <- aus_map |>
   )
 
 
-
 ggsave(
   filename = "./Figures/Main/evidence_ratio_aus_map.pdf",
   plot = single_map_aus,
@@ -441,11 +416,15 @@ ggsave(
 )
 
 
-
-
-
-
 # Relationship between evidence ratio and catchment area -----------------------
+single_label <- function(x_pos, y_pos, label_name) { # for adding a, b, c labels
+  tribble(
+    ~x_pos, ~y_pos, ~label_name,
+    x_pos,  y_pos,  label_name
+  )
+}
+
+
 ## Get catchment area and record length from gauge data
 gauge_area_and_record_length <- gauge_information |>
   select(gauge, catchment_area_sq_km, record_length, prop_forested)
@@ -461,12 +440,33 @@ additional_info_a3_direction_binned_evidence_ratio <- a3_direction_binned_lat_lo
 
 evidence_ratio_vs_catchment_area <- additional_info_a3_direction_binned_evidence_ratio |>
   filter(evidence_ratio > 0) |>
-  ggplot(aes(x = catchment_area_sq_km, evidence_ratio)) +
-  geom_point() +
+  ggplot(aes(x = catchment_area_sq_km, y = evidence_ratio)) +
+  geom_point(
+    fill = "grey",
+    colour = "black",
+    stroke = 0.1,
+    shape = 21,
+    size = 2
+  ) +
+  geom_text(
+    data = single_label(x_pos = 5, y_pos = 5E15, label_name = "a"),
+    mapping = aes(x = x_pos, y = y_pos, label = label_name),
+    inherit.aes = FALSE,
+    fontface = "bold",
+    size = 12,
+    size.unit = "pt"
+  ) +
   scale_y_log10() +
   scale_x_log10() +
-  labs(x = "Catchment Area (km2)", y = "Evidence Ratio") +
-  theme_bw()
+  labs(
+    x = bquote("Catchment Area ("*km^2*")"), # bquote("X Axis Label ("*m^2*")")
+    y = "Evidence Ratio"
+    ) +
+  theme_bw() +
+  theme(
+    axis.title = element_text(size = 9),
+    axis.text = element_text(size = 8)
+  )
 
 
 ggsave(
@@ -480,16 +480,35 @@ ggsave(
 )
 
 
-
-
 # Relationship between evidence ratio and record length ------------------------
 evidence_ratio_vs_record_length <- additional_info_a3_direction_binned_evidence_ratio |>
   filter(evidence_ratio > 0) |>
   ggplot(aes(x = record_length, evidence_ratio)) +
-  geom_jitter() + # stop dots overlapping
+  geom_jitter( # stop dots overlapping
+    fill = "grey",
+    colour = "black",
+    stroke = 0.1,
+    shape = 21,
+    size = 2
+  ) +
+  geom_text(
+    data = single_label(x_pos = 30, y_pos = 5E15, label_name = "b"),
+    mapping = aes(x = x_pos, y = y_pos, label = label_name),
+    inherit.aes = FALSE,
+    fontface = "bold",
+    size = 12,
+    size.unit = "pt"
+  ) +
   scale_y_log10() +
   labs(x = "Record Length (Years)", y = "Evidence Ratio") +
-  theme_bw()
+  theme_bw() +
+  theme(
+    axis.title.y = element_blank(), # remove double up of y axis when combining
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.title = element_text(size = 9),
+    axis.text = element_text(size = 8)
+  )
 
 
 ggsave(
@@ -507,10 +526,29 @@ ggsave(
 evidence_ratio_vs_prop_forested <- additional_info_a3_direction_binned_evidence_ratio |>
   filter(evidence_ratio > 0) |>
   ggplot(aes(x = prop_forested, evidence_ratio)) +
-  geom_point() +
+  geom_point(
+    fill = "grey",
+    colour = "black",
+    stroke = 0.1,
+    shape = 21,
+    size = 2
+  ) +
+  geom_text(
+    data = single_label(x_pos = 0.03, y_pos = 5E15, label_name = "c"),
+    mapping = aes(x = x_pos, y = y_pos, label = label_name),
+    inherit.aes = FALSE,
+    fontface = "bold",
+    size = 12,
+    size.unit = "pt"
+  ) +
   scale_y_log10() +
+  scale_x_continuous(labels = scales::percent) +
   labs(x = "Proportion of forested", y = "Evidence Ratio") +
-  theme_bw()
+  theme_bw() +
+  theme(
+    axis.title = element_text(size = 9),
+    axis.text = element_text(size = 8)
+  )
 
 
 ggsave(
@@ -551,12 +589,12 @@ rainfall_sens_slope_data <- data |>
   )
 
 # Test decade changes
-#rainfall_sens_slope_data <- data |>
-#  mutate(decade = year - year %% 10 ) |> 
+# rainfall_sens_slope_data <- data |>
+#  mutate(decade = year - year %% 10 ) |>
 #  summarise(
 #    mean_decade_rainfall = mean(p_mm),
 #    .by = c(decade, gauge)
-#  ) |> 
+#  ) |>
 #  summarise(
 #    sens_slope = simple_sens_slope(mean_decade_rainfall),
 #    mean_decade_rainfall = mean(mean_decade_rainfall),
@@ -570,19 +608,18 @@ all_evidence_ratio_information <- additional_info_a3_direction_binned_evidence_r
     by = join_by(gauge)
   ) |>
   filter(evidence_ratio > 0) |>
-  arrange(standard_sens_slope) 
-  
+  arrange(standard_sens_slope)
+
 
 # test decade changes
-#all_evidence_ratio_information |> 
-#  ggplot(aes(x = sens_slope, y = evidence_ratio)) + 
-#  geom_point() + 
-#  theme_bw() + 
+# all_evidence_ratio_information |>
+#  ggplot(aes(x = sens_slope, y = evidence_ratio)) +
+#  geom_point() +
+#  theme_bw() +
 #  scale_y_log10()
 
 # Sen's slope/trend of rainfall is standardised
 # You get the same result if you compare against the anomaly
-
 
 
 ## Plot  =======================================================================
@@ -602,11 +639,14 @@ mean_annual_rainfall_breaks <- all_evidence_ratio_information |>
 
 mean_annual_rainfall_breaks <- seq(from = 600, to = 1100, by = 100)
 
-#mean_annual_rainfall_breaks <- mean_annual_rainfall_breaks[-c(1, length(mean_annual_rainfall_breaks))]
+# mean_annual_rainfall_breaks <- mean_annual_rainfall_breaks[-c(1, length(mean_annual_rainfall_breaks))]
 
 mean_annual_rainfall_palette <- function(x) {
   c("#f7fcfd", "#e0ecf4", "#bfd3e6", "#9ebcda", "#8c96c6", "#8c6bb1", "#88419d", "#810f7c", "#4d004b")
 }
+
+
+
 
 
 sens_slope_evidence_ratio_plot <- all_evidence_ratio_information |>
@@ -615,7 +655,15 @@ sens_slope_evidence_ratio_plot <- all_evidence_ratio_information |>
     colour = "black",
     stroke = 0.1,
     shape = 21,
-    size = 3
+    size = 2
+  ) +
+  geom_text(
+    data = single_label(x_pos = -0.004375, y_pos = 5E15, label_name = "d"),
+    mapping = aes(x = x_pos, y = y_pos, label = label_name),
+    inherit.aes = FALSE,
+    fontface = "bold",
+    size = 12,
+    size.unit = "pt"
   ) +
   scale_y_log10() +
   binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
@@ -627,21 +675,28 @@ sens_slope_evidence_ratio_plot <- all_evidence_ratio_information |>
     guide = "colorsteps"
   ) +
   labs(
-    x = "Normalized Annual Rainfall Sen's Slope",
+    x = "Normalised Annual Rainfall Sen's Slope",
     y = "Evidence Ratio",
     fill = "Mean Annual Rainfall (mm)"
   ) +
   theme_bw() +
   theme(
     legend.position = "inside",
-    legend.position.inside = c(0.75, 0.9),
-    legend.background = element_rect(colour = "black", fill = NULL),
-    legend.title = element_text(hjust = 0.5),
-    legend.margin = margin(t = 10, r = 20, b = 10, l = 20, unit = "pt"),
+    legend.position.inside = c(0.6, 0.85),
+    #legend.background = element_rect(colour = "black", fill = NULL),
+    legend.title = element_text(hjust = 0.5, size = 7),
+    legend.text = element_text(size = 5),
+    #legend.margin = margin(t = 10, r = 20, b = 10, l = 20, unit = "pt"),
+    axis.title.y = element_blank(), # remove double up of y axis when combining
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.title.x = element_text(size = 9),
+    axis.text = element_text(size = 8)
   ) +
   guides(
     fill = guide_coloursteps(
-      barwidth = unit(10, "cm"),
+      barwidth = unit(4, "cm"),
+      barheight = unit(0.2, "cm"),
       show.limits = TRUE,
       even.steps = TRUE,
       title.position = "top",
@@ -661,6 +716,24 @@ ggsave(
 )
 
 
+# Combine into a 2 x 2 figure --------------------------------------------------
+evidence_ratio_extended_data_2x2 <- evidence_ratio_vs_catchment_area +
+  evidence_ratio_vs_record_length +
+  evidence_ratio_vs_prop_forested +
+  sens_slope_evidence_ratio_plot 
+
+# TODO:
+# - a, b, c, d  are uneven - probabaly need geom_text it - bold
+
+ggsave(
+  filename = "evidence_ratio_extended_data_2x2.pdf",
+  plot = evidence_ratio_extended_data_2x2,
+  path = "Figures/Extended_Data",
+  device = "pdf",
+  width = 180,
+  height = 150,
+  units = "mm"
+)
 
 
 # My own sen slope function - same as function from package
@@ -696,246 +769,4 @@ ggsave(
 # my_sens_slope(x = x$p_mm, t = x$year)
 
 
-# This can be deleted ...
-## Map =========================================================================
-QLD_data <- all_evidence_ratio_information |>
-  filter(state == "QLD")
 
-NSW_data <- all_evidence_ratio_information |>
-  filter(state == "NSW")
-
-VIC_data <- all_evidence_ratio_information |>
-  filter(state == "VIC")
-
-WA_data <- all_evidence_ratio_information |>
-  filter(state == "WA")
-
-TAS_data <- all_evidence_ratio_information |>
-  filter(state == "TAS")
-
-
-### All colour scales must be the same #########################################
-sens_range <- all_evidence_ratio_information |>
-  pull(standard_sens_slope) |>
-  range()
-
-# round by itself does not do a good job - a single variable outside of range
-sens_range <- c(
-  round_any(sens_range[1], accuracy = 0.001, f = floor),
-  round_any(sens_range[2], accuracy = 0.001, f = ceiling)
-)
-
-
-
-### Generate inset plots #######################################################
-
-inset_plot_QLD <- aus_map |>
-  filter(state == "QLD") |>
-  ggplot() +
-  geom_sf() +
-  geom_point(
-    data = QLD_data,
-    aes(x = lon, y = lat, fill = standard_sens_slope),
-    show.legend = FALSE,
-    size = 2.5,
-    stroke = 0.1,
-    colour = "black",
-    shape = 21
-  ) +
-  scale_fill_distiller(
-    palette = "RdBu",
-    limits = sens_range,
-    direction = 1
-  ) +
-  theme_void()
-
-
-inset_plot_NSW <- aus_map |>
-  filter(state == "NSW") |>
-  ggplot() +
-  geom_sf() +
-  geom_point(
-    data = NSW_data,
-    aes(x = lon, y = lat, fill = standard_sens_slope),
-    show.legend = FALSE,
-    size = 2.5,
-    stroke = 0.1,
-    colour = "black",
-    shape = 21
-  ) +
-  scale_fill_distiller(
-    palette = "RdBu",
-    limits = sens_range,
-    direction = 1
-  ) +
-  theme_void()
-
-
-inset_plot_VIC <- aus_map |>
-  filter(state == "VIC") |>
-  ggplot() +
-  geom_sf() +
-  geom_point(
-    data = VIC_data,
-    aes(x = lon, y = lat, fill = standard_sens_slope),
-    show.legend = FALSE,
-    size = 2.5,
-    stroke = 0.1,
-    colour = "black",
-    shape = 21
-  ) +
-  scale_fill_distiller(
-    palette = "RdBu",
-    limits = sens_range,
-    direction = 1
-  ) +
-  theme_void()
-
-
-
-inset_plot_WA <- aus_map |>
-  filter(state == "WA") |>
-  ggplot() +
-  geom_sf() +
-  geom_point(
-    data = WA_data,
-    aes(x = lon, y = lat, fill = standard_sens_slope),
-    show.legend = FALSE,
-    size = 2.5,
-    stroke = 0.1,
-    colour = "black",
-    shape = 21
-  ) +
-  scale_fill_distiller(
-    palette = "RdBu",
-    limits = sens_range,
-    direction = 1
-  ) +
-  theme_void()
-
-
-
-inset_plot_TAS <- aus_map |>
-  filter(state == "TAS") |>
-  ggplot() +
-  geom_sf() +
-  geom_point(
-    data = TAS_data,
-    aes(x = lon, y = lat, fill = standard_sens_slope),
-    show.legend = FALSE,
-    size = 2.5,
-    stroke = 0.1,
-    colour = "black",
-    shape = 21
-  ) +
-  scale_fill_distiller(
-    palette = "RdBu",
-    limits = sens_range,
-    direction = 1
-  ) +
-  theme_void()
-
-
-
-## Put it together =============================================================
-
-sens_slope_map <- aus_map |>
-  ggplot() +
-  geom_sf() +
-  geom_point(
-    data = all_evidence_ratio_information,
-    aes(x = lon, y = lat, fill = standard_sens_slope),
-    size = 2.5,
-    stroke = 0.1,
-    colour = "black",
-    shape = 21
-  ) +
-  scale_fill_distiller(
-    palette = "RdBu",
-    limits = sens_range,
-    direction = 1
-  ) +
-  theme_bw() +
-  # expand map
-  coord_sf(xlim = c(95, 176), ylim = c(-60, 0)) +
-  # magnify WA
-  geom_magnify(
-    from = c(114, 118, -35.5, -30),
-    to = c(93, 112, -36, -10),
-    shadow = FALSE,
-    expand = 0,
-    plot = inset_plot_WA,
-    proj = "single"
-  ) +
-  # magnify VIC
-  geom_magnify(
-    # aes(from = state == "VIC"), # use aes rather than manually selecting area
-    from = c(141, 149.5, -39, -34),
-    to = c(95, 136, -38, -60),
-    shadow = FALSE,
-    plot = inset_plot_VIC,
-    proj = "single"
-  ) +
-  # magnify QLD
-  geom_magnify(
-    from = c(145, 155, -29.2, -15),
-    to = c(157, 178, -29.5, 1.5),
-    shadow = FALSE,
-    expand = 0,
-    plot = inset_plot_QLD,
-    proj = "single"
-  ) +
-  # magnify NSW
-  geom_magnify(
-    from = c(146.5, 154, -38, -28.1),
-    to = c(157, 178, -61, -30.5),
-    shadow = FALSE,
-    expand = 0,
-    plot = inset_plot_NSW,
-    proj = "single"
-  ) +
-  # magnify TAS
-  geom_magnify(
-    from = c(144, 149, -40, -44),
-    to = c(140, 155, -45, -61),
-    shadow = FALSE,
-    expand = 0,
-    plot = inset_plot_TAS,
-    proj = "single"
-  ) +
-  labs(
-    x = NULL, # "Latitude",
-    y = NULL, # "Longitude",
-    fill = "Normalized Annual Rainfall Sen's Slope"
-  ) +
-  theme(
-    legend.title = element_text(hjust = 0.5),
-    legend.title.position = "top",
-    legend.background = element_rect(colour = "black"),
-    axis.text = element_blank(),
-    legend.position = "inside",
-    legend.position.inside = c(0.346, 0.9), # constants used to move the legend in the right place
-    legend.box = "horizontal", # side-by-side legends
-    panel.border = element_blank(),
-    panel.grid = element_blank(),
-    axis.ticks = element_blank(),
-    legend.margin = margin(t = 5, b = 5, r = 20, l = 20, unit = "pt") # add extra padding around legend box to avoid -1.6 intersecting with line
-  ) +
-  guides(
-    fill = guide_colourbar(
-      direction = "horizontal",
-      barwidth = unit(10, "cm"),
-      show.limits = TRUE
-    )
-  )
-  
-
-
-ggsave(
-  filename = "./Figures/Other/sens_slope_map.pdf",
-  plot = sens_slope_map,
-  device = "pdf",
-  width = 232,
-  height = 200, # 210,
-  units = "mm"
-)

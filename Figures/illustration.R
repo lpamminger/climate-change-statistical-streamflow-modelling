@@ -308,6 +308,7 @@ mean_annual_rainfall <- data |>
   summarise(
     mean_annual_rainfall = mean(p_mm),
     max_annual_rainfall = max(p_mm),
+    median_annual_rainfall = median(p_mm),
     .by = gauge
   ) 
 
