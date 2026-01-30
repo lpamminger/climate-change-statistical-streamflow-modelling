@@ -690,7 +690,7 @@ time_of_emergence_histogram <- time_of_emergence_data |>
   theme_bw() +
   theme(
     axis.title = element_text(size = 9),
-    axis.text = element_text(size = 8)
+    axis.text = element_text(size = 7)
   )
 
 
