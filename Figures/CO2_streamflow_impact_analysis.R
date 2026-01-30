@@ -1309,14 +1309,14 @@ plot_and_save_timeseries_data <- function(plotting_data, label_data, identifier)
   
   plot <- plotting_data |> 
     ggplot(aes(x = year, y = streamflow, colour = type, shape = type)) +
-    geom_line(alpha = 0.8) +
-    geom_point() +
+    geom_line(alpha = 0.8, linewidth = 0.5) +
+    geom_point(size = 1) +
     geom_text(
       mapping = aes(x = xlab, y = ylab, label = label_name),
       data = label_data,
       inherit.aes = FALSE,
       fontface = "bold",
-      size = 10,
+      size = 8,
       size.unit = "pt"
     ) +
     scale_colour_brewer(palette = "Set1") +
@@ -1330,19 +1330,22 @@ plot_and_save_timeseries_data <- function(plotting_data, label_data, identifier)
     theme_bw() +
     theme(
       legend.position = "bottom",
-      text = element_text(family = "sans", size = 9), # default fonts are serif, sans and mono, text size is in pt
+      axis.title = element_text(size = 9),
+      axis.text = element_text(size = 8),
+      legend.text = element_text(size = 8),
       strip.background = element_blank(), # remove facet_strip gauge numbers
-      strip.text = element_blank() # remove facet_strip gauge numbers
+      strip.text = element_blank(), # remove facet_strip gauge numbers
+      panel.grid.minor = element_blank()
     ) +
-    facet_wrap(~gauge, ncol = 1, scales = "free_y") 
+    facet_wrap(~gauge, ncol = 2, nrow = 7, scales = "free_y") 
   
   ggsave(
-    filename = paste0("streamflow_timeseries_supp_plot_", identifier,".pdf"),
-    path = "Figures/Supplementary",
+    filename = paste0("streamflow_timeseries_extended_data_plot_", identifier,".pdf"),
+    path = "Figures/Extended_Data",
     device = "pdf",
     plot = plot,
-    width = 183,
-    height = 197,
+    width = 180,
+    height = 170,
     units = "mm"
   )
 }
@@ -1389,7 +1392,7 @@ save_plot_and_caption_timeseries_data <- function(data_chunk, identifier) {
     facet_column = "gauge",
     x_axis_column = "year",
     y_axis_column = "streamflow",
-    label_type = LETTERS,
+    label_type = letters,
     hjust = 0.0005,
     vjust = -0.05
   )
@@ -1408,16 +1411,22 @@ save_plot_and_caption_timeseries_data <- function(data_chunk, identifier) {
 }
 
 # divide all_timeseries_data into lots of 7 using split
-chunk <- 7
-n <- length(CO2_gauges)
+# Only use moderately strong or greater catchments
+moderately_strong_or_greater_catchments <- evidence_ratio_calc |> 
+  filter(evidence_ratio > 100) |> 
+  pull(gauge)
+
+chunk <- 14
+n <- length(moderately_strong_or_greater_catchments)
 split_group <- rep(rep(1:ceiling(n/chunk), each = chunk))[1:n]
 split_tibble <- tibble(
-  "gauge" = CO2_gauges,
+  "gauge" = moderately_strong_or_greater_catchments,
   "split" = split_group
 )
 
 # left_join and split
 all_timeseries_data <- all_timeseries_data |> 
+  filter(gauge %in% moderately_strong_or_greater_catchments) |> 
   left_join(
     split_tibble,
     by = join_by(gauge)
@@ -1426,7 +1435,6 @@ all_timeseries_data <- all_timeseries_data |>
 chunked_timeseries_data <- all_timeseries_data |> # converting table to list by groups https://stackoverflow.com/questions/7060272/split-up-a-dataframe-by-number-of-rows
   group_by(split) |> 
   group_map(~ .x)
-
 
 
 
@@ -1998,10 +2006,10 @@ ggsave(
   units = "mm"
 )
 
-stop_here()
+
 # 2.
 # Supplementary time series figures and captions:
-sink(file = "Figures/Supplementary/streamflow_time_captions_supp.txt") # filename must change
+sink(file = "Figures/Extended_Data/streamflow_time_captions_extended_data.txt") # filename must change
 iwalk(
   .x = chunked_timeseries_data,
   .f = save_plot_and_caption_timeseries_data
