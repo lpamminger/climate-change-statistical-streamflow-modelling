@@ -543,7 +543,7 @@ evidence_ratio_vs_prop_forested <- additional_info_a3_direction_binned_evidence_
   ) +
   scale_y_log10() +
   scale_x_continuous(labels = scales::percent) +
-  labs(x = "Proportion of forested", y = "Evidence Ratio") +
+  labs(x = "Proportion of Catchment Forested", y = "Evidence Ratio") +
   theme_bw() +
   theme(
     axis.title = element_text(size = 9),

@@ -862,7 +862,7 @@ ToE_vs_prop_forested <- time_of_emergence_data |>
     size = 2
   ) +
   labs(
-    x = "Proportion of Catchment Forested (%)",
+    x = "Proportion of Catchment Forested",
     y = "Time of Activation (Year)"
   ) +
   scale_x_continuous(labels = scales::percent) +
