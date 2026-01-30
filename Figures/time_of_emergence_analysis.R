@@ -25,7 +25,7 @@
 
 
 # Import libraries -------------------------------------------------------------
-pacman::p_load(tidyverse, ozmaps, sf, ggmagnify, furrr, arrow)
+pacman::p_load(tidyverse, ozmaps, sf, ggmagnify, furrr, arrow, patchwork)
 
 
 
@@ -677,12 +677,21 @@ ggsave(
 # Decade histogram time of emergence -------------------------------------------
 time_of_emergence_histogram <- time_of_emergence_data |> 
   ggplot(aes(x = decade_time_of_emergence)) +
-  geom_histogram(stat = "count") +
+  geom_histogram(
+    stat = "count",
+    fill = "grey",
+    colour = "black",
+    linewidth = 0.1
+    ) +
   labs(
     x = "Time of Activation Decade",
     y = "Frequency"
   ) +
-  theme_bw()
+  theme_bw() +
+  theme(
+    axis.title = element_text(size = 9),
+    axis.text = element_text(size = 8)
+  )
 
 
 ggsave(
@@ -759,12 +768,22 @@ time_of_emergence_data <- time_of_emergence_data |>
 
 ToE_vs_record_length <- time_of_emergence_data |> 
   ggplot(aes(x = record_length, y = year_time_of_emergence)) +
-  geom_point() +
+  geom_point(
+    fill = "grey",
+    colour = "black",
+    stroke = 0.1,
+    shape = 21,
+    size = 2
+  ) +
   labs(
     x = "Record Length (Year)",
     y = "Time of Activation (Year)"
   ) +
-  theme_bw()
+  theme_bw() +
+  theme(
+    axis.title = element_text(size = 9),
+    axis.text = element_text(size = 8)
+  )
 
 
 
@@ -793,13 +812,23 @@ time_of_emergence_data <- time_of_emergence_data |>
 
 ToE_vs_catchment_area <- time_of_emergence_data |> 
   ggplot(aes(x = catchment_area_sq_km, y = year_time_of_emergence)) +
-  geom_point() +
+  geom_point(
+    fill = "grey",
+    colour = "black",
+    stroke = 0.1,
+    shape = 21,
+    size = 2
+  ) +
   scale_x_log10() +
   labs(
-    x = "Catchment Area (km2)",
+    x = bquote("Catchment Area ("*km^2*")"),
     y = "Time of Activation (Year)"
   ) +
-  theme_bw()
+  theme_bw() +
+  theme(
+    axis.title = element_text(size = 9),
+    axis.text = element_text(size = 8)
+  )
 
 
 ggsave(
@@ -824,15 +853,24 @@ time_of_emergence_data <- time_of_emergence_data |>
 
 
 ToE_vs_prop_forested <- time_of_emergence_data |> 
-  mutate(prop_forested = prop_forested * 100) |> 
   ggplot(aes(x = prop_forested, y = year_time_of_emergence)) +
-  geom_point() +
-  #scale_x_log10() +
+  geom_point(
+    fill = "grey",
+    colour = "black",
+    stroke = 0.1,
+    shape = 21,
+    size = 2
+  ) +
   labs(
     x = "Proportion of Catchment Forested (%)",
     y = "Time of Activation (Year)"
   ) +
-  theme_bw()
+  scale_x_continuous(labels = scales::percent) +
+  theme_bw() +
+  theme(
+    axis.title = element_text(size = 9),
+    axis.text = element_text(size = 8)
+  )
 
 
 ggsave(
@@ -845,7 +883,27 @@ ggsave(
 )
 
 
+# Combine into a 2 x 2 figure --------------------------------------------------
+ToA_extended_data_2x2 <- ToE_vs_catchment_area +
+  ToE_vs_record_length +
+  ToE_vs_prop_forested +
+  time_of_emergence_histogram +
+  plot_annotation(tag_levels = "a") &
+  theme(
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(size = 12, hjust = 0, vjust = 0, face = "bold")
+  )
 
+
+ggsave(
+  filename = "ToA_extended_data_2x2.pdf",
+  plot = ToA_extended_data_2x2,
+  path = "Figures/Extended_Data",
+  device = "pdf",
+  width = 180,
+  height = 150,
+  units = "mm"
+)
 
 
 

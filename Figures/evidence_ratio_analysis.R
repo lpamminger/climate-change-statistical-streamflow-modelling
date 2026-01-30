@@ -722,9 +722,6 @@ evidence_ratio_extended_data_2x2 <- evidence_ratio_vs_catchment_area +
   evidence_ratio_vs_prop_forested +
   sens_slope_evidence_ratio_plot 
 
-# TODO:
-# - a, b, c, d  are uneven - probabaly need geom_text it - bold
-
 ggsave(
   filename = "evidence_ratio_extended_data_2x2.pdf",
   plot = evidence_ratio_extended_data_2x2,
