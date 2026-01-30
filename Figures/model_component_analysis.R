@@ -172,6 +172,13 @@ count_components <- plot_best_model_components |>
 
 
 ## plotting ====================================================================
+# a b c labels
+abc_labels <- count_components |> 
+  select(simple_name) |> 
+  mutate(lon = 114) |> 
+  mutate(lat = -13) |> 
+  mutate(label_name = letters[1:nrow(count_components)])
+
 model_components <- single_aus_map |>
   ggplot(aes(geometry = geometry)) +
   geom_sf(
@@ -183,17 +190,25 @@ model_components <- single_aus_map |>
     mapping = aes(x = lon, y = lat, colour = show),
     data = plot_best_model_components,
     inherit.aes = FALSE,
-    size = 1,
+    size = 0.8,
     show.legend = TRUE,
     shape = 21,
     fill = NA,
-    stroke = 0.25
+    stroke = 0.1
+  ) +
+  geom_text(
+    mapping = aes(x = lon, y = lat, label = label_name),
+    data = abc_labels,
+    inherit.aes = FALSE,
+    size = 10,
+    size.unit = "pt",
+    fontface = "bold"
   ) +
   geom_text(
     mapping = aes(x = lon, y = lat, label = label),
     data = count_components,
     inherit.aes = FALSE,
-    size = 10,
+    size = 8,
     size.unit = "pt"
   ) +
   scale_colour_brewer(palette = "Set1") +
@@ -202,15 +217,20 @@ model_components <- single_aus_map |>
   labs(
     x = "Longitude",
     y = "Latitude",
-    colour = "Best Streamflow Model Contains Component"
+    colour = "Best Streamflow Model\n Contains Component"
   ) +
   facet_wrap(~simple_name) +
   theme_bw() +
   theme(
     legend.position = "inside",
     legend.position.inside = c(0.825, 0.25),
-    legend.background = element_rect(colour = "black"),
-    axis.text = element_text(size = 7)
+    legend.background = element_rect(colour = "black", linewidth = 0.2),
+    legend.title = element_text(size = 8),
+    legend.text = element_text(size = 7),
+    axis.text = element_text(size = 7),
+    strip.background = element_blank(),
+    strip.text = element_blank(),
+    panel.grid = element_blank()
   ) +
   guides(
     colour = guide_legend(override.aes = list(size = 5, shape = 21, fill = NA))
@@ -221,7 +241,7 @@ ggsave(
   filename = "./Figures/Supplementary/model_components.pdf",
   plot = model_components,
   device = "pdf",
-  width = 297,
-  height = 210,
+  width = 180,
+  height = 130,
   units = "mm"
 )

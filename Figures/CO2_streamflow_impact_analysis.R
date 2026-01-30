@@ -805,7 +805,7 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
       legend.box = "horizontal", # side-by-side legends
       panel.grid = element_blank(),
       axis.ticks = element_blank(),
-      plot.title = element_text(margin = margin(l = 25, r = 0, t = 30, b = -30), size = 18) # push title into plot
+      plot.title = element_text(margin = margin(l = 25, r = 0, t = 30, b = -30), size = 12, face = "bold") # push title into plot
     ) +
     guides(
       fill = guide_coloursteps(
@@ -1083,7 +1083,7 @@ percentage_difference_CO2_model_non_CO2_model_1990s <- plotting_best_CO2_non_CO2
 percentage_difference_CO2_model_non_CO2_model_2010s <- plotting_best_CO2_non_CO2_streamflow |>
   filter(decade == 2)
 
-patchwork_CO2_model_and_non_CO2_model_percentage_differences <- (make_CO2_streamflow_percentage_change_map(percentage_difference_CO2_model_non_CO2_model_1990s, "1990-1999") | make_CO2_streamflow_percentage_change_map(percentage_difference_CO2_model_non_CO2_model_2010s, "2012-2021")) +
+patchwork_CO2_model_and_non_CO2_model_percentage_differences <- (make_CO2_streamflow_percentage_change_map(percentage_difference_CO2_model_non_CO2_model_1990s, "a") | make_CO2_streamflow_percentage_change_map(percentage_difference_CO2_model_non_CO2_model_2010s, "b")) +
   plot_layout(guides = "collect") & theme(legend.position = "bottom")
 
 
