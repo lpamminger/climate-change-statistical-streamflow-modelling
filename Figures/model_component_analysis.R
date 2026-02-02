@@ -172,12 +172,20 @@ count_components <- plot_best_model_components |>
 
 
 ## plotting ====================================================================
+
+# control order of facets
+plot_best_model_components <- plot_best_model_components |> 
+  mutate(
+    simple_name = factor(simple_name, levels = c("Autocorrelation", "CO2 Intercept", "CO2 Slope", "Drought", "Rainfall Seasonality"))
+  )
+
+  
 # a b c labels
 abc_labels <- count_components |> 
   select(simple_name) |> 
   mutate(lon = 114) |> 
   mutate(lat = -13) |> 
-  mutate(label_name = letters[1:nrow(count_components)])
+  mutate(label_name = c("a", "e", "b", "c", "d"))
 
 model_components <- single_aus_map |>
   ggplot(aes(geometry = geometry)) +
@@ -238,7 +246,7 @@ model_components <- single_aus_map |>
 
 
 ggsave(
-  filename = "./Figures/Supplementary/model_components.pdf",
+  filename = "./Figures/Extended_Data/model_components.pdf",
   plot = model_components,
   device = "pdf",
   width = 180,
