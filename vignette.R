@@ -4,10 +4,10 @@
 
 # Import libraries required ----------------------------------------------------
 # If this is a package this step is not required
-pacman::p_load(tidyverse, cmaesr, smoof, truncnorm, sloop, ggExtra)
+pacman::p_load(tidyverse, cmaesr, smoof, truncnorm, sloop, ggExtra, tictoc)
 ## ggExtra is for ggMarginal used in the examine_transform plot
 
-
+# Expected run time for vignette is less than 30 seconds
 
 # Import and prepare data-------------------------------------------------------
 # If this is a package this step is not required
@@ -53,7 +53,7 @@ source("./Functions/result_set.R")
 
 # 1. Select gauge to test from data --------------------------------------------
 
-gauge <- "302208"   
+gauge <- "405245"   
 
 
 # ideally catchment_data_blueprint should have other methods of data entry such as giving vectors individually
@@ -128,10 +128,9 @@ plot(standardised_results, type = "std_errors")
 # The near_bound column does not functioning correctly
 # Ideally, it should scale with the parameters. It does not do this currently.
 parameter_table <- parameters_summary(standardised_results)
-head(parameter_table)
 result_table <- streamflow_timeseries_summary(standardised_results) 
 
-# DREAM is a bit more complex...
+
 
 
 
