@@ -16,17 +16,17 @@ This repo contains the data and source code to accompany the manuscript.
 
 The code in repository requires only a standard computer with enough RAM to support the in-memory operations. The code was developed using a computer with the following specifications:
 
--   RAM: 32 Gb
+- RAM: 32 Gb
 
--   CPU: 11th Gen Intel (R) Core (TM) i7-11850H \@ 2.5 GHz (8 cores, 16 threads)
+- CPU: 11th Gen Intel (R) Core (TM) i7-11850H \@ 2.5 GHz (8 cores, 16 threads)
 
 ### OS Requirements
 
 The code was developed and tested in both Windows and Linux operating systems: The versions used are:
 
--   Windows 10
+- Windows 10
 
--   Linux Ubuntu 24.04
+- Linux Ubuntu 24.04
 
 ### R Requirements
 
