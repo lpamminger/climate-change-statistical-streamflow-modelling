@@ -42,7 +42,10 @@ catchment_information <- readr::read_csv(
     "state_outlet",
     "lat_outlet",
     "long_outlet",
-    "catchment_area"
+    "catchment_area",
+    "nested_status",
+    "next_station_ds",
+    "num_nested_within"
   ),
   show_col_types = FALSE
 ) |>
@@ -73,6 +76,9 @@ catchment_information <- catchment_information |>
     catchment_vegetation,
     by = join_by(gauge)
   )
+
+
+
 
 
 # Tidying data -----------------------------------------------------------------
@@ -369,6 +375,83 @@ gauge_data <- gauge_data |>
     climate_type_gauge_data,
     by = join_by(gauge, lat, lon)
   )
+
+
+# Add nested catchment columns to gauge data -----------------------------------
+# psuedo code
+# if nested_status is level 1 then collection is next_station_ds
+# if nested_status is level 2 then collection is next_station_ds --> recursion until level 1 is reached inputs are the results
+
+
+collection_under_main_catchment_recursive <- function(gauge, data) {
+  
+  # read nested_status and next_station_ds
+  filtered_data <- data |> 
+    select(gauge, nested_status, next_station_ds) |> 
+    filter(gauge == {{ gauge }})
+  
+  nested_status <- filtered_data |> pull(nested_status)
+  
+  # safety to avoid infinite loop - nested_station must be Level 1, Level 2 etc.
+  if(nested_status == "Not nested") {
+    return(gauge)
+  }
+  
+  stopifnot(nested_status %in% c("Level 1", "Level 2", "Level 3", "Level 4"))
+  
+  
+  
+  main_catchment <- filtered_data |> pull(next_station_ds)
+  
+  if(nested_status == "Level 1") {
+    # if Level 1 then only a single subcatchment and return the main catchment
+    return(main_catchment)
+  } else {
+    collection_under_main_catchment_recursive(data = data, gauge = main_catchment)
+  }
+  
+}
+
+
+# Filter only catchments with subcatchments
+only_subcatchments <- gauge_data |> 
+  mutate(
+    new_status = case_when(
+      (nested_status == "Not nested") & (num_nested_within) > 0 ~ "main_catchment",
+      (nested_status != "Not nested") ~ "sub_catchment",
+      .default = NA
+    )
+  ) |> 
+  # remove anything that is not nested or the major catchment
+  filter(
+    !is.na(new_status)
+  ) 
+
+parent_catchment <- map_chr(
+  .x = only_subcatchments |> pull(gauge),
+  .f = collection_under_main_catchment_recursive,
+  data = only_subcatchments
+)
+
+only_subcatchments <- cbind(only_subcatchments, parent_catchment) |> 
+  arrange(collection, new_status) |> 
+  select(gauge, lat, lon, new_status, parent_catchment) |> 
+  rename(status = new_status)
+
+
+
+## Add to gauge data ===========================================================
+gauge_data <- gauge_data |>
+  left_join(
+    only_subcatchments,
+    by = join_by(gauge, lat, lon)
+  ) |> 
+  # if status is na then no subcatchment
+  mutate(
+    status = if_else(is.na(status), "no_nested", status)
+  )
+
+
 
 
 # gauge_data filtered out gauges that do not meet record length requirements ---
