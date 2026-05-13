@@ -78,7 +78,23 @@ catchment_information <- catchment_information |>
   )
 
 
+catchment_attributes_anthro <- readr::read_csv(
+  "./Data/Raw/CatchmentAttributes_04_AnthropogenicInfluences.csv",
+  col_select = c(
+    "station_id",
+    "river_di"
+  ),
+  show_col_types = FALSE
+) |> 
+  rename(
+    gauge = station_id
+  )
 
+catchment_information <- catchment_information |> 
+  left_join(
+    catchment_attributes_anthro,
+    by = join_by(gauge)
+  )
 
 
 # Tidying data -----------------------------------------------------------------
@@ -434,7 +450,6 @@ parent_catchment <- map_chr(
 )
 
 only_subcatchments <- cbind(only_subcatchments, parent_catchment) |> 
-  arrange(collection, new_status) |> 
   select(gauge, lat, lon, new_status, parent_catchment) |> 
   rename(status = new_status)
 

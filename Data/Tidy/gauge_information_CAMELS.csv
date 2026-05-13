@@ -1,534 +1,534 @@
-gauge,drought,record_length,station_name,state,lat,lon,catchment_area_sq_km,nested_status,next_station_ds,num_nested_within,climate_type,major_climate_type,status,parent_catchment
-003303A,TRUE,51,Barcoo River at Blackall (003303A),QLD,-24.43,145.46,5713.9,Level 1,A0030501,0,BSh,Dry (B),sub_catchment,A0030501
-102101A,FALSE,36,Pascoe River at Fall Creek (102101A),QLD,-12.880278,142.983056,648.4,Not nested,N/A,0,Aw,Tropical (A),no_nested,NA
-105101A,TRUE,53,Normanby River at Battle Camp (105101A),QLD,-15.281389,144.838611,2308.6,Not nested,N/A,1,Aw,Tropical (A),main_catchment,105101A
-105105A,FALSE,51,East Normanby River at Development Road (105105A),QLD,-15.771111,145.014167,296.1,Level 1,105101A,0,Am,Tropical (A),sub_catchment,105101A
-107001B,TRUE,36,Endeavour River at Flaggy (107001B),QLD,-15.423333,145.067222,340.2,Not nested,N/A,0,As,Tropical (A),no_nested,NA
-108002A,FALSE,46,Daintree River at Bairds (108002A),QLD,-16.179444,145.281944,910.2,Not nested,N/A,0,Am,Tropical (A),no_nested,NA
-108003A,FALSE,38,Bloomfield River at China Camp (108003A),QLD,-15.988333,145.2875,262.5,Not nested,N/A,0,Am,Tropical (A),no_nested,NA
-111005A,FALSE,52,Mulgrave River at The Fisheries (111005A),QLD,-17.1832,145.7248,356.5,Level 1,111007A,0,Cfa,Temperate (C),sub_catchment,111007A
-111007A,FALSE,49,Mulgrave River at Peets Br (111007A),QLD,-17.13,145.76,521.4,Not nested,N/A,1,Cfa,Temperate (C),main_catchment,111007A
-112002A,FALSE,60,Fisher Creek at Nerada (112002A),QLD,-17.564167,145.9075,16,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-112101B,FALSE,46,South Johnstone River at Upstream Central Mill (112101B),QLD,-17.6089,145.9791,397.3,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-112102A,FALSE,50,Liverpool Creek at Upper Japoonvale (112102A),QLD,-17.715,145.905278,77.9,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-113004A,FALSE,51,Cochable Creek at Powerline (113004A),QLD,-17.739722,145.63,93.4,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-114001A,FALSE,50,Murray River at Upper Murray (114001A),QLD,-18.1069,145.8054,155.4,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-116006B,FALSE,52,Herbert River at Abergowrie (116006B),QLD,-18.492778,145.922222,7457.1,Not nested,N/A,5,Cfa,Temperate (C),main_catchment,116006B
-116010A,FALSE,59,Blencoe Creek at Blencoe Falls (116010A),QLD,-18.204444,145.537778,226.8,Level 1,116006B,0,Cfa,Temperate (C),sub_catchment,116006B
-116011A,FALSE,59,Millstream River at Ravenshoe (116011A),QLD,-17.605,145.4775,90.6,Level 2,116013A,0,Cwa,Temperate (C),sub_catchment,116006B
-116012A,FALSE,53,Cameron Creek at 8.7KM (116012A),QLD,-18.065278,145.341944,350.9,Level 1,116006B,0,Cwa,Temperate (C),sub_catchment,116006B
-116013A,FALSE,60,Millstream river at Archer Creek (116013A),QLD,-17.651944,145.341111,319.4,Level 1,116006B,1,Cwa,Temperate (C),sub_catchment,116006B
-116014A,FALSE,60,Wild River at Silver Valley (116014A),QLD,-17.625,145.298889,585.4,Level 1,116006B,0,Cwa,Temperate (C),sub_catchment,116006B
-116015A,FALSE,55,Blunder Creek at Wooroora (116015A),QLD,-17.735278,145.438056,125.9,Level 1,116006B,0,Cwa,Temperate (C),sub_catchment,116006B
-117002A,FALSE,48,BlaCreek at Bruce HWY (117002A),QLD,-19.2377,146.6329,250.6,Not nested,N/A,0,Aw,Tropical (A),no_nested,NA
-117003A,FALSE,46,Bluewater Creek at Bluewater (117003A),QLD,-19.185,146.5461,87.6,Not nested,N/A,0,Aw,Tropical (A),no_nested,NA
-118106A,TRUE,45,Alligator Creek at Allendale (118106A),QLD,-19.39,146.96,69.7,Not nested,N/A,0,Aw,Tropical (A),no_nested,NA
-119003A,TRUE,52,Haughton River at Powerline (119003A),QLD,-19.63,147.11,1758.8,Not nested,N/A,0,Aw,Tropical (A),no_nested,NA
-120102A,TRUE,51,Keelbottom Creek at Keelbottom (120102A),QLD,-19.3719,146.3589,193.4,Not nested,N/A,0,Cwa,Temperate (C),no_nested,NA
-120301B,TRUE,45,Belyando River at Gregory Development Road (120301B),QLD,-21.53,146.86,35299.9,Not nested,N/A,0,BSh,Dry (B),no_nested,NA
-120304A,TRUE,50,Suttor River at Eaglefield (120304A),QLD,-21.45,147.71,1953.6,Not nested,N/A,0,BSh,Dry (B),no_nested,NA
-121001A,TRUE,52,Don River at Ida Creek (121001A),QLD,-20.289444,148.116111,603.6,Level 1,121003A,0,Cwa,Temperate (C),sub_catchment,121003A
-121002A,TRUE,47,Elliot River at Guthalungra (121002A),QLD,-19.94,147.84,269.5,Not nested,N/A,0,Aw,Tropical (A),no_nested,NA
-121003A,TRUE,37,Don River at Reeves (121003A),QLD,-20.15,148.15,1012.5,Not nested,N/A,1,Cwa,Temperate (C),main_catchment,121003A
-122004A,TRUE,49,Gregory river at Lower Gregory (122004A),QLD,-20.3,148.547222,46.6,Not nested,N/A,0,Aw,Tropical (A),no_nested,NA
-124002A,TRUE,45,StHelens Creek at Calen (124002A),QLD,-20.9075,148.7586,118.1,Not nested,N/A,0,Cwa,Temperate (C),no_nested,NA
-125005A,TRUE,48,BlaCreeks Creek at Whitefords (125005A),QLD,-21.3228,148.8351,510.2,Not nested,N/A,0,Cwa,Temperate (C),no_nested,NA
-126003A,FALSE,46,Carmila Creek at Carmila (126003A),QLD,-21.915556,149.398611,83.7,Not nested,N/A,0,Cwa,Temperate (C),no_nested,NA
-129001A,TRUE,60,Waterpark Creek at Byfield (129001A),QLD,-22.835,150.6653,248.7,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-130004A,FALSE,58,Raglan Creek at Old Stn (130004A),QLD,-23.8191,150.8206,392.9,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-130302A,TRUE,63,Dawson River at Taroom (130302A),QLD,-25.64,149.79,15806.9,Not nested,N/A,1,BSh,Dry (B),main_catchment,130302A
-130324A,FALSE,55,Dawson River at Utopia Downs (130324A),QLD,-25.7447,149.3299,6056.7,Level 1,130302A,0,BSh,Dry (B),sub_catchment,130302A
-130403A,TRUE,56,Connors River at Mt Bridget (130403A),QLD,-22.0383,149.1286,1286.4,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-130410A,FALSE,51,Isaac River at Deverill (130410A),QLD,-22.1742,148.3811,4067.2,Not nested,N/A,0,BSh,Dry (B),no_nested,NA
-130413A,FALSE,50,Denison Creek at Braeside (130413A),QLD,-21.7696,148.7869,764.8,Not nested,N/A,0,Cwa,Temperate (C),no_nested,NA
-132001A,TRUE,63,Calliope River at Castlehope (132001A),QLD,-23.99,151.1,1287.7,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-135002A,FALSE,56,Kolan River at Springfield (135002A),QLD,-24.7533,151.5872,547.9,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-135004A,TRUE,56,Gin Gin Creek at Dam Site (135004A),QLD,-24.97,151.89,536.3,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-136006A,FALSE,56,Reid Creek at Dam Site (136006A),QLD,-25.2731,151.5173,220.7,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-136202D,FALSE,57,Barambah Creek at Litzows (136202D),QLD,-26.301111,152.044444,649.6,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-136203A,TRUE,62,Barker Creek at Brooklands (136203A),QLD,-26.733889,151.820556,310.7,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-136208A,TRUE,53,Boonara Creek at Ettiewyn (136208A),QLD,-25.902778,151.844167,1391.9,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-136304A,TRUE,56,Stuart River at Proston Rifle Range (136304A),QLD,-26.1816,151.5461,1554.4,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-137101A,TRUE,48,Gregory River at Burrum Highway (137101A),QLD,-25.086667,152.240833,453.4,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-137201A,TRUE,55,Isis River at Bruce Highway (137201A),QLD,-25.266944,152.368611,444.5,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-138004B,FALSE,36,Munna Creek at Marodian (138004B),QLD,-25.903611,152.349167,1189,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-138009A,FALSE,47,Tinana Creek at Tagigan Road (138009A),QLD,-26.078611,152.783889,101.4,Level 1,138903A,0,Cfa,Temperate (C),sub_catchment,138903A
-138110A,TRUE,62,Mary River at Bellbird Ck (138110A),QLD,-26.63,152.7,485.4,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-138113A,FALSE,36,Kandanga Creek at Hygait (138113A),QLD,-26.39,152.644444,170.3,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-138903A,FALSE,40,Tinana Creek at Bauple East (138903A),QLD,-25.82,152.72,772,Not nested,N/A,1,Cfa,Temperate (C),main_catchment,138903A
-140002A,FALSE,42,Teewah Creek at Coops Coner Tm (140002A),QLD,-26.0572,153.0426,52.2,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-141008A,TRUE,39,Eudlo Creek at Kiels Mountain (141008A),QLD,-26.66,153.02,57.2,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-143007A,TRUE,50,Brisbane River at Linville (143007A),QLD,-26.8061,152.2711,2010,Level 1,143009A,0,Cfa,Temperate (C),sub_catchment,143009A
-143009A,TRUE,59,Brisbane River at Gregors Creek (143009A),QLD,-26.996389,152.408611,3868.7,Not nested,N/A,1,Cfa,Temperate (C),main_catchment,143009A
-143107A,TRUE,48,Bremer River at Walloon (143107A),QLD,-27.6,152.69,624.3,Not nested,N/A,1,Cfa,Temperate (C),main_catchment,143107A
-143110A,TRUE,48,Bremer River at Adams Bridge (143110A),QLD,-27.8275,152.510833,125.7,Level 1,143107A,0,Cfa,Temperate (C),sub_catchment,143107A
-143209B,TRUE,46,Laidley Creek at Mulgowie2 (143209B),QLD,-27.7314,152.3633,172.7,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-143303A,TRUE,59,Stanley River at Peachester (143303A),QLD,-26.838889000000002,152.840556,104,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-145010A,TRUE,56,Running Creek at 5.8KM Deickmans Bridge (145010A),QLD,-28.246389,152.891111,132.2,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-145011A,TRUE,55,Teviot Brook at Croftby (145011A),QLD,-28.147778,152.570833,82.8,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-145018A,TRUE,48,Burnett Creek at Up Stream Maroon Dam (145018A),QLD,-28.219722,152.608333,81.5,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-145101D,TRUE,63,Albert River at Lumeah Number 2 (145101D),QLD,-28.053056,153.045278,166.8,Level 1,N/A,0,Cfa,Temperate (C),sub_catchment,N/A
-145102B,TRUE,57,Albert River at Bromfleet (145102B),QLD,-27.91,153.11,543.2,Not nested,N/A,1,Cfa,Temperate (C),main_catchment,145102B
-145107A,TRUE,48,Canungra Creek at Main Rd Bridge (145107A),QLD,-27.996667,153.158333,99.7,Level 1,145102B,0,Cfa,Temperate (C),sub_catchment,145102B
-146010A,TRUE,59,Coomera River at Army Camp (146010A),QLD,-28.025833,153.193056,97,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-146012A,TRUE,46,Currumbin Creek at Nicolls Bridge (146012A),QLD,-28.178333,153.424167,30.1,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-146014A,TRUE,40,Back Creek at Beechmont (146014A),QLD,-28.123333,153.19,6.8,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-146095A,TRUE,49,Tallebudgera Creek at Tallebudgera Ck Rd (146095A),QLD,-28.149444,153.403611,56.3,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-201001,TRUE,56,Oxley River at Eungella (201001),NSW,-28.3553,153.292,214.8,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-203005,TRUE,46,Richmond River at Wiangaree (203005),NSW,-28.5065,152.9658,702.5,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-203010,TRUE,49,Leycester River at Rock Valley (203010),NSW,-28.7381,153.163,175.9,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-203030,FALSE,42,Myrtle Creek at Rappville (203030),NSW,-29.1116,152.9984,387.3,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-204002,FALSE,49,Clarence River at Tabulam (204002),NSW,-28.89,152.56,4545.3,Level 1,204007,3,Cfa,Temperate (C),sub_catchment,204007
-204007,FALSE,47,Clarence River at Lilydale (Newbold Crossing (204007),NSW,-29.51,152.68,16944.4,Not nested,N/A,8,Cfa,Temperate (C),main_catchment,204007
-204014,FALSE,38,Mann River at Mitchell (204014),NSW,-29.6947,152.1049,882.9,Level 1,204007,0,Cfb,Temperate (C),sub_catchment,204007
-204017,FALSE,44,Bielsdown Creek at Dorrigo No.2 & No.3 (204017),NSW,-30.3073,152.7135,74,Level 1,204007,0,Cfb,Temperate (C),sub_catchment,204007
-204025,TRUE,43,Orara River at Karangi (204025),NSW,-30.2544,153.0323,134.3,Level 2,204906,0,Cfa,Temperate (C),sub_catchment,204041
-204030,FALSE,40,Aberfoyle River at Aberfoyle (204030),NSW,-30.2603,152.0083,208.6,Level 1,204007,0,Cfb,Temperate (C),sub_catchment,204007
-204034,FALSE,40,Henry River at Newton Boyd (204034),NSW,-29.763056,152.213333,400.1,Level 1,204007,0,Cfb,Temperate (C),sub_catchment,204007
-204036,FALSE,55,Cataract Creek at Sandy Hill(below Snake Cre (204036),NSW,-28.9341,152.2171,238.6,Level 3,204002,0,Cfb,Temperate (C),sub_catchment,204007
-204037,FALSE,48,Clouds Creek at Clouds Ck (204037),NSW,-30.0938,152.6282,62.8,Level 1,204007,0,Cfb,Temperate (C),sub_catchment,204007
-204039,TRUE,32,Maryland River at D/S Wylie Ck (204039),NSW,-28.468,152.1978,385.5,Level 3,204002,0,Cfa,Temperate (C),sub_catchment,204007
-204041,TRUE,42,Orara River at Bawden Br (204041),NSW,-29.7242,152.8092,1809.8,Not nested,N/A,1,Cfa,Temperate (C),main_catchment,204041
-204046,FALSE,46,Timbarra River at Drake (204046),NSW,-29.0573,152.3849,1714.6,Level 1,204007,0,Cfb,Temperate (C),sub_catchment,204007
-204051,FALSE,39,Clarence River at Paddys Flat (204051),NSW,-28.7211,152.4174,3116.8,Level 2,204002,0,Cfb,Temperate (C),sub_catchment,204007
-204056,FALSE,42,Dandahra Creek at Gibraltar Range (204056),NSW,-29.4864,152.4456,112.4,Level 1,204007,0,Cfb,Temperate (C),sub_catchment,204007
-204906,TRUE,44,Orara River at Glenreagh (204906),NSW,-30.07,152.98,432.2,Level 1,204041,1,Cfb,Temperate (C),sub_catchment,204041
-206009,TRUE,60,Tia River at Tia (206009),NSW,-31.1878,151.8291,262.2,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-206014,TRUE,58,Wollomombi River at Coninside (206014),NSW,-30.476389,152.028333,369.9,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-206018,FALSE,58,Apsley River at Apsley Falls (206018),NSW,-31.049722,151.766111,862.9,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-206025,FALSE,47,Salisbury Waters River at near Dangar Falls (206025),NSW,-30.681,151.7133,648.7,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-207004,FALSE,43,Hastings River at Ellenborough (Kindee Bridg (207004),NSW,-31.4241,152.4697,1580.9,Not nested,N/A,2,Cfb,Temperate (C),main_catchment,207004
-207013,FALSE,43,Ellenborough River at D/S Bunnoo R Junction (207013),NSW,-31.481,152.4478,497.6,Level 1,207004,0,Cfb,Temperate (C),sub_catchment,207004
-207014,FALSE,34,Wilson River at Avenel (207014),NSW,-31.3326,152.7404,508.8,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-207015,FALSE,37,Hastings River at Mount Seaview (207015),NSW,-31.3714,152.2442,349.1,Level 1,207004,0,Cfb,Temperate (C),sub_catchment,207004
-208003,FALSE,55,Gloucester River at Doon Ayre (208003),NSW,-31.8981,152.0956,1629.7,Level 1,208004,0,Cfb,Temperate (C),sub_catchment,208004
-208004,TRUE,51,Manning River at Killawarra (208004),NSW,-31.92,152.31,6631.4,Not nested,N/A,3,Cfb,Temperate (C),main_catchment,208004
-208005,TRUE,53,Nowendoc River at Rocks Crossing (208005),NSW,-31.779,152.0746,1894,Level 1,208004,1,Cfb,Temperate (C),sub_catchment,208004
-208007,TRUE,53,Nowendoc River at Nowendoc (208007),NSW,-31.516389,151.716389,222.2,Level 2,208005,0,Cfb,Temperate (C),sub_catchment,208004
-208009,FALSE,51,Barnard River at Barry (208009),NSW,-31.579167,151.315278,151.5,Level 3,208024,0,Cfb,Temperate (C),sub_catchment,208004
-208011,TRUE,48,Barnard River at Mackay (208011),NSW,-31.77,151.9,1813.5,Level 1,208004,2,Cfb,Temperate (C),sub_catchment,208004
-208015,FALSE,47,Landsdowne River at Landsdowne (208015),NSW,-31.7889,152.5128,95.4,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-208024,FALSE,34,Barnard River at D/S Back R Jctn (208024),NSW,-31.56,151.34,281.1,Level 2,208011,1,Cfb,Temperate (C),sub_catchment,208004
-208026,TRUE,35,Myall River at Jacky Barkers (208026),NSW,-31.6417,151.7342,546.8,Level 2,208011,0,Cfb,Temperate (C),sub_catchment,208004
-209002,TRUE,49,Mammy Johnsons River at Crossing (209002),NSW,-32.2453,151.9778,157.5,Level 1,209003,0,Cfb,Temperate (C),sub_catchment,209003
-209003,FALSE,45,Karuah River at Booral (209003),NSW,-32.48,151.96,982.1,Not nested,N/A,1,Cfb,Temperate (C),main_catchment,209003
-210006,FALSE,48,Goulburn River at Coggan (210006),NSW,-32.342778,150.101389,3390.6,Level 2,210016,0,Cfa,Temperate (C),sub_catchment,210031
-210011,FALSE,53,William River at Tillegra (210011),NSW,-32.318889,151.688056,195.9,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-210014,FALSE,52,Rouchel Brook River at Rouchel Brook (The Vale) (210014),NSW,-32.1531,151.0474,401.3,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-210016,FALSE,43,Goulburn River at Kerrabee (210016),NSW,-32.42,150.32,4973.6,Level 1,210031,1,Cfa,Temperate (C),sub_catchment,210031
-210017,FALSE,44,Moonan Brook River at Moonan Brook (210017),NSW,-31.9437,151.2797,102.4,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-210022,TRUE,56,Allyn River at Halton (210022),NSW,-32.3078,151.5117,188.7,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-210031,FALSE,58,Goulburn River at Sandy Hollow (210031),NSW,-32.35,150.57,6815.3,Not nested,N/A,1,Cfa,Temperate (C),main_catchment,210031
-210040,FALSE,55,Wybong Creek at Wybong (210040),NSW,-32.2708,150.6349,670.9,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-210052,FALSE,50,Pages River at Gundy Recorder (210052),NSW,-32.0119,150.9965,1070.4,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-211009,TRUE,41,Wyong River at Gracemere (211009),NSW,-33.2724,151.3593,236.5,Not nested,N/A,1,Cfa,Temperate (C),main_catchment,211009
-211013,FALSE,41,Ourimbah Creek at U/S Weir (211013),NSW,-33.3497,151.3428,81.6,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-211014,FALSE,41,Wyong River at Yarramalong (211014),NSW,-33.2198,151.2734,180.9,Level 1,211009,0,Cfa,Temperate (C),sub_catchment,211009
-212040,TRUE,32,Kialla Creek at Pomeroy (212040),NSW,-34.6089,149.5431,91.9,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-212260,TRUE,38,Kowmung River at Cedar Ford (212260),NSW,-33.947222,150.244444,715.3,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-215002,TRUE,30,Shoalhaven River at Warri  (215002),NSW,-35.340833,149.739444,1396,Level 1,215207,0,Cfb,Temperate (C),sub_catchment,215207
-215004,TRUE,34,Corang River at Hockeys (215004),NSW,-35.146944,150.033056,163.7,Level 1,215207,0,Cfb,Temperate (C),sub_catchment,215207
-215207,TRUE,37,Shoalhaven River at Fossickers Flat,NSW,-34.818901,150.182923,4682,Not nested,N/A,2,Cfb,Temperate (C),main_catchment,215207
-216002,TRUE,46,Clyde River at Brooman (216002),NSW,-35.468056,150.237222,859.7,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-216009,TRUE,35,BuCreekenbowra River at Buckenbowra No.3 (216009),NSW,-35.714,150.0342,162,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-218001,TRUE,51,Tuross River at Tuross Vale (218001),NSW,-36.265,149.510556,90.1,Level 2,218005,0,Cfb,Temperate (C),sub_catchment,218008
-218005,TRUE,54,Tuross River at D/S Wadbilliga R Junct (218005),NSW,-36.1975,149.7606,918.9,Level 1,218008,2,Cfb,Temperate (C),sub_catchment,218008
-218007,TRUE,47,Wadbilliga River at Wadbilliga (218007),NSW,-36.2586,149.6914,123.5,Level 2,218005,0,Cfb,Temperate (C),sub_catchment,218008
-218008,TRUE,43,Tuross River at Eurobodalla (218008),NSW,-36.13,150,1607.2,Not nested,N/A,1,Cfb,Temperate (C),main_catchment,218008
-219001,TRUE,60,Rutherford Creek at Brown Mountain (219001),NSW,-36.593889,149.4425,15.3,Level 1,219003,0,Cfb,Temperate (C),sub_catchment,219003
-219003,TRUE,63,Bemboka River at Morans Crossing (219003),NSW,-36.6674,149.6469,314.5,Not nested,N/A,1,Cfb,Temperate (C),main_catchment,219003
-219006,TRUE,63,Tantawangalo Creek at Tantawangalo Mountain Dam (219006),NSW,-36.78,149.54,80.7,Level 1,219022,0,Cfb,Temperate (C),sub_catchment,219022
-219017,TRUE,55,Double Creek at near Brogo (219017),NSW,-36.6,149.8094,152.9,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-219022,TRUE,49,Tantawangalo Creek at Candelo Dam Site (219022),NSW,-36.7319,149.6842,198.9,Not nested,N/A,1,Cfb,Temperate (C),main_catchment,219022
-220003,TRUE,55,Pambula River at Lochiel (220003),NSW,-36.9414,149.8194,106.4,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-221002,TRUE,47,Wallagaraugh River at Princes HWY (221002),NSW,-37.3719,149.7125,480.1,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-221201,FALSE,63,Cann(West Branch River at Weeragua (221201),VIC,-37.373,149.2,323.3,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-221207,TRUE,52,Errinundra River at Errinundra (221207),VIC,-37.447222,148.914167,158.1,Level 1,221212,0,Cfb,Temperate (C),sub_catchment,221212
-221208,TRUE,42,Wingan River at Wingan Inlet National Park (221208),VIC,-37.689,149.49,421,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-221209,TRUE,49,Cann(East Branch River at Weeragua (221209),VIC,-37.356,149.21,148.9,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-221210,FALSE,49,Genoa River at The Gorge (221210),VIC,-37.416389,149.518611,838.8,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-221211,FALSE,47,Combienbar River at Combienbar (221211),VIC,-37.44,148.98,179.3,Level 1,221212,0,Cfb,Temperate (C),sub_catchment,221212
-221212,TRUE,46,Bemm River at Princes HWY (221212),VIC,-37.606,148.9,727.2,Not nested,N/A,2,Cfb,Temperate (C),main_catchment,221212
-222004,FALSE,63,Little Plains River at Wellesley (Rowes) (222004),NSW,-36.9969,149.0925,614.3,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-222016,TRUE,39,Pinch River at The Barry Way (222016),NSW,-36.7936,148.4033,157.9,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-222202,TRUE,61,Brodribb Riber River at Sardine Creek (222202),VIC,-37.512,148.55,652.1,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-222206,TRUE,63,Buchan River at Buchan (222206),VIC,-37.494722,148.174722,847.5,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-222210,TRUE,50,Deddick River at Deddick (Caseys) (222210),VIC,-37.0853747,148.4241522,846.1,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-222213,TRUE,55,Suggan Buggan River at Suggan Buggan (222213),VIC,-36.954722,148.326667,363.7,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-222217,TRUE,45,Rodger River at Jacksons Crossing (222217),VIC,-37.41,148.36,432.1,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-223202,TRUE,63,Tambo River at Swifts Creek (223202),VIC,-37.268056,147.728056,894.3,Level 1,223205,0,Cfb,Temperate (C),sub_catchment,223205
-223204,TRUE,57,Nicholson River at Deptford (223204),VIC,-37.59294631,147.697124,289.1,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-223205,TRUE,54,Tambo River at D/S Of Ramrod Creek (223205),VIC,-37.67253062,147.8698513,2673.2,Not nested,N/A,1,Cfb,Temperate (C),main_catchment,223205
-224201,TRUE,55,Wonnangatta R River at Waterford (224201),VIC,-37.49,147.17,1974.8,Level 1,224203,1,Cfb,Temperate (C),sub_catchment,224203
-224203,TRUE,61,Mitchell River at Glenaladale (224203),VIC,-37.76358991,147.3747776,3917.6,Not nested,N/A,3,Cfb,Temperate (C),main_catchment,224203
-224206,TRUE,60,Wonnangatta River at Crooked River (224206),VIC,-37.406389,147.088056,1102.3,Level 2,224201,0,Cfb,Temperate (C),sub_catchment,224203
-224213,TRUE,46,Dargo River at Lower Dargo Rd (224213),VIC,-37.493889,147.271389,666.3,Level 1,224203,0,Cfb,Temperate (C),sub_catchment,224203
-224214,TRUE,45,Wentworth River at Tabberabbera (224214),VIC,-37.494444,147.393333,440.6,Level 1,224203,0,Cfb,Temperate (C),sub_catchment,224203
-225020A,TRUE,33,South Cascade Creek at Thomson Valley Road (225020A),VIC,-37.833333,146.354167,11.5,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-225201,TRUE,43,Avon River at Stratford (225201),VIC,-37.9685868,147.0760061,1460.2,Not nested,N/A,3,Cfb,Temperate (C),main_catchment,225201
-225209,TRUE,55,Macalister River at Licola (225209),VIC,-37.62961037,146.6233123,1237.3,Level 1,225221,1,Cfb,Temperate (C),sub_catchment,225221
-225213,TRUE,57,Aberfeldy River at Beardmore (225213),VIC,-37.854,146.43,311,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-225218,FALSE,54,Freestone Creek at Briagolong (225218),VIC,-37.812,147.09,305.2,Level 1,225201,0,Cfb,Temperate (C),sub_catchment,225201
-225219,TRUE,52,Macalister River at Glencairn (225219),VIC,-37.516111,146.566111,572,Level 2,225209,0,Cfb,Temperate (C),sub_catchment,225221
-225221,TRUE,41,Macalister River at Stringybark Creek (225221),VIC,-37.76935073,146.6677493,1541.3,Not nested,N/A,1,Cfb,Temperate (C),main_catchment,225221
-225223,TRUE,44,Valencia Creek at Gillio Road (225223),VIC,-37.74346413,146.9922931,202.2,Level 1,225201,0,Cfb,Temperate (C),sub_catchment,225201
-225224,TRUE,46,Avon River at The Channel (225224),VIC,-37.80184085,146.8849073,557,Level 1,225201,0,Cfb,Temperate (C),sub_catchment,225201
-226023,TRUE,49,Traralgon Creek at Traralgon (226023),VIC,-38.19405359,146.5439326,168.4,Not nested,N/A,1,Cfb,Temperate (C),main_catchment,226023
-226204,TRUE,63,Latrobe River at Willow Grove (226204),VIC,-38.089,146.16,562.9,Not nested,N/A,1,Cfb,Temperate (C),main_catchment,226204
-226205,FALSE,60,Latrobe River at Noojee (226205),VIC,-37.90701017,146.0221188,296.1,Level 1,226204,2,Cfb,Temperate (C),sub_catchment,226204
-226209,TRUE,61,Moe R River at Darnum (226209),VIC,-38.206,146,215.7,Level 1,226402,0,Cfb,Temperate (C),sub_catchment,226402
-226218,TRUE,61,Narracan Creek at Thorpdale (226218),VIC,-38.27191618,146.1865277,65.7,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-226220,TRUE,54,Loch River at Noojee (226220),VIC,-37.866667,146.006111,104.2,Level 2,226205,0,Cfb,Temperate (C),sub_catchment,226204
-226222,FALSE,33,Latrobe River at Near Noojee (226222),VIC,-37.881944,145.8925,64.7,Level 2,226205,0,Cfb,Temperate (C),sub_catchment,226204
-226226,TRUE,61,Tanjil River at Tanjil Junction (226226),VIC,-37.98,146.19,299.2,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-226402,TRUE,63,Moe Drain River at Trafalgar East (226402),VIC,-38.176,146.21,609.4,Not nested,N/A,1,Cfb,Temperate (C),main_catchment,226402
-226407,TRUE,47,Morwell River at Boolarra (226407),VIC,-38.4075,146.304722,115,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-226410,TRUE,57,Traralgon Creek at Koornalla (226410),VIC,-38.323,146.53,83.9,Level 1,226023,0,Cfb,Temperate (C),sub_catchment,226023
-227200,TRUE,52,Tarra River at Yarram (227200),VIC,-38.538,146.68,222.1,Not nested,N/A,1,Cfb,Temperate (C),main_catchment,227200
-227202,TRUE,62,Tarwin River at Meeniyan (227202),VIC,-38.582,145.99,1069.5,Not nested,N/A,2,Cfb,Temperate (C),main_catchment,227202
-227205,TRUE,54,Merriman Creek at Calignee South (227205),VIC,-38.35208581,146.6547464,39.2,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-227210,TRUE,61,Bruthen Creek at Carrajung Lower (227210),VIC,-38.39502395,146.74407,17.8,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-227211,TRUE,61,Agnes River at Toora (227211),VIC,-38.64,146.37,66.2,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-227213,TRUE,58,Jack River at Jack River (227213),VIC,-38.52579869,146.538118,35,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-227219,TRUE,54,Bass River at Loch (227219),VIC,-38.358,145.72,53.9,Level 1,227231,0,Cfb,Temperate (C),sub_catchment,227231
-227225,TRUE,52,Tarra River at Fischers (227225A),VIC,-38.469722,146.555278,20.3,Level 1,227200,0,Cfb,Temperate (C),sub_catchment,227200
-227226,TRUE,51,Tarwin River East Branch  at Dumbalk North (227226),VIC,-38.499722,146.160833,127.1,Level 1,227202,0,Cfb,Temperate (C),sub_catchment,227202
-227227,TRUE,44,Wilkur Creek at Leongatha (227227),VIC,-38.393333,145.957222,105.1,Level 1,227202,0,Cfb,Temperate (C),sub_catchment,227202
-227231,TRUE,48,Bass River at Glen Forbes South (227231),VIC,-38.467,145.51,233.7,Not nested,N/A,1,Cfb,Temperate (C),main_catchment,227231
-227236,FALSE,41,Powlett River at D/S Foster Ck Junction (227236),VIC,-38.559,145.71,233.8,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-227237,TRUE,42,Franklin River at Toora (227237),VIC,-38.63,146.31,73.6,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-230205,TRUE,60,Deep Creek at Bulla (D/S of Emu Ck Ju (230205),VIC,-37.632,144.8,861.2,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-230209,TRUE,52,Barringo Creek at Barringo (U/S Of Diversion) (230209),VIC,-37.41050387,144.6260551,5.5,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-230210,TRUE,52,Saltwater Creek at Bullengarook (230210),VIC,-37.471944,144.524167,39,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-231211,TRUE,43,Lerderderg River at U/S Goodman Ck Junction (231211),VIC,-37.63,144.43,234.5,Not nested,N/A,1,Cfb,Temperate (C),main_catchment,231211
-231213,TRUE,59,Lerderderg River at Sardine Creek O'brien Crossing (231213),VIC,-37.496111,144.359722,153.4,Level 1,231211,0,Cfb,Temperate (C),sub_catchment,231211
-231225,TRUE,44,Werribee River at Ballan (U/S Old Western H- (231225),VIC,-37.598,144.25,108.2,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-231231,TRUE,36,Toolern Creek at Melton South (231231),VIC,-37.72796,144.57898,85.8,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-232214,TRUE,42,Black Creek at U/S Of Bungal Dam (232214),VIC,-37.62982,144.06236,11.7,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-232215,TRUE,42,Woollen Creek at U/S Of Bungal Dam (232215),VIC,-37.6337175,144.0807662,8.8,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-233214,TRUE,61,Barwon River East Branch at Forrest (233214),VIC,-38.52871645,143.730405,16.6,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-233223,FALSE,45,Warrambine Creek at Warrambine (233223),VIC,-37.928637,143.8663116,53.5,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-234200,TRUE,57,Woady Yaloak River River at Pitfield (234200),VIC,-37.809,143.59,309.5,Level 1,234201,0,Cfb,Temperate (C),sub_catchment,234201
-234201,TRUE,58,Woady Yaloak River at Cressy (Yarima) (234201),VIC,-38.012,143.64,1149.2,Not nested,N/A,1,Cfb,Temperate (C),main_catchment,234201
-234203,FALSE,48,Pirron YalloCreek C River at Pirron Yallock (above H'Wy (234203),VIC,-38.354,143.42,164.6,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-234209,FALSE,43,Dean Creek at Lake Colac (234209),VIC,-38.33843869,143.5583248,53.7,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-235202,FALSE,60,Gellibrand River River at Upper Gelliberand (235202),VIC,-38.564,143.66,51.6,Level 2,235227,0,Cfb,Temperate (C),sub_catchment,235224
-235203,FALSE,46,Curdies River River at Curdie (235203),VIC,-38.445,142.96,780.5,Not nested,N/A,1,Cfb,Temperate (C),main_catchment,235203
-235204,FALSE,43,Little Aire Creek at Beech Forest (235204),VIC,-38.6548305,143.5291815,11.1,Level 1,235219,0,Cfb,Temperate (C),sub_catchment,235219
-235205,FALSE,62,Arkins Creek West Branch at Wyelangta (235205),VIC,-38.638056,143.443056,4.4,Level 1,235224,0,Cfb,Temperate (C),sub_catchment,235224
-235209,FALSE,54,Aire River at Beech Forest (235209),VIC,-38.66849499,143.5812749,25.1,Level 1,235219,0,Cfb,Temperate (C),sub_catchment,235219
-235210,FALSE,55,Lardner Creek at Gellibrand (235210),VIC,-38.535,143.54,51.6,Level 2,235227,0,Cfb,Temperate (C),sub_catchment,235224
-235211,FALSE,55,Kennedys Creek at Kennedys Ck (235211),VIC,-38.588,143.26,266.3,Level 1,235224,0,Cfb,Temperate (C),sub_catchment,235224
-235219,FALSE,51,Aire River at Wyelangta (235219),VIC,-38.7031718,143.4772919,90.3,Not nested,N/A,2,Cfb,Temperate (C),main_catchment,235219
-235224,FALSE,52,Gellibrand River at Burrupa (235224),VIC,-38.7,143.25,1038.3,Not nested,N/A,3,Cfb,Temperate (C),main_catchment,235224
-235227,FALSE,42,Gellibrand River at Bunkers Hill (235227),VIC,-38.5241,143.4829,314.1,Level 1,235224,3,Cfb,Temperate (C),sub_catchment,235224
-235233,FALSE,42,Barham River East Branch at Apollo Bay Paradise (235233),VIC,-38.75502396,143.6249731,43.9,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-235234,TRUE,40,Love Creek at Gellibrand (235234),VIC,-38.483,143.57,76.6,Level 2,235227,0,Cfb,Temperate (C),sub_catchment,235224
-235237,FALSE,38,Scotts Creek at Curdie (Digneys Br) (235237),VIC,-38.448,142.99,344.7,Level 1,235203,0,Cfb,Temperate (C),sub_catchment,235203
-236202,TRUE,52,Hopkins River at Wickliffe (236202),VIC,-37.694023,142.725571,1394.3,Level 2,236210,0,Cfb,Temperate (C),sub_catchment,236209
-236203,TRUE,60,Mount Emu Creek at Skipton (236203),VIC,-37.68769856,143.3600674,1251.5,Level 2,236216,1,Cfb,Temperate (C),sub_catchment,236209
-236204,TRUE,59,Fiery Creek at Streatham (236204),VIC,-37.68052,143.0657,986.4,Level 2,236210,0,Cfb,Temperate (C),sub_catchment,236209
-236205,FALSE,55,Merri River at Woodford (236205),VIC,-38.316,142.48,902.2,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-236209,FALSE,61,Hopkins River at Hopkins Falls (236209),VIC,-38.33543732,142.6251911,8453.8,Not nested,N/A,2,Cfb,Temperate (C),main_catchment,236209
-236210,FALSE,61,Hopkins River at Framlingham (236210),VIC,-38.24379422,142.7030202,5191.7,Level 1,236209,2,Cfb,Temperate (C),sub_catchment,236209
-236212,FALSE,46,BruCreeknell Creek at Cudgee (236212),VIC,-38.346,142.65,219.2,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-236213,TRUE,46,Mount Emu Creek at Mena Park (236213),VIC,-37.531111,143.466389,464.1,Level 3,236203,0,Cfb,Temperate (C),sub_catchment,236209
-236216,TRUE,40,Mount Emu Creek at Taroon (Ayrford Road Bridge) (236216),VIC,-38.30559215,142.8812902,2984.6,Level 1,236209,1,Cfb,Temperate (C),sub_catchment,236209
-237200,FALSE,61,Moyne River at Toolong (237200),VIC,-38.31991057,142.2264285,559,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-237202,FALSE,53,Fitzroy River at Heywood (237202),VIC,-38.126,141.62,261.4,Not nested,N/A,0,Csb,Temperate (C),no_nested,NA
-237205,FALSE,51,Darlot Creek at Homerton Br (237205),VIC,-38.15,141.77,732.3,Not nested,N/A,0,Csb,Temperate (C),no_nested,NA
-237206,FALSE,48,Eumeralla River at Codrington (237206),VIC,-38.258,141.94,432.8,Not nested,N/A,0,Csb,Temperate (C),no_nested,NA
-237207,FALSE,46,Surry River at Heathmere (237207),VIC,-38.243,141.66,303.6,Not nested,N/A,0,Csb,Temperate (C),no_nested,NA
-238204,TRUE,51,Wannon River River at Dunkeld (238204),VIC,-37.631,142.34,576.9,Not nested,N/A,1,Cfb,Temperate (C),main_catchment,238204
-238208,TRUE,63,Jimmy Creek at Jimmy Creek (238208),VIC,-37.373333,142.507778,22.5,Level 1,238204,0,Cfb,Temperate (C),sub_catchment,238204
-238219,FALSE,51,Grange Burn at Morgiana (238219),VIC,-37.70876208,141.8325532,987.2,Not nested,N/A,0,Csb,Temperate (C),no_nested,NA
-238223,FALSE,46,Wando River at Wando Vale (238223),VIC,-37.496,141.43,175.7,Not nested,N/A,0,Csb,Temperate (C),no_nested,NA
-238229,FALSE,50,Chetwynd River at Chetwynd (238229),VIC,-37.321,141.48,70.6,Not nested,N/A,0,Csb,Temperate (C),no_nested,NA
-238230,FALSE,47,Stokes River at Teakettle (238230),VIC,-37.87,141.41,201.1,Not nested,N/A,0,Csb,Temperate (C),no_nested,NA
-238231,FALSE,41,Glenelg River at Big Cord (238231),VIC,-37.312,142.37,58.4,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-238235,FALSE,51,Crawford River at Lower Crawford (238235),VIC,-37.98,141.46,600.4,Not nested,N/A,0,Csb,Temperate (C),no_nested,NA
-302200,TRUE,43,Swan river at The Grange (302200),TAS,-42.0467,148.075,457.2,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-302208,FALSE,51,Meredith Reiver at Swansea (302208),TAS,-42.1217,148.04,86.1,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-303203,FALSE,48,Coal River at Baden (303203),TAS,-42.435,147.4533,54.1,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-304040,FALSE,63,Florentine River at U/S Derwent Junction (304040),TAS,-42.4417,146.515,444.6,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-304497,FALSE,57,Nive River at Gowan Brae (304497),TAS,-42.030556,146.419722,177.6,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-304499,FALSE,56,Tyenna River at Newbury (304499),TAS,-42.706389,146.711111,206.1,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-305202,FALSE,46,Snug Rivulet at U/S Snug Tiers Rd Bridge (305202),TAS,-43.071111,147.236944,17.4,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-306119,FALSE,45,Huon River above Frying PanCreek (306119),TAS,-43.0367,146.84,1822.5,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-307473,FALSE,48,Davey River at D/S Crossing Rv  (307473),TAS,-43.1412,145.95,697.9,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-308145,FALSE,53,Franklin River at Mt Fincham Track (308145),TAS,-42.241667,145.767222,774,Not nested,N/A,1,Cfb,Temperate (C),main_catchment,308145
-308799,FALSE,41,Collingwood river at B/L Alma (308799),TAS,-42.164167,145.928056,268.3,Level 1,308145,0,Cfb,Temperate (C),sub_catchment,308145
-312061,FALSE,63,Hellyer River at Guilford Junction (312061),TAS,-41.419444,145.670556,99.4,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-314207,FALSE,52,Leven River at at Bannons Bridge (314207),TAS,-41.250833,146.09,499.6,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-314212,FALSE,51,Cam River U/S Somerset WS (314212),TAS,-41.06,145.8367,225.5,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-314213,FALSE,46,Black River at South Forest (314213),TAS,-40.872222,145.297778,319,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-314214,FALSE,54,Duck River at Scotchtown Road (314214),TAS,-40.8733,145.1183,359.2,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-315450,FALSE,59,Forth River at U/S Lemonthyme (315450),TAS,-41.611667,146.130556,309.6,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-316624,FALSE,49,Arm River at U/S Mersey (316624),TAS,-41.6894,146.2154,86.3,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-317200,FALSE,53,Rubican River at Tidal Limit (317200),TAS,-41.2567,146.5667,259.6,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-318076,TRUE,58,North Esk River at Ballroom (318076),TAS,-41.494444,147.384167,374.2,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-318150,FALSE,48,River at South Esk at Llewellyn (318150),TAS,-41.8167,147.5633,2282.4,Level 1,318181,2,Cfb,Temperate (C),sub_catchment,318181
-318181,FALSE,63,South Esk River at U/S Macquarie R (at Per (318181),TAS,-41.5983,147.2033,3294.7,Not nested,N/A,1,Cfb,Temperate (C),main_catchment,318181
-318191,TRUE,37,Break O'Day River at at Killymoon (318191),TAS,-41.5967,148.0567,185.7,Level 2,318150,0,Cfb,Temperate (C),sub_catchment,318181
-319204,FALSE,47,Pipers River D/S  Yarrow Creek (319204),TAS,-41.0667,147.11,303,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-401009,FALSE,54,Maragle Creek at Maragle (401009),NSW,-35.926111,148.100833,215.5,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-401012,TRUE,48,Murray River at Biggara (401012),NSW,-36.318333,148.051944,1257.2,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-401013,TRUE,45,Jingellic Creek at Jingellic (401013),NSW,-35.8972,147.6917,392,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-401015,FALSE,45,Bowna Creek at Yambla (401015),NSW,-35.916667,146.976944,273.5,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-401017,TRUE,34,Mannus Creek at Yarramundi (401017),NSW,-35.77,147.93,199.4,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-401203,TRUE,63,Mitta Mitta River at Hinnomunjie (401203),VIC,-36.948056,147.606944,1520.4,Not nested,N/A,1,Cfb,Temperate (C),main_catchment,401203
-401208,TRUE,56,Cudgewa Creek at Berringama (401208),VIC,-36.213333,147.677778,356.2,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-401210,FALSE,63,Snowy Creek at Below Granite Flat (401210),VIC,-36.568611,147.413611,412.9,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-401212,TRUE,61,Nariel Creek at Upper Nariel (401212),VIC,-36.446111,147.829444,254.7,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-401215,TRUE,58,Morass Creek at Uplands (401215),VIC,-36.86621971,147.7035132,536.7,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-401216,TRUE,60,Big River at Jokers Creek (401216),VIC,-36.933056,147.4725,358.1,Level 1,401203,0,Cfb,Temperate (C),sub_catchment,401203
-401217,TRUE,48,Gibbo River at Gibbo Park (401217),VIC,-36.756111,147.708611,389.2,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-401220,FALSE,40,Tallangatta Creek at McCallums (401220),VIC,-36.213,147.34,454.7,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-402204,FALSE,53,Yackandandah Creek at Osbornes Flat (402204),VIC,-36.303333,146.906111,280.5,Not nested,N/A,1,Cfa,Temperate (C),main_catchment,402204
-402206,FALSE,44,Running Creek at Running Creek (402206),VIC,-36.54,147.044444,127.4,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-402213,FALSE,47,Kinchington Creek at Osbornes Flat (402213),VIC,-36.316389,146.894444,120.3,Level 1,402204,1,Cfa,Temperate (C),sub_catchment,402204
-402217,FALSE,39,Flaggy Creek at Myrtleford Road Bridge (402217),VIC,-36.385833,146.876389,22.5,Level 2,402213,0,Cfa,Temperate (C),sub_catchment,402204
-403200,FALSE,59,Ovens River at Wangaratta (403200),VIC,-36.35066081,146.3209358,5117.2,Level 1,403209A,3,Cfa,Temperate (C),sub_catchment,403209A
-403205,FALSE,57,Ovens Rivers at Bright (403205),VIC,-36.72564366,146.9525954,493.7,Level 3,403230,1,Cfb,Temperate (C),sub_catchment,403209A
-403209A,FALSE,47,Reedy Creek at Wangaratta North (403209A),VIC,-36.3325,146.344722,5486.9,Not nested,N/A,2,Cfa,Temperate (C),main_catchment,403209A
-403213,FALSE,59,Fifteen Mile Creek at Greta South (403213),VIC,-36.619444,146.244722,227.1,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-403214,FALSE,59,Happy Valley Creek at Rosewhite (403214),VIC,-36.577778,146.820278,137.6,Level 3,403230,0,Cfb,Temperate (C),sub_catchment,403209A
-403217,FALSE,48,Rose River at Matong North (403217),VIC,-36.824722,146.583611,177.8,Level 3,403230,0,Cfb,Temperate (C),sub_catchment,403209A
-403221,FALSE,56,Reedy Creek at Woolshed (403221),VIC,-36.311667,146.601111,211.5,Level 1,403209A,0,Cfa,Temperate (C),sub_catchment,403209A
-403222,FALSE,54,Buffalo River at Abbeyard (403222),VIC,-36.910833,146.700556,414.8,Level 3,403223,0,Cfb,Temperate (C),sub_catchment,403209A
-403223,FALSE,51,King River at Docker Road Bridge (403223),VIC,-36.5163133,146.3894165,1083.1,Level 2,403200,2,Cfb,Temperate (C),sub_catchment,403209A
-403224,FALSE,46,Hurdle Creek at Bobinawarrah (403224),VIC,-36.513,146.45,152.3,Level 2,403200,0,Cfb,Temperate (C),sub_catchment,403209A
-403226,FALSE,50,Boggy Creek at Angleside (403226),VIC,-36.605556,146.362222,107.9,Level 3,403223,0,Cfb,Temperate (C),sub_catchment,403209A
-403230,FALSE,53,Ovens River at Rocky Point (403230),VIC,-36.5334707,146.6683095,2966.7,Level 2,403200,4,Cfb,Temperate (C),sub_catchment,403209A
-403232,FALSE,47,Morses Creek at Wandiligong (403232),VIC,-36.751111,146.979722,125.3,Level 4,403205,0,Cfb,Temperate (C),sub_catchment,403209A
-403233,FALSE,44,Buckland River at Harris Lane (403233),VIC,-36.72149292,146.8820491,457.1,Level 3,403230,0,Cfb,Temperate (C),sub_catchment,403209A
-404204,FALSE,53,Boosey Creek at Tungamah (404204),VIC,-36.12376902,145.8319105,830.3,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-404207,FALSE,61,Holland Creek at Kelfeera (404207),VIC,-36.612222,146.058611,454.7,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-405205,TRUE,45,Murrindindi River at Murrindindi above Colwells (405205),VIC,-37.413889,145.564167,107.8,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-405209,TRUE,48,Acheron River at Taggerty (405209),VIC,-37.317778,145.713889,625.8,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-405212,FALSE,56,Sunday Creek at Tallarook (405212),VIC,-37.1,145.06,333.2,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-405214,FALSE,61,Delatite River at Tonga Br (405214),VIC,-37.159,146.11,359.8,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-405215,FALSE,45,Howqua River at Glen Esk (405215),VIC,-37.229444,146.207222,369.5,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-405217,TRUE,44,Yea River at Devlins Bridge (405217),VIC,-37.383056,145.473333,360.2,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-405218,TRUE,62,Jamieson River at Gerrang Bridge (405218),VIC,-37.291667,146.1875,366.8,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-405219,TRUE,49,Goulburn River at Dohertys (405219),VIC,-37.3325,146.130278,699.1,Not nested,N/A,1,Cfb,Temperate (C),main_catchment,405219
-405226,FALSE,44,Pranjip Creek at Moorlim (405226),VIC,-36.621111,145.306667,788.4,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-405227,TRUE,49,Big River at Jamieson (405227),VIC,-37.3675,146.056944,628.1,Not nested,N/A,1,Cfb,Temperate (C),main_catchment,405227
-405228,FALSE,46,Hughes Creek at Tarcombe Rd (405228),VIC,-36.95,145.28,480.6,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-405229,TRUE,52,Wanalta Creek at Wanalta (405229),VIC,-36.635,144.87,108.7,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-405230,TRUE,47,Cornella Creek at Colbinabbin (405230),VIC,-36.604,144.81,259.3,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-405231,TRUE,46,King Parrot Creek at Flowerdale (405231),VIC,-37.347,145.29,182.7,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-405234,TRUE,54,Seven Creeks River at D/S of Polly McQuinn Weir (405234),VIC,-36.888,145.68,154.8,Level 1,405237,0,Cfb,Temperate (C),sub_catchment,405237
-405237,TRUE,52,Seven Creeks at Euroa Township (405237),VIC,-36.762369,145.585843,341.5,Not nested,N/A,1,Cfb,Temperate (C),main_catchment,405237
-405238,FALSE,46,Mollison Creek at Pyalong (405238),VIC,-37.120278,144.856944,164.3,Level 1,405240,0,Cfb,Temperate (C),sub_catchment,405240
-405240,FALSE,45,Sugarloaf Creek at Ash Br (405240),VIC,-37.061,145.06,611.3,Not nested,N/A,1,Cfb,Temperate (C),main_catchment,405240
-405241,TRUE,48,Rubicon River at Rubicon (405241),VIC,-37.291,145.83,127.7,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-405245,FALSE,50,Ford Creek at Mansfield (405245),VIC,-37.038611,146.053889,117.3,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-405246,FALSE,45,Castle Creek at Arcadia (405246),VIC,-36.59083189,145.3511279,202.7,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-405248,TRUE,50,Major Creek at Graytown (405248),VIC,-36.853611,144.914444,292.1,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-405251,FALSE,47,Brankeet Creek at Ancona (405251),VIC,-36.968611,145.783889,118.6,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-405263,TRUE,35,Goulburn River at U/S of Snake Creek Junction (405263),VIC,-37.462778,146.247778,327.6,Level 1,405219,0,Cfb,Temperate (C),sub_catchment,405219
-405264,TRUE,46,Big River at D/S of Frenchman Creek Junction (405264),VIC,-37.520556,146.076667,336.5,Level 1,405227,0,Cfb,Temperate (C),sub_catchment,405227
-405274,TRUE,44,Home Creek at Yarck (405274),VIC,-37.106111,145.605,181.4,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-406208,TRUE,63,Campaspe River at Ashborne (406208),VIC,-37.387778,144.450556,37.9,Level 1,406213,0,Cfb,Temperate (C),sub_catchment,406213
-406213,TRUE,44,Campaspe River at Redesdale (406213),VIC,-37.016111,144.539167,638,Not nested,N/A,1,Cfb,Temperate (C),main_catchment,406213
-406214,TRUE,49,Axe Creek at Longlea (406214),VIC,-36.773889,144.428333,236.2,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-406224,FALSE,40,Mount Pleasant Creek at Runnymede (406224),VIC,-36.546389,144.637222,242.3,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-406226,TRUE,41,Mount Ida Creek at Derrinal (406226),VIC,-36.881,144.65,173,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-406235,TRUE,36,Wild DuCreek Creek at U/S of Heathcote-Mia Mia (406235),VIC,-36.948,144.66,213.4,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-406250,TRUE,34,Coliban River at Springhill-Tylden Rd (406250),VIC,-37.32,144.37,78.2,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-407213,TRUE,44,McCallums Creek at Carisbrook (407213),VIC,-37.085,143.81,467.7,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-407214,TRUE,63,Creswick Creek at Clunes (407214),VIC,-37.296944,143.789444,305.7,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-407215,TRUE,37,Loddon River at Newstead (407215),VIC,-37.108889,144.058889,1027.5,Not nested,N/A,2,Cfb,Temperate (C),main_catchment,407215
-407217,TRUE,58,Loddon River at Vaughan D/S Fryers Creek (407217),VIC,-37.15795783,144.2084168,294.7,Level 1,407215,0,Cfb,Temperate (C),sub_catchment,407215
-407220,TRUE,37,Bet Bet Creek at Norwood (407220),VIC,-36.993611,143.644167,351,Level 1,407211,0,Cfb,Temperate (C),sub_catchment,407211
-407221,TRUE,59,Larni Barramal Yaluk at Yandoit (407221),VIC,-37.2064268,144.100373,167.5,Level 1,407215,0,Cfb,Temperate (C),sub_catchment,407215
-407230,TRUE,48,Joyces Creek at Strathlea (407230),VIC,-37.162222,143.960833,150.8,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-407246,TRUE,45,Bullock Creek at Marong (407246),VIC,-36.72893939,144.1360524,186.3,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-407253,FALSE,44,Piccaninny Creek at Minto (407253),VIC,-36.452222,144.468889,679.5,Not nested,N/A,0,BSk,Dry (B),no_nested,NA
-408200,TRUE,53,Avoca River at Coonooer (408200),VIC,-36.438056,143.298333,2677.9,Not nested,N/A,1,BSk,Dry (B),main_catchment,408200
-408202,TRUE,51,Avoca River at Amphitheatre (408202),VIC,-37.181944,143.405556,76.6,Level 2,408206,0,Cfb,Temperate (C),sub_catchment,408200
-408206,TRUE,34,Avoca River at Archdale Junction (408206),VIC,-36.885,143.5,667.5,Level 1,408200,1,Cfb,Temperate (C),sub_catchment,408200
-410024,TRUE,63,Goodradigbee River at Wee Jasper (Kashmir) (410024),NSW,-35.1672,148.6855,989.3,Not nested,N/A,1,Cfb,Temperate (C),main_catchment,410024
-410026,TRUE,52,Yass River at Yass (410026),NSW,-34.8367,148.9103,1229.1,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-410033,TRUE,57,Murrumbidgee River at Mittagang Crossing (410033),NSW,-36.17,149.09,1894.8,Level 1,410761,0,Cfb,Temperate (C),sub_catchment,410761
-410038,TRUE,51,Adjungbilly Creek at Darbalara (410038),NSW,-35.0192,148.2457,389.2,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-410044,TRUE,39,Muttama Creek at Coolac (410044),NSW,-34.9319,148.1616,1062.5,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-410047,TRUE,48,Tarcutta Creek at Old Borambola (410047),NSW,-35.1639,147.6543,1646,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-410057,TRUE,63,Goobarragandra River at Lacmalac (410057),NSW,-35.33,148.348889,664.7,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-410061,TRUE,63,Adelong Creek at Batlow Road (410061),NSW,-35.332222,148.069167,146.6,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-410062,TRUE,56,Numeralla River at Numeralla School (410062),NSW,-36.1793,149.3485,674.1,Level 1,410761,0,Cfb,Temperate (C),sub_catchment,410761
-410088,TRUE,58,Goodradigbee River at Brindabella (No.2&No.3-Cab (410088),NSW,-35.42,148.73,428.1,Level 1,410024,0,Cfb,Temperate (C),sub_catchment,410024
-410091,TRUE,38,Billabong Creek at Walbundrie (410091),NSW,-35.69,146.72,2636.3,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-410141,TRUE,38,Micaligo Creek at Michelago (410141),NSW,-35.7053,149.1488,190.6,Level 1,410761,0,Cfb,Temperate (C),sub_catchment,410761
-410156,TRUE,36,Kyeamba Creek at Book Book (410156),NSW,-35.35,147.55,144.4,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-410705,TRUE,60,Molonglo River at Burbong (410705),NSW,-35.335556,149.316111,498,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-410713,TRUE,57,Paddy's River at Riverlea (410713),ACT,-35.3843,148.9656,226.5,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-410730,TRUE,57,Cotter River at Gingera (410730),ACT,-35.591944,148.822222,129.2,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-410731,TRUE,51,Gudgenby River at Tennent (410731),ACT,-35.575,149.066111,669.6,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-410734,TRUE,53,Queanbeyan River at Tinderry (410734),NSW,-35.613889,149.348889,564.4,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-410761,TRUE,44,Murrumbidgee River at Lobb Holes (410761),ACT,-35.54,149.101944,5163.1,Not nested,N/A,3,Cfb,Temperate (C),main_catchment,410761
-411003,TRUE,34,Butmaroo Creek at Butmaroo (411003),NSW,-35.2567,149.5422,63.9,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-412028,TRUE,51,Abercrombie River at Abercrombie  (412028),NSW,-33.954722,149.325278,2639.3,Not nested,N/A,1,Cfb,Temperate (C),main_catchment,412028
-412029,TRUE,52,Boorowa River at Prossers Crossing (412029),NSW,-34.1441,148.8101,1550.6,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-412050,TRUE,42,Crookwell River at Narrawa North (412050),NSW,-34.310556,149.167222,759.3,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-412066,TRUE,55,Abercrombie River at Hadley No. 2 (412066),NSW,-34.112778,149.5975,1636.6,Level 1,412028,0,Cfb,Temperate (C),sub_catchment,412028
-415201,TRUE,56,Wimmera River at Glenorchy Weir Tail Gauge (415201),VIC,-36.909,142.64,1973.8,Not nested,N/A,2,Cfb,Temperate (C),main_catchment,415201
-415206,TRUE,59,Wimmera River at Glynwylln (415206),VIC,-36.95390887,142.8600891,1386.5,Level 1,415201,3,Cfb,Temperate (C),sub_catchment,415201
-415207,TRUE,57,Wimmera River at Eversley (415207),VIC,-37.185278,143.184722,305.8,Level 2,415206,0,Cfb,Temperate (C),sub_catchment,415201
-415220,TRUE,43,Avon River at Wimmera HWY (415220),VIC,-36.64,142.98,526.5,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-415223,TRUE,50,Burnt Creek at Wonwondah East (415223),VIC,-36.88537671,142.2340353,82,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-415226,TRUE,47,Richardson River at Carrs Plains (415226),VIC,-36.743611,142.785278,129.7,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-415237,TRUE,44,Concongella Creek at Stawell (415237),VIC,-37.026389,142.821389,239.6,Level 1,415201,0,Cfb,Temperate (C),sub_catchment,415201
-415238,TRUE,41,Wattle Creek at Navarre (415238),VIC,-36.902,143.11,139.3,Level 2,415206,0,Cfb,Temperate (C),sub_catchment,415201
-415245,TRUE,34,Mount Cole Creek at Crowlands (415245),VIC,-37.165,143.09,153.1,Level 2,415206,0,Cfb,Temperate (C),sub_catchment,415201
-416003,FALSE,43,Tenterfield Creek at Clifton (416003),NSW,-29.029167,151.725833,555.1,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-416008,FALSE,32,Beadt River at Haystack (416008),NSW,-29.219167,151.383056,898,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-416010,FALSE,46,Macintyre River at Wallangra (416010),NSW,-29.2642,150.8984,2142.9,Not nested,N/A,1,Cfa,Temperate (C),main_catchment,416010
-416016,FALSE,46,Macintyre River at Inverell (Middle Ck) (416016),NSW,-29.7936,151.1263,752.8,Level 1,416010,0,Cfa,Temperate (C),sub_catchment,416010
-416020,FALSE,41,Ottleys Creek at Coolatai (416020),NSW,-29.234,150.7581,385.1,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-416023,FALSE,42,Deepwater River at Bolivia (416023),NSW,-29.2929,151.9234,538.9,Level 1,416032,0,Cfb,Temperate (C),sub_catchment,416032
-416032,FALSE,47,Mole River at Donaldson (416032),NSW,-29.017,151.5986,1585.9,Not nested,N/A,1,Cfb,Temperate (C),main_catchment,416032
-418005,FALSE,50,Copes Creek at Kimberley (418005),NSW,-29.916944,151.114167,237.5,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-418014,FALSE,47,Gwydir River at Yarrowyck (418014),NSW,-30.4675,151.362778,826.2,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-418015,FALSE,46,Horton River at Rider (Killara) (418015),NSW,-29.83,150.35,1958.1,Not nested,N/A,1,Cfa,Temperate (C),main_catchment,418015
-418017,FALSE,40,Myall Creek at Molroy (418017),NSW,-29.7992,150.5832,872.6,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-418021,FALSE,42,Laura Creek at Laura (418021),NSW,-30.2293,151.1857,346.9,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-418025,FALSE,41,Halls Creek at Bingara (418025),NSW,-29.9361,150.5716,121.8,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-418027,FALSE,47,Horton River at Horton Dam Site (418027),NSW,-30.2081,150.4281,206.9,Level 1,418015,0,Cfa,Temperate (C),sub_catchment,418015
-419005,FALSE,59,Namoi River at North Cuerindi (419005),NSW,-30.678611,150.778056,2535.9,Not nested,N/A,1,Cfa,Temperate (C),main_catchment,419005
-419010,FALSE,41,Macdonald River at Woolbrook (419010),NSW,-30.9669,151.3448,843.9,Level 1,419005,0,Cfb,Temperate (C),sub_catchment,419005
-419016,FALSE,47,CoCreekburn River at Mulla Crossing (419016),NSW,-31.0614,151.1254,894.5,Not nested,N/A,1,Cfb,Temperate (C),main_catchment,419016
-419029,FALSE,34,Halls Creek at Ukolan (419029),NSW,-30.7054,150.8259,357.4,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-419035,FALSE,37,Goonoo Goonoo Creek at Timbumburi (419035),NSW,-31.2726,150.9147,454.1,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-419054,FALSE,45,Swamp Oak Creek at Limbri (419054),NSW,-31.0396,151.1694,393.1,Level 1,419016,0,Cfb,Temperate (C),sub_catchment,419016
-420003,TRUE,32,Belar Creek at Warkton (Blackburns) (420003),NSW,-31.3861,149.2011,130.9,Level 1,420017,0,Cfa,Temperate (C),sub_catchment,420017
-420017,TRUE,37,Castlereagh River at Hidden Valley (420017),NSW,-31.4197,149.3103,1156.7,Not nested,N/A,1,Cfa,Temperate (C),main_catchment,420017
-421018,FALSE,39,Bell River at Newrea (421018),NSW,-32.6808,148.9478,1635,Not nested,N/A,1,Cfa,Temperate (C),main_catchment,421018
-421026,TRUE,36,Turon River at Sofala (421026),NSW,-33.0819,149.689,885.8,Not nested,N/A,0,Cfb,Temperate (C),no_nested,NA
-421042,FALSE,43,Talbragar River at Elong Elong (421042),NSW,-32.0939,149.0598,3192,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-421048,FALSE,31,Little River at Obley No.2 (421048),NSW,-32.7072,148.5511,577.6,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-421050,FALSE,36,Bell River at Molong (421050),NSW,-33.03,148.95,368.2,Level 1,421018,0,Cfa,Temperate (C),sub_catchment,421018
-422202B,FALSE,63,Dogwood Creek at Gilweir (422202B),QLD,-26.708889,150.178889,2987.4,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-422306A,TRUE,63,Swan Creek at Swanfels (422306A),QLD,-28.164444,152.283333,81.9,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-422313B,TRUE,41,Emu Creek at Emu Vale (422313B),QLD,-28.228333,152.226667,153.4,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-422319B,TRUE,52,Dalrymple Creek at Allora (422319B),QLD,-28.035833,152.014444,245.7,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-422321B,TRUE,46,Spring Creek at Killarney (422321B),QLD,-28.353889,152.333056,33.3,Level 1,422394A,0,Cfa,Temperate (C),sub_catchment,422394A
-422334A,TRUE,51,Kings Creek at Aides Bridge (422334A),QLD,-27.926389,151.8625,513.5,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-422338A,TRUE,47,Canal Creek at Leyburn (422338A),QLD,-28.0321,151.5853,395.6,Not nested,N/A,0,Cfa,Temperate (C),no_nested,NA
-422394A,TRUE,49,Condamine River at Elbow Valley (422394A),QLD,-28.371111,152.141944,327.8,Not nested,N/A,1,Cfa,Temperate (C),main_catchment,422394A
-424002,FALSE,46,Paroo River at Willarra Crossing (424002),NSW,-29.2387,144.4553,35247.5,Not nested,N/A,1,BSh,Dry (B),main_catchment,424002
-424201A,TRUE,52,Paroo River at Caiwarro (424201A),QLD,-28.6891,144.7859,22886.1,Level 1,424002,0,BSh,Dry (B),sub_catchment,424002
-602004,FALSE,45,Kalgan R River at Stevens Farm (602004),WA,-34.8861,118,2431.3,Not nested,N/A,0,Csb,Temperate (C),no_nested,NA
-603003,FALSE,47,Denmark River at Kompup (603003),WA,-34.6994,117.2169,230.2,Level 1,603136,1,Csb,Temperate (C),sub_catchment,603136
-603004,FALSE,38,Hay River at Sunny Glen (603004),WA,-34.9108,117.4783,1234.1,Not nested,N/A,1,Csb,Temperate (C),main_catchment,603004
-603005,TRUE,36,Mitchell River at Beigpiegup (603005),WA,-34.8276,117.3929,51.5,Level 1,603004,0,Csb,Temperate (C),sub_catchment,603004
-603007,TRUE,36,Sleeman River at Sleeman Rd Bridge (603007),WA,-34.9583,117.5032,79.7,Not nested,N/A,0,Csb,Temperate (C),no_nested,NA
-603136,FALSE,61,Denmark River at Mt Lindesay (603136),WA,-34.8667,117.315,494,Not nested,N/A,1,Csb,Temperate (C),main_catchment,603136
-603190,FALSE,59,Yate Flat Creek at Woonanup (603190),WA,-34.7038,117.2921,57.8,Level 2,603003,0,Csb,Temperate (C),sub_catchment,603136
-604001,FALSE,42,Kent River at Rocky Glen (604001),WA,-34.6227,117.0353,1117.5,Level 1,604053,0,Csb,Temperate (C),sub_catchment,604053
-604053,FALSE,63,Kent River at Styx Junction (604053),WA,-34.889167,117.087222,1841.4,Not nested,N/A,1,Csb,Temperate (C),main_catchment,604053
-605012,FALSE,63,Frankland R River at Mount Frankland (605012),WA,-34.9062,116.7885,4733,Not nested,N/A,0,Csb,Temperate (C),no_nested,NA
-606001,FALSE,46,Deep River at Teds Pool (606001),WA,-34.764167,116.615278,473.7,Not nested,N/A,0,Csb,Temperate (C),no_nested,NA
-606002,FALSE,39,Weld River at Wattle Block (606002),WA,-34.696667,116.513889,60.5,Level 1,606195,0,Csb,Temperate (C),sub_catchment,606195
-606185,FALSE,39,Shannon River at Dog Pool (606185),WA,-34.7648,116.3773,379.4,Not nested,N/A,0,Csb,Temperate (C),no_nested,NA
-606195,FALSE,57,Weld River at Ordnance Rd Crossing (606195),WA,-34.8069,116.5752,245.8,Not nested,N/A,1,Csb,Temperate (C),main_catchment,606195
-607003,FALSE,51,Warren River at Wheatley Farm (607003),WA,-34.3694,116.2777,2986.7,Level 1,607220,3,Csb,Temperate (C),sub_catchment,607220
-607004,FALSE,47,Perup River at Quabicup Hill (607004),WA,-34.3311,116.4585,665.1,Level 2,607003,0,Csb,Temperate (C),sub_catchment,607220
-607007,FALSE,40,Tone River at Bullilup (607007),WA,-34.2503,116.679,977.7,Level 2,607003,0,Csb,Temperate (C),sub_catchment,607220
-607013,FALSE,42,Lefroy Brook River at Rainbow Trail (607013),WA,-34.4275,116.016,248,Level 1,607220,0,Csb,Temperate (C),sub_catchment,607220
-607144,FALSE,60,Wilgarup River at Quintarrup (607144),WA,-34.3486,116.3475,472,Level 2,607003,0,Csb,Temperate (C),sub_catchment,607220
-607155,FALSE,43,Dombakup Brook at Malimup Track (607155),WA,-34.578611,115.972222,124.9,Not nested,N/A,0,Csb,Temperate (C),no_nested,NA
-607220,FALSE,55,Warren River at Barker Rd Crossing (607220),WA,-34.5217,115.8994,3936.3,Not nested,N/A,2,Csb,Temperate (C),main_catchment,607220
-608002,FALSE,46,Carey Brook at Staircase Road (608002),WA,-34.392778,115.842222,44.5,Not nested,N/A,0,Csb,Temperate (C),no_nested,NA
-608151,FALSE,63,Donnelly River at Strickland (608151),WA,-34.3272,115.7846,770.4,Not nested,N/A,0,Csb,Temperate (C),no_nested,NA
-609002,FALSE,52,Scott River at Brennans Ford (609002),WA,-34.2761,115.3022,593.8,Not nested,N/A,0,Csb,Temperate (C),no_nested,NA
-609005,FALSE,43,Balgarup River at Mandelup Pool (609005),WA,-33.9075,117.1422,84.1,Not nested,N/A,0,Csb,Temperate (C),no_nested,NA
-609010,FALSE,43,Northern Arthur River at Lake Toolibin Inflow (609010),WA,-32.9048,117.614,439.8,Not nested,N/A,0,Csa,Temperate (C),no_nested,NA
-609018,FALSE,38,St John Brook River at Barrabup Pool (609018),WA,-33.9435,115.6914,550.3,Not nested,N/A,0,Csb,Temperate (C),no_nested,NA
-610001,FALSE,51,Margaret River at Willmots Farm (610001),WA,-33.9422,115.0549,442.7,Not nested,N/A,1,Csb,Temperate (C),main_catchment,610001
-610008,FALSE,30,Margaret River North at Whicher Range (610008),WA,-33.806667,115.443611,15.7,Level 1,610001,0,Csb,Temperate (C),sub_catchment,610001
-611004,FALSE,41,Preston River at Boyanup Bridge (611004),WA,-33.479,115.734,807.4,Not nested,N/A,1,Csa,Temperate (C),main_catchment,611004
-611111,FALSE,63,Thomson Brook River at Woodperry Homestead (611111),WA,-33.6284,115.9476,102,Level 1,611004,0,Csb,Temperate (C),sub_catchment,611004
-612001,FALSE,53,Collie R East River at Coolangatta Farm (612001),WA,-33.3303,116.2632,1342.1,Not nested,N/A,3,Csb,Temperate (C),main_catchment,612001
-612014,FALSE,47,Bingham River at Palmer (612014),WA,-33.2776,116.2756,366.1,Level 1,612001,0,Csb,Temperate (C),sub_catchment,612001
-612025,FALSE,39,Camballan Creek at James Well (612025),WA,-33.4557,116.4258,167.6,Level 1,612001,0,Csb,Temperate (C),sub_catchment,612001
-612034,FALSE,59,Collie River at South Branch (612034),WA,-33.387,116.1634,668,Not nested,N/A,0,Csb,Temperate (C),no_nested,NA
-612230,FALSE,54,Collie R East Trib River at James Crossing (612230),WA,-33.3814,116.5811,167.2,Level 1,612001,0,Csa,Temperate (C),sub_catchment,612001
-613002,FALSE,51,Harvey River at Dingo Road (613002),WA,-33.085833,116.038889,147.2,Not nested,N/A,0,Csb,Temperate (C),no_nested,NA
-613146,FALSE,60,Clarke Brook at Hillview Farm (613146),WA,-32.997778,115.921944,16.9,Not nested,N/A,0,Csa,Temperate (C),no_nested,NA
-614006,FALSE,46,Murray River at Baden Powell Wtr Spout (614006),WA,-32.7722,116.0843,6750.1,Not nested,N/A,3,Csa,Temperate (C),main_catchment,614006
-614037,FALSE,38,Big Brook River at O'Neil Rd (614037),WA,-32.5113,116.1902,150.2,Not nested,N/A,0,Csa,Temperate (C),no_nested,NA
-614044,FALSE,56,Yarragil Brook at Yarragil Formation (614044),WA,-32.811111,116.155556,73.3,Level 1,614006,0,Csa,Temperate (C),sub_catchment,614006
-614196,FALSE,48,Williams River at Saddleback Rd Bridge (614196),WA,-32.9934,116.4278,1407.4,Level 1,614006,0,Csa,Temperate (C),sub_catchment,614006
-614224,FALSE,55,Hotham River at Marradong Rd Bridge (614224),WA,-32.8656,116.3981,3961.1,Level 1,614006,0,Csa,Temperate (C),sub_catchment,614006
-616001,FALSE,49,Wooroloo Brook River at Karls Ranch (616001),WA,-31.7337,116.1164,519,Not nested,N/A,0,Csa,Temperate (C),no_nested,NA
-616002,FALSE,49,Darkin River at Pine Plantation (616002),WA,-32.068333,116.2925,669.3,Not nested,N/A,0,Csa,Temperate (C),no_nested,NA
-616006,FALSE,41,BroCreekman River at Tanamerah (616006),WA,-31.3442,116.0916,964.2,Level 1,616019,0,Csa,Temperate (C),sub_catchment,616019
-616013,TRUE,42,Helena River  at Ngangaguringuring (616013),WA,-31.939722,116.403611,327.9,Level 1,616216,0,Csa,Temperate (C),sub_catchment,616216
-616019,FALSE,45,BroCreekman River at Yalliawirra (616019),WA,-31.6744,116.1178,1525.2,Not nested,N/A,1,Csa,Temperate (C),main_catchment,616019
-616041,FALSE,40,Wungong Brook River at Vardi Rd (616041),WA,-32.2479,116.1124,81.2,Not nested,N/A,0,Csa,Temperate (C),no_nested,NA
-616065,FALSE,30,Canning River at Glen Eagle (616065),WA,-32.2275,116.171944,520.9,Not nested,N/A,0,Csa,Temperate (C),no_nested,NA
-616178,FALSE,49,Jane Brook River at National Park (616178),WA,-31.884,116.0948,73,Not nested,N/A,0,Csa,Temperate (C),no_nested,NA
-616216,TRUE,54,Helena River at Poison Lease (616216),WA,-31.9731,116.2903,593.9,Not nested,N/A,1,Csa,Temperate (C),main_catchment,616216
-617002,TRUE,50,Hill River at Hill R Springs (617002),WA,-30.2771,115.3666,915,Not nested,N/A,0,Csa,Temperate (C),no_nested,NA
-617003,FALSE,48,Gingin Brook River at Bookine Bookine (617003),WA,-31.3194,115.627,1404.1,Not nested,N/A,0,Csa,Temperate (C),no_nested,NA
-701002,TRUE,51,Greenough River at Karlanew Peak (701002),WA,-28.8242,114.8455,11608.3,Not nested,N/A,0,Csa,Temperate (C),no_nested,NA
-701007,TRUE,45,Chapman River at Utakarra (701007),WA,-28.7629,114.6688,1931.6,Not nested,N/A,0,Csa,Temperate (C),no_nested,NA
-701009,TRUE,38,Irwin River at Mountain Bridge (701009),WA,-29.238,115.0351,5254,Not nested,N/A,0,Csa,Temperate (C),no_nested,NA
-704139,TRUE,63,Gascoyne River at Nine Mile Bridge (704139),WA,-24.8276,113.7691,72876.7,Not nested,N/A,1,BWh,Dry (B),main_catchment,704139
-704193,TRUE,57,Gascoyne River at Fishy Pool (704193),WA,-24.9497,114.6442,71234.8,Level 1,704139,0,BWh,Dry (B),sub_catchment,704139
-705001,TRUE,46,Minilya River at Minilya Bridge (705001),WA,-23.8163,114.0103,4642.6,Not nested,N/A,0,BWh,Dry (B),no_nested,NA
-707002,FALSE,49,Robe River at Yarraloola (707002),WA,-21.6162,115.9225,7258.1,Not nested,N/A,0,BSh,Dry (B),no_nested,NA
-707005,TRUE,35,Cane River at Toolunga (707005),WA,-22.0226,115.5945,2329.7,Not nested,N/A,0,BSh,Dry (B),no_nested,NA
-708011,TRUE,41,Fortescue River at Newman (708011),WA,-23.4014,119.7943,2878.9,Not nested,N/A,0,BWh,Dry (B),no_nested,NA
-709010,FALSE,36,Turner River at Pincunah (709010),WA,-21.2305,118.8338,885.2,Not nested,N/A,0,BWh,Dry (B),no_nested,NA
-710003,FALSE,44,De Grey River at Coolenar Pool (710003),WA,-20.3114,119.249,53384.3,Not nested,N/A,1,BWh,Dry (B),main_catchment,710003
-710229,TRUE,48,Shaw River at North Pole Mine (710229),WA,-21.0943,119.3173,6502,Level 1,710003,0,BWh,Dry (B),sub_catchment,710003
-802055,TRUE,40,Fitzroy River at Fitzroy Crossing (802055),WA,-18.2963,125.5263,46401.6,Not nested,N/A,0,BSh,Dry (B),no_nested,NA
-804001,FALSE,34,Isdell River at Dales Yard (804001),WA,-17.008889,125.4275,1834.8,Not nested,N/A,0,BSh,Dry (B),no_nested,NA
-809310,FALSE,46,Ord River at Bedford Downs (809310),WA,-17.425833,127.600556,547.8,Level 1,809316,0,BSh,Dry (B),sub_catchment,809316
-809315,FALSE,49,Negri River at Mistake Ck Homestead (809315),NT,-17.1775,129.0925,7464.2,Not nested,N/A,0,BSh,Dry (B),no_nested,NA
-809316,TRUE,45,Ord River at Old Ord Homestead (809316),WA,-17.3738,128.8537,19409.4,Not nested,N/A,1,BSh,Dry (B),main_catchment,809316
-809321,TRUE,44,Dunham River at Dunham Gorge (809321),WA,-16.1863,128.3,1635.7,Not nested,N/A,0,BSh,Dry (B),no_nested,NA
-809322,TRUE,43,Wilson River at Odonnell Range (809322),WA,-16.6475,128.0925,2527.4,Not nested,N/A,0,BSh,Dry (B),no_nested,NA
-912101A,TRUE,43,Gregory River at Gregory Downs (912101A),QLD,-18.643611,139.253056,12577.3,Not nested,N/A,1,BSh,Dry (B),main_catchment,912101A
-912105A,TRUE,35,Gregory River at Riversleigh No. 2 (912105A),QLD,-18.970833,138.803333,11392.9,Level 1,912101A,0,BSh,Dry (B),sub_catchment,912101A
-915011A,TRUE,30,Porcupine Creek at Mt Emu Plains (915011A),QLD,-20.1775,144.524444,565.3,Not nested,N/A,0,BSh,Dry (B),no_nested,NA
-915206A,TRUE,47,Dugald River at Railway Crossing (915206A),QLD,-20.2013,140.2233,657.4,Not nested,N/A,0,BSh,Dry (B),no_nested,NA
-917107A,FALSE,48,Elizabeth Creek at Mount Surprise (917107A),QLD,-18.133611,144.306667,458.3,Not nested,N/A,0,Aw,Tropical (A),no_nested,NA
-919003A,TRUE,46,Mitchell River at O.K. Bridge (919003A),QLD,-16.471389,144.290556,7731.7,Not nested,N/A,1,Aw,Tropical (A),main_catchment,919003A
-919005A,FALSE,48,Rifle Creek at Fonthill (919005A),QLD,-16.6788,145.2267,366.7,Level 1,919003A,0,Aw,Tropical (A),sub_catchment,919003A
-919201A,TRUE,47,Palmer River at Goldfields (919201A),QLD,-16.108056,144.778611,531.7,Not nested,N/A,0,Aw,Tropical (A),no_nested,NA
-919309A,TRUE,44,Walsh River at Trimbles Crossing (919309A),QLD,-16.545278,143.784722,8656.4,Not nested,N/A,0,Aw,Tropical (A),no_nested,NA
-925001A,TRUE,54,Wenlock river at Moreton (925001A),QLD,-12.454444,142.637778,3302.1,Not nested,N/A,0,Aw,Tropical (A),no_nested,NA
-926002A,FALSE,46,Dulhunty River at Dougs Pad (926002A),QLD,-11.831667,142.42,330.2,Not nested,N/A,0,Aw,Tropical (A),no_nested,NA
-A0020101,TRUE,50,Diamantina River at Birdsville (A0020101),QLD,-25.9088,139.3667,118974.1,Not nested,N/A,0,BWh,Dry (B),no_nested,NA
-A0030501,TRUE,48,Cooper Creek at Cullyamurra Water Hole (A0030501),SA,-27.7013,140.8433,233250.3,Not nested,N/A,1,BWh,Dry (B),main_catchment,A0030501
-A2390519,FALSE,48,Mosquito Creek at Struan (A2390519),SA,-37.0938,140.776,1549,Not nested,N/A,0,Csb,Temperate (C),no_nested,NA
-A2390523,FALSE,39,Stony Creek at Woakwine Range (A2390523),SA,-37.7034,140.3622,485.4,Not nested,N/A,0,Csb,Temperate (C),no_nested,NA
-A2390531,FALSE,44,Morambro Creek at Bordertown-Naracoorte Road Bridge (A2390531),SA,-36.689167,140.661111,404.9,Not nested,N/A,0,Csb,Temperate (C),no_nested,NA
-A4260533,FALSE,38,Bremer River at near Hartley (A4260533),SA,-35.2087,139.0063,473.5,Not nested,N/A,0,BSk,Dry (B),no_nested,NA
-A5030502,FALSE,50,Scott Creek at Scott Bottom (A5030502),SA,-35.099167,138.673889,26.8,Not nested,N/A,0,Csb,Temperate (C),no_nested,NA
-A5040523,FALSE,38,Sixth Creek at Castambul (A5040523),SA,-34.873056,138.754444,43.5,Not nested,N/A,0,Csb,Temperate (C),no_nested,NA
-A5050517,FALSE,37,North Para River at Penrice (A5050517),SA,-34.463333,139.058333,116.3,Not nested,N/A,0,BSk,Dry (B),no_nested,NA
-A5060500,FALSE,45,Wakefield River at Near Rhynie (A5060500),SA,-34.13,138.63,492.6,Not nested,N/A,0,BSk,Dry (B),no_nested,NA
-A5070500,FALSE,48,Hill River at near Andrews (A5070500),SA,-33.61,138.63,237,Level 1,A5070503,0,BSk,Dry (B),sub_catchment,A5070503
-A5070503,FALSE,36,Broughton River at Mooroola (A5070503),SA,-33.5331,138.5181,2538,Not nested,N/A,1,BSk,Dry (B),main_catchment,A5070503
-A5090503,FALSE,40,Kanyaka Creek at Old Kanyaka Ruins (A5090503),SA,-32.09,138.29,186.7,Not nested,N/A,0,BSk,Dry (B),no_nested,NA
-A5130501,FALSE,45,Rocky River upstream Gorge Falls (A5130501),SA,-35.955,136.697778,190.5,Not nested,N/A,0,Csb,Temperate (C),no_nested,NA
-G0010005,TRUE,33,Ranken River at Soudan Homestead (G0010005),NT,-20.045278,137.020833,6639.9,Not nested,N/A,0,BWh,Dry (B),no_nested,NA
-G0050115,FALSE,45,Hugh River at South Road Crossing (G0050115),NT,-24.351667,133.433333,3335.6,Not nested,N/A,0,BWh,Dry (B),no_nested,NA
-G0060005,FALSE,36,Trephina Creek at Trephina Gorge (G0060005),NT,-23.533611,134.380556,436.3,Not nested,N/A,0,BWh,Dry (B),no_nested,NA
-G8110004,TRUE,38,East Baines River at VIC Highway (G8110004),NT,-15.766944,130.033611,2443.2,Not nested,N/A,0,BSh,Dry (B),no_nested,NA
-G8140001,TRUE,46,Katherine River at Railway Bridge (G8140001),NT,-14.463333,132.256944,8248.4,Level 2,G8140067,0,Aw,Tropical (A),sub_catchment,G8140040
-G8140008,TRUE,36,Fergusson River at Old Railway Br (G8140008),NT,-14.0712,131.9762,1737.5,Level 2,G8140067,0,Aw,Tropical (A),sub_catchment,G8140040
-G8140011,TRUE,31,Dry River at Manbulloo Boundary (G8140011),NT,-15.0841,132.4109,4794.5,Level 2,G8140067,0,Aw,Tropical (A),sub_catchment,G8140040
-G8140040,TRUE,43,Daly River at Mount Nancar (G8140040),NT,-13.8308,130.7358,47745.4,Not nested,N/A,3,Aw,Tropical (A),main_catchment,G8140040
-G8140063,TRUE,53,Douglas River at D/S Old Douglas H/S (G8140063),NT,-13.798,131.3396,842.1,Level 1,G8140040,0,Aw,Tropical (A),sub_catchment,G8140040
-G8140067,TRUE,42,Daly River at U/S Dorisvale Crossing (G8140067),NT,-14.3633,131.5737,33280,Level 1,G8140040,3,Aw,Tropical (A),sub_catchment,G8140040
-G8150010,TRUE,42,Finniss River at Batchelor Damsite (G8150010),NT,-13.025,130.9512,367.6,Level 1,G8150180,0,Aw,Tropical (A),sub_catchment,G8150180
-G8150098,TRUE,45,BlaCreekmore River at Tumbling Waters (G8150098),NT,-12.7813,130.9413,159.3,Not nested,N/A,0,Aw,Tropical (A),no_nested,NA
-G8150180,TRUE,44,Finniss River at Gitchams (G8150180),NT,-12.9696,130.7621,1044.2,Not nested,N/A,1,Aw,Tropical (A),main_catchment,G8150180
-G8170002,TRUE,40,Adelaide River at Railway Bridge (G8170002),NT,-13.240556,131.108333,643.5,Not nested,N/A,0,Aw,Tropical (A),no_nested,NA
-G9070142,TRUE,31,McArthur River Upstream of Bailey's Grave (G9070142),NT,-16.778056,135.760556,4015.5,Not nested,N/A,0,BSh,Dry (B),no_nested,NA
+gauge,drought,record_length,station_name,state,lat,lon,catchment_area_sq_km,nested_status,next_station_ds,num_nested_within,prop_forested,river_di,climate_type,major_climate_type,status,parent_catchment
+003303A,TRUE,51,Barcoo River at Blackall (003303A),QLD,-24.43,145.46,5713.9,Level 1,A0030501,0,0.41054,0.618367,BSh,Dry (B),sub_catchment,A0030501
+102101A,FALSE,36,Pascoe River at Fall Creek (102101A),QLD,-12.880278,142.983056,648.4,Not nested,N/A,0,0.99762,0.004043,Aw,Tropical (A),no_nested,NA
+105101A,TRUE,53,Normanby River at Battle Camp (105101A),QLD,-15.281389,144.838611,2308.6,Not nested,N/A,1,0.95679,0.06953,Aw,Tropical (A),main_catchment,105101A
+105105A,FALSE,51,East Normanby River at Development Road (105105A),QLD,-15.771111,145.014167,296.1,Level 1,105101A,0,0.98134,0.092598,Am,Tropical (A),sub_catchment,105101A
+107001B,TRUE,36,Endeavour River at Flaggy (107001B),QLD,-15.423333,145.067222,340.2,Not nested,N/A,0,0.99771,0.058167,As,Tropical (A),no_nested,NA
+108002A,FALSE,46,Daintree River at Bairds (108002A),QLD,-16.179444,145.281944,910.2,Not nested,N/A,0,0.99981,0.045517,Am,Tropical (A),no_nested,NA
+108003A,FALSE,38,Bloomfield River at China Camp (108003A),QLD,-15.988333,145.2875,262.5,Not nested,N/A,0,1,0.125959,Am,Tropical (A),no_nested,NA
+111005A,FALSE,52,Mulgrave River at The Fisheries (111005A),QLD,-17.1832,145.7248,356.5,Level 1,111007A,0,0.89113,0.031076,Cfa,Temperate (C),sub_catchment,111007A
+111007A,FALSE,49,Mulgrave River at Peets Br (111007A),QLD,-17.13,145.76,521.4,Not nested,N/A,1,0.91366,0.047731,Cfa,Temperate (C),main_catchment,111007A
+112002A,FALSE,60,Fisher Creek at Nerada (112002A),QLD,-17.564167,145.9075,16,Not nested,N/A,0,0.085,0.217037,Cfa,Temperate (C),no_nested,NA
+112101B,FALSE,46,South Johnstone River at Upstream Central Mill (112101B),QLD,-17.6089,145.9791,397.3,Not nested,N/A,0,0.86802,0.056195,Cfa,Temperate (C),no_nested,NA
+112102A,FALSE,50,Liverpool Creek at Upper Japoonvale (112102A),QLD,-17.715,145.905278,77.9,Not nested,N/A,0,0.9607,0.024178,Cfa,Temperate (C),no_nested,NA
+113004A,FALSE,51,Cochable Creek at Powerline (113004A),QLD,-17.739722,145.63,93.4,Not nested,N/A,0,0.9736,0.032011,Cfa,Temperate (C),no_nested,NA
+114001A,FALSE,50,Murray River at Upper Murray (114001A),QLD,-18.1069,145.8054,155.4,Not nested,N/A,0,0.98502,0.025184,Cfa,Temperate (C),no_nested,NA
+116006B,FALSE,52,Herbert River at Abergowrie (116006B),QLD,-18.492778,145.922222,7457.1,Not nested,N/A,5,0.92449,0.132119,Cfa,Temperate (C),main_catchment,116006B
+116010A,FALSE,59,Blencoe Creek at Blencoe Falls (116010A),QLD,-18.204444,145.537778,226.8,Level 1,116006B,0,0.9941,0.059981,Cfa,Temperate (C),sub_catchment,116006B
+116011A,FALSE,59,Millstream River at Ravenshoe (116011A),QLD,-17.605,145.4775,90.6,Level 2,116013A,0,0.59959,0.223361,Cwa,Temperate (C),sub_catchment,116006B
+116012A,FALSE,53,Cameron Creek at 8.7KM (116012A),QLD,-18.065278,145.341944,350.9,Level 1,116006B,0,0.96343,0.0625,Cwa,Temperate (C),sub_catchment,116006B
+116013A,FALSE,60,Millstream river at Archer Creek (116013A),QLD,-17.651944,145.341111,319.4,Level 1,116006B,1,0.81823,0.154051,Cwa,Temperate (C),sub_catchment,116006B
+116014A,FALSE,60,Wild River at Silver Valley (116014A),QLD,-17.625,145.298889,585.4,Level 1,116006B,0,0.92705,0.117174,Cwa,Temperate (C),sub_catchment,116006B
+116015A,FALSE,55,Blunder Creek at Wooroora (116015A),QLD,-17.735278,145.438056,125.9,Level 1,116006B,0,0.99998,0.03147,Cwa,Temperate (C),sub_catchment,116006B
+117002A,FALSE,48,BlaCreek at Bruce HWY (117002A),QLD,-19.2377,146.6329,250.6,Not nested,N/A,0,0.76011,0.093497,Aw,Tropical (A),no_nested,NA
+117003A,FALSE,46,Bluewater Creek at Bluewater (117003A),QLD,-19.185,146.5461,87.6,Not nested,N/A,0,0.95732,0.090398,Aw,Tropical (A),no_nested,NA
+118106A,TRUE,45,Alligator Creek at Allendale (118106A),QLD,-19.39,146.96,69.7,Not nested,N/A,0,0.8667,0.087231,Aw,Tropical (A),no_nested,NA
+119003A,TRUE,52,Haughton River at Powerline (119003A),QLD,-19.63,147.11,1758.8,Not nested,N/A,0,0.75876999999999994,0.212862,Aw,Tropical (A),no_nested,NA
+120102A,TRUE,51,Keelbottom Creek at Keelbottom (120102A),QLD,-19.3719,146.3589,193.4,Not nested,N/A,0,0.96003,0.011184,Cwa,Temperate (C),no_nested,NA
+120301B,TRUE,45,Belyando River at Gregory Development Road (120301B),QLD,-21.53,146.86,35299.9,Not nested,N/A,0,0.45973,0.109075,BSh,Dry (B),no_nested,NA
+120304A,TRUE,50,Suttor River at Eaglefield (120304A),QLD,-21.45,147.71,1953.6,Not nested,N/A,0,0.50629,0.124333,BSh,Dry (B),no_nested,NA
+121001A,TRUE,52,Don River at Ida Creek (121001A),QLD,-20.289444,148.116111,603.6,Level 1,121003A,0,0.89451,0.151264,Cwa,Temperate (C),sub_catchment,121003A
+121002A,TRUE,47,Elliot River at Guthalungra (121002A),QLD,-19.94,147.84,269.5,Not nested,N/A,0,0.83564,0.094815,Aw,Tropical (A),no_nested,NA
+121003A,TRUE,37,Don River at Reeves (121003A),QLD,-20.15,148.15,1012.5,Not nested,N/A,1,0.78291,0.198114,Cwa,Temperate (C),main_catchment,121003A
+122004A,TRUE,49,Gregory river at Lower Gregory (122004A),QLD,-20.3,148.547222,46.6,Not nested,N/A,0,0.91518,0.095185,Aw,Tropical (A),no_nested,NA
+124002A,TRUE,45,StHelens Creek at Calen (124002A),QLD,-20.9075,148.7586,118.1,Not nested,N/A,0,0.88178,0.053567,Cwa,Temperate (C),no_nested,NA
+125005A,TRUE,48,BlaCreeks Creek at Whitefords (125005A),QLD,-21.3228,148.8351,510.2,Not nested,N/A,0,0.98071,0.28418,Cwa,Temperate (C),no_nested,NA
+126003A,FALSE,46,Carmila Creek at Carmila (126003A),QLD,-21.915556,149.398611,83.7,Not nested,N/A,0,0.80426,0.163813,Cwa,Temperate (C),no_nested,NA
+129001A,TRUE,60,Waterpark Creek at Byfield (129001A),QLD,-22.835,150.6653,248.7,Not nested,N/A,0,0.99849,0.068135,Cfa,Temperate (C),no_nested,NA
+130004A,FALSE,58,Raglan Creek at Old Stn (130004A),QLD,-23.8191,150.8206,392.9,Not nested,N/A,0,0.66494,0.192365,Cfa,Temperate (C),no_nested,NA
+130302A,TRUE,63,Dawson River at Taroom (130302A),QLD,-25.64,149.79,15806.9,Not nested,N/A,1,0.45296,0.411511,BSh,Dry (B),main_catchment,130302A
+130324A,FALSE,55,Dawson River at Utopia Downs (130324A),QLD,-25.7447,149.3299,6056.7,Level 1,130302A,0,0.69529,0.387256,BSh,Dry (B),sub_catchment,130302A
+130403A,TRUE,56,Connors River at Mt Bridget (130403A),QLD,-22.0383,149.1286,1286.4,Not nested,N/A,0,0.87649,0.104747,Cfa,Temperate (C),no_nested,NA
+130410A,FALSE,51,Isaac River at Deverill (130410A),QLD,-22.1742,148.3811,4067.2,Not nested,N/A,0,0.36879,0.364764,BSh,Dry (B),no_nested,NA
+130413A,FALSE,50,Denison Creek at Braeside (130413A),QLD,-21.7696,148.7869,764.8,Not nested,N/A,0,0.90943,0.105336,Cwa,Temperate (C),no_nested,NA
+132001A,TRUE,63,Calliope River at Castlehope (132001A),QLD,-23.99,151.1,1287.7,Not nested,N/A,0,0.64909,0.158752,Cfa,Temperate (C),no_nested,NA
+135002A,FALSE,56,Kolan River at Springfield (135002A),QLD,-24.7533,151.5872,547.9,Not nested,N/A,0,0.95817,0.085686,Cfa,Temperate (C),no_nested,NA
+135004A,TRUE,56,Gin Gin Creek at Dam Site (135004A),QLD,-24.97,151.89,536.3,Not nested,N/A,0,0.87111,0.148509,Cfa,Temperate (C),no_nested,NA
+136006A,FALSE,56,Reid Creek at Dam Site (136006A),QLD,-25.2731,151.5173,220.7,Not nested,N/A,0,0.68791,0.416013,Cfa,Temperate (C),no_nested,NA
+136202D,FALSE,57,Barambah Creek at Litzows (136202D),QLD,-26.301111,152.044444,649.6,Not nested,N/A,0,0.63727,0.27052,Cfa,Temperate (C),no_nested,NA
+136203A,TRUE,62,Barker Creek at Brooklands (136203A),QLD,-26.733889,151.820556,310.7,Not nested,N/A,0,0.76741,0.143268,Cfa,Temperate (C),no_nested,NA
+136208A,TRUE,53,Boonara Creek at Ettiewyn (136208A),QLD,-25.902778,151.844167,1391.9,Not nested,N/A,0,0.65135,0.192682,Cfa,Temperate (C),no_nested,NA
+136304A,TRUE,56,Stuart River at Proston Rifle Range (136304A),QLD,-26.1816,151.5461,1554.4,Not nested,N/A,0,0.6853,0.486478,Cfa,Temperate (C),no_nested,NA
+137101A,TRUE,48,Gregory River at Burrum Highway (137101A),QLD,-25.086667,152.240833,453.4,Not nested,N/A,0,0.95556,0.618001,Cfa,Temperate (C),no_nested,NA
+137201A,TRUE,55,Isis River at Bruce Highway (137201A),QLD,-25.266944,152.368611,444.5,Not nested,N/A,0,0.91331,0.143823,Cfa,Temperate (C),no_nested,NA
+138004B,FALSE,36,Munna Creek at Marodian (138004B),QLD,-25.903611,152.349167,1189,Not nested,N/A,0,0.71588,0.344376,Cfa,Temperate (C),no_nested,NA
+138009A,FALSE,47,Tinana Creek at Tagigan Road (138009A),QLD,-26.078611,152.783889,101.4,Level 1,138903A,0,0.70299,0.185968,Cfa,Temperate (C),sub_catchment,138903A
+138110A,TRUE,62,Mary River at Bellbird Ck (138110A),QLD,-26.63,152.7,485.4,Not nested,N/A,0,0.84956,0.257367,Cfa,Temperate (C),no_nested,NA
+138113A,FALSE,36,Kandanga Creek at Hygait (138113A),QLD,-26.39,152.644444,170.3,Not nested,N/A,0,0.87324,0.139324,Cfa,Temperate (C),no_nested,NA
+138903A,FALSE,40,Tinana Creek at Bauple East (138903A),QLD,-25.82,152.72,772,Not nested,N/A,1,0.86937,0.184226,Cfa,Temperate (C),main_catchment,138903A
+140002A,FALSE,42,Teewah Creek at Coops Coner Tm (140002A),QLD,-26.0572,153.0426,52.2,Not nested,N/A,0,0.99918,0.024429,Cfa,Temperate (C),no_nested,NA
+141008A,TRUE,39,Eudlo Creek at Kiels Mountain (141008A),QLD,-26.66,153.02,57.2,Not nested,N/A,0,0.92423,0.208426,Cfa,Temperate (C),no_nested,NA
+143007A,TRUE,50,Brisbane River at Linville (143007A),QLD,-26.8061,152.2711,2010,Level 1,143009A,0,0.83045,0.169499,Cfa,Temperate (C),sub_catchment,143009A
+143009A,TRUE,59,Brisbane River at Gregors Creek (143009A),QLD,-26.996389,152.408611,3868.7,Not nested,N/A,1,0.75132,0.209326,Cfa,Temperate (C),main_catchment,143009A
+143107A,TRUE,48,Bremer River at Walloon (143107A),QLD,-27.6,152.69,624.3,Not nested,N/A,1,0.48016,0.241306,Cfa,Temperate (C),main_catchment,143107A
+143110A,TRUE,48,Bremer River at Adams Bridge (143110A),QLD,-27.8275,152.510833,125.7,Level 1,143107A,0,0.58348,0.228456,Cfa,Temperate (C),sub_catchment,143107A
+143209B,TRUE,46,Laidley Creek at Mulgowie2 (143209B),QLD,-27.7314,152.3633,172.7,Not nested,N/A,0,0.8437,0.112472,Cfa,Temperate (C),no_nested,NA
+143303A,TRUE,59,Stanley River at Peachester (143303A),QLD,-26.838889000000002,152.840556,104,Not nested,N/A,0,0.89756,0.20973,Cfa,Temperate (C),no_nested,NA
+145010A,TRUE,56,Running Creek at 5.8KM Deickmans Bridge (145010A),QLD,-28.246389,152.891111,132.2,Not nested,N/A,0,0.68887,0.232396,Cfa,Temperate (C),no_nested,NA
+145011A,TRUE,55,Teviot Brook at Croftby (145011A),QLD,-28.147778,152.570833,82.8,Not nested,N/A,0,0.78816,0.094864,Cfa,Temperate (C),no_nested,NA
+145018A,TRUE,48,Burnett Creek at Up Stream Maroon Dam (145018A),QLD,-28.219722,152.608333,81.5,Not nested,N/A,0,0.9048,0.042143,Cfa,Temperate (C),no_nested,NA
+145101D,TRUE,63,Albert River at Lumeah Number 2 (145101D),QLD,-28.053056,153.045278,166.8,Level 1,N/A,0,0.70619,0.113484,Cfa,Temperate (C),sub_catchment,N/A
+145102B,TRUE,57,Albert River at Bromfleet (145102B),QLD,-27.91,153.11,543.2,Not nested,N/A,1,0.63823,0.173326,Cfa,Temperate (C),main_catchment,145102B
+145107A,TRUE,48,Canungra Creek at Main Rd Bridge (145107A),QLD,-27.996667,153.158333,99.7,Level 1,145102B,0,0.98549,0.080519,Cfa,Temperate (C),sub_catchment,145102B
+146010A,TRUE,59,Coomera River at Army Camp (146010A),QLD,-28.025833,153.193056,97,Not nested,N/A,0,0.76275,0.14418,Cfa,Temperate (C),no_nested,NA
+146012A,TRUE,46,Currumbin Creek at Nicolls Bridge (146012A),QLD,-28.178333,153.424167,30.1,Not nested,N/A,0,0.99605,0.365762,Cfa,Temperate (C),no_nested,NA
+146014A,TRUE,40,Back Creek at Beechmont (146014A),QLD,-28.123333,153.19,6.8,Not nested,N/A,0,0.3826,0.234839,Cfa,Temperate (C),no_nested,NA
+146095A,TRUE,49,Tallebudgera Creek at Tallebudgera Ck Rd (146095A),QLD,-28.149444,153.403611,56.3,Not nested,N/A,0,0.99891,0.226217,Cfa,Temperate (C),no_nested,NA
+201001,TRUE,56,Oxley River at Eungella (201001),NSW,-28.3553,153.292,214.8,Not nested,N/A,0,0.76353,0.128224,Cfa,Temperate (C),no_nested,NA
+203005,TRUE,46,Richmond River at Wiangaree (203005),NSW,-28.5065,152.9658,702.5,Not nested,N/A,0,0.92524,0.081592,Cfa,Temperate (C),no_nested,NA
+203010,TRUE,49,Leycester River at Rock Valley (203010),NSW,-28.7381,153.163,175.9,Not nested,N/A,0,0.93627,0.20715,Cfa,Temperate (C),no_nested,NA
+203030,FALSE,42,Myrtle Creek at Rappville (203030),NSW,-29.1116,152.9984,387.3,Not nested,N/A,0,0.91725,0.324829,Cfa,Temperate (C),no_nested,NA
+204002,FALSE,49,Clarence River at Tabulam (204002),NSW,-28.89,152.56,4545.3,Level 1,204007,3,0.80938,0.123779,Cfa,Temperate (C),sub_catchment,204007
+204007,FALSE,47,Clarence River at Lilydale (Newbold Crossing (204007),NSW,-29.51,152.68,16944.4,Not nested,N/A,8,0.83269,0.106548,Cfa,Temperate (C),main_catchment,204007
+204014,FALSE,38,Mann River at Mitchell (204014),NSW,-29.6947,152.1049,882.9,Level 1,204007,0,0.39705,0.156254,Cfb,Temperate (C),sub_catchment,204007
+204017,FALSE,44,Bielsdown Creek at Dorrigo No.2 & No.3 (204017),NSW,-30.3073,152.7135,74,Level 1,204007,0,0.20701,0.189639,Cfb,Temperate (C),sub_catchment,204007
+204025,TRUE,43,Orara River at Karangi (204025),NSW,-30.2544,153.0323,134.3,Level 2,204906,0,0.98072,0.284485,Cfa,Temperate (C),sub_catchment,204041
+204030,FALSE,40,Aberfoyle River at Aberfoyle (204030),NSW,-30.2603,152.0083,208.6,Level 1,204007,0,0.16926,0.390412,Cfb,Temperate (C),sub_catchment,204007
+204034,FALSE,40,Henry River at Newton Boyd (204034),NSW,-29.763056,152.213333,400.1,Level 1,204007,0,0.86827,0.069909,Cfb,Temperate (C),sub_catchment,204007
+204036,FALSE,55,Cataract Creek at Sandy Hill(below Snake Cre (204036),NSW,-28.9341,152.2171,238.6,Level 3,204002,0,0.42426,0.133183,Cfb,Temperate (C),sub_catchment,204007
+204037,FALSE,48,Clouds Creek at Clouds Ck (204037),NSW,-30.0938,152.6282,62.8,Level 1,204007,0,0.99992,0.117857,Cfb,Temperate (C),sub_catchment,204007
+204039,TRUE,32,Maryland River at D/S Wylie Ck (204039),NSW,-28.468,152.1978,385.5,Level 3,204002,0,0.68152,0.158097,Cfa,Temperate (C),sub_catchment,204007
+204041,TRUE,42,Orara River at Bawden Br (204041),NSW,-29.7242,152.8092,1809.8,Not nested,N/A,1,0.93505,0.161449,Cfa,Temperate (C),main_catchment,204041
+204046,FALSE,46,Timbarra River at Drake (204046),NSW,-29.0573,152.3849,1714.6,Level 1,204007,0,0.94036,0.074567,Cfb,Temperate (C),sub_catchment,204007
+204051,FALSE,39,Clarence River at Paddys Flat (204051),NSW,-28.7211,152.4174,3116.8,Level 2,204002,0,0.81269,0.114121,Cfb,Temperate (C),sub_catchment,204007
+204056,FALSE,42,Dandahra Creek at Gibraltar Range (204056),NSW,-29.4864,152.4456,112.4,Level 1,204007,0,0.99835,0.013317,Cfb,Temperate (C),sub_catchment,204007
+204906,TRUE,44,Orara River at Glenreagh (204906),NSW,-30.07,152.98,432.2,Level 1,204041,1,0.93496,0.208177,Cfb,Temperate (C),sub_catchment,204041
+206009,TRUE,60,Tia River at Tia (206009),NSW,-31.1878,151.8291,262.2,Not nested,N/A,0,0.30954,0.170662,Cfb,Temperate (C),no_nested,NA
+206014,TRUE,58,Wollomombi River at Coninside (206014),NSW,-30.476389,152.028333,369.9,Not nested,N/A,0,0.20953,0.18532,Cfb,Temperate (C),no_nested,NA
+206018,FALSE,58,Apsley River at Apsley Falls (206018),NSW,-31.049722,151.766111,862.9,Not nested,N/A,0,0.07192,0.28981,Cfb,Temperate (C),no_nested,NA
+206025,FALSE,47,Salisbury Waters River at near Dangar Falls (206025),NSW,-30.681,151.7133,648.7,Not nested,N/A,0,0.02275,0.342858,Cfb,Temperate (C),no_nested,NA
+207004,FALSE,43,Hastings River at Ellenborough (Kindee Bridg (207004),NSW,-31.4241,152.4697,1580.9,Not nested,N/A,2,0.94663,0.073694,Cfb,Temperate (C),main_catchment,207004
+207013,FALSE,43,Ellenborough River at D/S Bunnoo R Junction (207013),NSW,-31.481,152.4478,497.6,Level 1,207004,0,0.94135,0.098795,Cfb,Temperate (C),sub_catchment,207004
+207014,FALSE,34,Wilson River at Avenel (207014),NSW,-31.3326,152.7404,508.8,Not nested,N/A,0,0.89751,0.087755,Cfa,Temperate (C),no_nested,NA
+207015,FALSE,37,Hastings River at Mount Seaview (207015),NSW,-31.3714,152.2442,349.1,Level 1,207004,0,0.98901,0.025858,Cfb,Temperate (C),sub_catchment,207004
+208003,FALSE,55,Gloucester River at Doon Ayre (208003),NSW,-31.8981,152.0956,1629.7,Level 1,208004,0,0.67643,0.11568,Cfb,Temperate (C),sub_catchment,208004
+208004,TRUE,51,Manning River at Killawarra (208004),NSW,-31.92,152.31,6631.4,Not nested,N/A,3,0.84177,0.098338,Cfb,Temperate (C),main_catchment,208004
+208005,TRUE,53,Nowendoc River at Rocks Crossing (208005),NSW,-31.779,152.0746,1894,Level 1,208004,1,0.92406,0.076991,Cfb,Temperate (C),sub_catchment,208004
+208007,TRUE,53,Nowendoc River at Nowendoc (208007),NSW,-31.516389,151.716389,222.2,Level 2,208005,0,0.68916,0.147635,Cfb,Temperate (C),sub_catchment,208004
+208009,FALSE,51,Barnard River at Barry (208009),NSW,-31.579167,151.315278,151.5,Level 3,208024,0,0.99848,0.080264,Cfb,Temperate (C),sub_catchment,208004
+208011,TRUE,48,Barnard River at Mackay (208011),NSW,-31.77,151.9,1813.5,Level 1,208004,2,0.92433,0.100977,Cfb,Temperate (C),sub_catchment,208004
+208015,FALSE,47,Landsdowne River at Landsdowne (208015),NSW,-31.7889,152.5128,95.4,Not nested,N/A,0,0.7488,0.096639,Cfa,Temperate (C),no_nested,NA
+208024,FALSE,34,Barnard River at D/S Back R Jctn (208024),NSW,-31.56,151.34,281.1,Level 2,208011,1,0.99639,0.086813,Cfb,Temperate (C),sub_catchment,208004
+208026,TRUE,35,Myall River at Jacky Barkers (208026),NSW,-31.6417,151.7342,546.8,Level 2,208011,0,0.90016,0.119124,Cfb,Temperate (C),sub_catchment,208004
+209002,TRUE,49,Mammy Johnsons River at Crossing (209002),NSW,-32.2453,151.9778,157.5,Level 1,209003,0,0.99413,0.057605,Cfb,Temperate (C),sub_catchment,209003
+209003,FALSE,45,Karuah River at Booral (209003),NSW,-32.48,151.96,982.1,Not nested,N/A,1,0.8296,0.095707,Cfb,Temperate (C),main_catchment,209003
+210006,FALSE,48,Goulburn River at Coggan (210006),NSW,-32.342778,150.101389,3390.6,Level 2,210016,0,0.70011,0.176925,Cfa,Temperate (C),sub_catchment,210031
+210011,FALSE,53,William River at Tillegra (210011),NSW,-32.318889,151.688056,195.9,Not nested,N/A,0,0.59343,0.136914,Cfb,Temperate (C),no_nested,NA
+210014,FALSE,52,Rouchel Brook River at Rouchel Brook (The Vale) (210014),NSW,-32.1531,151.0474,401.3,Not nested,N/A,0,0.77598,0.10334,Cfb,Temperate (C),no_nested,NA
+210016,FALSE,43,Goulburn River at Kerrabee (210016),NSW,-32.42,150.32,4973.6,Level 1,210031,1,0.66186,0.167668,Cfa,Temperate (C),sub_catchment,210031
+210017,FALSE,44,Moonan Brook River at Moonan Brook (210017),NSW,-31.9437,151.2797,102.4,Not nested,N/A,0,0.99313,0.045959,Cfb,Temperate (C),no_nested,NA
+210022,TRUE,56,Allyn River at Halton (210022),NSW,-32.3078,151.5117,188.7,Not nested,N/A,0,0.83413,0.10746,Cfb,Temperate (C),no_nested,NA
+210031,FALSE,58,Goulburn River at Sandy Hollow (210031),NSW,-32.35,150.57,6815.3,Not nested,N/A,1,0.71193,0.123227,Cfa,Temperate (C),main_catchment,210031
+210040,FALSE,55,Wybong Creek at Wybong (210040),NSW,-32.2708,150.6349,670.9,Not nested,N/A,0,0.54677,0.164699,Cfa,Temperate (C),no_nested,NA
+210052,FALSE,50,Pages River at Gundy Recorder (210052),NSW,-32.0119,150.9965,1070.4,Not nested,N/A,0,0.71541,0.149145,Cfa,Temperate (C),no_nested,NA
+211009,TRUE,41,Wyong River at Gracemere (211009),NSW,-33.2724,151.3593,236.5,Not nested,N/A,1,0.99853,0.112398,Cfa,Temperate (C),main_catchment,211009
+211013,FALSE,41,Ourimbah Creek at U/S Weir (211013),NSW,-33.3497,151.3428,81.6,Not nested,N/A,0,0.99445,0.101034,Cfa,Temperate (C),no_nested,NA
+211014,FALSE,41,Wyong River at Yarramalong (211014),NSW,-33.2198,151.2734,180.9,Level 1,211009,0,1,0.095787,Cfa,Temperate (C),sub_catchment,211009
+212040,TRUE,32,Kialla Creek at Pomeroy (212040),NSW,-34.6089,149.5431,91.9,Not nested,N/A,0,0.01894,0.186956,Cfb,Temperate (C),no_nested,NA
+212260,TRUE,38,Kowmung River at Cedar Ford (212260),NSW,-33.947222,150.244444,715.3,Not nested,N/A,0,0.93213,0.069044,Cfb,Temperate (C),no_nested,NA
+215002,TRUE,30,Shoalhaven River at Warri  (215002),NSW,-35.340833,149.739444,1396,Level 1,215207,0,0.65354,0.137628,Cfb,Temperate (C),sub_catchment,215207
+215004,TRUE,34,Corang River at Hockeys (215004),NSW,-35.146944,150.033056,163.7,Level 1,215207,0,0.98552,0.055289,Cfb,Temperate (C),sub_catchment,215207
+215207,TRUE,37,Shoalhaven River at Fossickers Flat,NSW,-34.818901,150.182923,4682,Not nested,N/A,2,0.77608,0.111963,Cfb,Temperate (C),main_catchment,215207
+216002,TRUE,46,Clyde River at Brooman (216002),NSW,-35.468056,150.237222,859.7,Not nested,N/A,0,0.98384,0.04949,Cfb,Temperate (C),no_nested,NA
+216009,TRUE,35,BuCreekenbowra River at Buckenbowra No.3 (216009),NSW,-35.714,150.0342,162,Not nested,N/A,0,0.97856,0.041392,Cfb,Temperate (C),no_nested,NA
+218001,TRUE,51,Tuross River at Tuross Vale (218001),NSW,-36.265,149.510556,90.1,Level 2,218005,0,0.98695,0.043815,Cfb,Temperate (C),sub_catchment,218008
+218005,TRUE,54,Tuross River at D/S Wadbilliga R Junct (218005),NSW,-36.1975,149.7606,918.9,Level 1,218008,2,0.92922,0.035956,Cfb,Temperate (C),sub_catchment,218008
+218007,TRUE,47,Wadbilliga River at Wadbilliga (218007),NSW,-36.2586,149.6914,123.5,Level 2,218005,0,0.98901,0.006838,Cfb,Temperate (C),sub_catchment,218008
+218008,TRUE,43,Tuross River at Eurobodalla (218008),NSW,-36.13,150,1607.2,Not nested,N/A,1,0.94526,0.084407,Cfb,Temperate (C),main_catchment,218008
+219001,TRUE,60,Rutherford Creek at Brown Mountain (219001),NSW,-36.593889,149.4425,15.3,Level 1,219003,0,0.99999,0.095433,Cfb,Temperate (C),sub_catchment,219003
+219003,TRUE,63,Bemboka River at Morans Crossing (219003),NSW,-36.6674,149.6469,314.5,Not nested,N/A,1,0.70434,0.185358,Cfb,Temperate (C),main_catchment,219003
+219006,TRUE,63,Tantawangalo Creek at Tantawangalo Mountain Dam (219006),NSW,-36.78,149.54,80.7,Level 1,219022,0,0.99832,0.010658,Cfb,Temperate (C),sub_catchment,219022
+219017,TRUE,55,Double Creek at near Brogo (219017),NSW,-36.6,149.8094,152.9,Not nested,N/A,0,0.75536,0.082195,Cfb,Temperate (C),no_nested,NA
+219022,TRUE,49,Tantawangalo Creek at Candelo Dam Site (219022),NSW,-36.7319,149.6842,198.9,Not nested,N/A,1,0.79419,0.081527,Cfb,Temperate (C),main_catchment,219022
+220003,TRUE,55,Pambula River at Lochiel (220003),NSW,-36.9414,149.8194,106.4,Not nested,N/A,0,0.98551,0.097411,Cfb,Temperate (C),no_nested,NA
+221002,TRUE,47,Wallagaraugh River at Princes HWY (221002),NSW,-37.3719,149.7125,480.1,Not nested,N/A,0,0.9996,0.117783,Cfb,Temperate (C),no_nested,NA
+221201,FALSE,63,Cann(West Branch River at Weeragua (221201),VIC,-37.373,149.2,323.3,Not nested,N/A,0,0.99535,0.125127,Cfb,Temperate (C),no_nested,NA
+221207,TRUE,52,Errinundra River at Errinundra (221207),VIC,-37.447222,148.914167,158.1,Level 1,221212,0,0.98943,0.072498,Cfb,Temperate (C),sub_catchment,221212
+221208,TRUE,42,Wingan River at Wingan Inlet National Park (221208),VIC,-37.689,149.49,421,Not nested,N/A,0,0.99913,0.113156,Cfb,Temperate (C),no_nested,NA
+221209,TRUE,49,Cann(East Branch River at Weeragua (221209),VIC,-37.356,149.21,148.9,Not nested,N/A,0,0.99571,0.069539,Cfb,Temperate (C),no_nested,NA
+221210,FALSE,49,Genoa River at The Gorge (221210),VIC,-37.416389,149.518611,838.8,Not nested,N/A,0,0.99643,0.060192,Cfb,Temperate (C),no_nested,NA
+221211,FALSE,47,Combienbar River at Combienbar (221211),VIC,-37.44,148.98,179.3,Level 1,221212,0,0.98454,0.120868,Cfb,Temperate (C),sub_catchment,221212
+221212,TRUE,46,Bemm River at Princes HWY (221212),VIC,-37.606,148.9,727.2,Not nested,N/A,2,0.99179,0.104237,Cfb,Temperate (C),main_catchment,221212
+222004,FALSE,63,Little Plains River at Wellesley (Rowes) (222004),NSW,-36.9969,149.0925,614.3,Not nested,N/A,0,0.72509,0.130683,Cfb,Temperate (C),no_nested,NA
+222016,TRUE,39,Pinch River at The Barry Way (222016),NSW,-36.7936,148.4033,157.9,Not nested,N/A,0,0.93221,6.24e-4,Cfb,Temperate (C),no_nested,NA
+222202,TRUE,61,Brodribb Riber River at Sardine Creek (222202),VIC,-37.512,148.55,652.1,Not nested,N/A,0,0.99018,0.104637,Cfb,Temperate (C),no_nested,NA
+222206,TRUE,63,Buchan River at Buchan (222206),VIC,-37.494722,148.174722,847.5,Not nested,N/A,0,0.9425,0.036454,Cfb,Temperate (C),no_nested,NA
+222210,TRUE,50,Deddick River at Deddick (Caseys) (222210),VIC,-37.0853747,148.4241522,846.1,Not nested,N/A,0,0.95102,0.054304,Cfb,Temperate (C),no_nested,NA
+222213,TRUE,55,Suggan Buggan River at Suggan Buggan (222213),VIC,-36.954722,148.326667,363.7,Not nested,N/A,0,0.95335,0.008964,Cfb,Temperate (C),no_nested,NA
+222217,TRUE,45,Rodger River at Jacksons Crossing (222217),VIC,-37.41,148.36,432.1,Not nested,N/A,0,0.97275,0.064107,Cfb,Temperate (C),no_nested,NA
+223202,TRUE,63,Tambo River at Swifts Creek (223202),VIC,-37.268056,147.728056,894.3,Level 1,223205,0,0.83945,0.256537,Cfb,Temperate (C),sub_catchment,223205
+223204,TRUE,57,Nicholson River at Deptford (223204),VIC,-37.59294631,147.697124,289.1,Not nested,N/A,0,0.96378,0.129622,Cfb,Temperate (C),no_nested,NA
+223205,TRUE,54,Tambo River at D/S Of Ramrod Creek (223205),VIC,-37.67253062,147.8698513,2673.2,Not nested,N/A,1,0.84863,0.358114,Cfb,Temperate (C),main_catchment,223205
+224201,TRUE,55,Wonnangatta R River at Waterford (224201),VIC,-37.49,147.17,1974.8,Level 1,224203,1,0.93571,0.064531,Cfb,Temperate (C),sub_catchment,224203
+224203,TRUE,61,Mitchell River at Glenaladale (224203),VIC,-37.76358991,147.3747776,3917.6,Not nested,N/A,3,0.93456,0.127623,Cfb,Temperate (C),main_catchment,224203
+224206,TRUE,60,Wonnangatta River at Crooked River (224206),VIC,-37.406389,147.088056,1102.3,Level 2,224201,0,0.95782,0.038675,Cfb,Temperate (C),sub_catchment,224203
+224213,TRUE,46,Dargo River at Lower Dargo Rd (224213),VIC,-37.493889,147.271389,666.3,Level 1,224203,0,0.8799,0.0627,Cfb,Temperate (C),sub_catchment,224203
+224214,TRUE,45,Wentworth River at Tabberabbera (224214),VIC,-37.494444,147.393333,440.6,Level 1,224203,0,0.96223,0.122853,Cfb,Temperate (C),sub_catchment,224203
+225020A,TRUE,33,South Cascade Creek at Thomson Valley Road (225020A),VIC,-37.833333,146.354167,11.5,Not nested,N/A,0,1,0.124996,Cfb,Temperate (C),no_nested,NA
+225201,TRUE,43,Avon River at Stratford (225201),VIC,-37.9685868,147.0760061,1460.2,Not nested,N/A,3,0.84528,0.228845,Cfb,Temperate (C),main_catchment,225201
+225209,TRUE,55,Macalister River at Licola (225209),VIC,-37.62961037,146.6233123,1237.3,Level 1,225221,1,0.93071,0.046948,Cfb,Temperate (C),sub_catchment,225221
+225213,TRUE,57,Aberfeldy River at Beardmore (225213),VIC,-37.854,146.43,311,Not nested,N/A,0,0.96089,0.125007,Cfb,Temperate (C),no_nested,NA
+225218,FALSE,54,Freestone Creek at Briagolong (225218),VIC,-37.812,147.09,305.2,Level 1,225201,0,0.96765,0.121229,Cfb,Temperate (C),sub_catchment,225201
+225219,TRUE,52,Macalister River at Glencairn (225219),VIC,-37.516111,146.566111,572,Level 2,225209,0,0.92557,0.021747,Cfb,Temperate (C),sub_catchment,225221
+225221,TRUE,41,Macalister River at Stringybark Creek (225221),VIC,-37.76935073,146.6677493,1541.3,Not nested,N/A,1,0.9285,0.053659,Cfb,Temperate (C),main_catchment,225221
+225223,TRUE,44,Valencia Creek at Gillio Road (225223),VIC,-37.74346413,146.9922931,202.2,Level 1,225201,0,0.98247,0.106667,Cfb,Temperate (C),sub_catchment,225201
+225224,TRUE,46,Avon River at The Channel (225224),VIC,-37.80184085,146.8849073,557,Level 1,225201,0,0.96686,0.14658,Cfb,Temperate (C),sub_catchment,225201
+226023,TRUE,49,Traralgon Creek at Traralgon (226023),VIC,-38.19405359,146.5439326,168.4,Not nested,N/A,1,0.76853,0.383788,Cfb,Temperate (C),main_catchment,226023
+226204,TRUE,63,Latrobe River at Willow Grove (226204),VIC,-38.089,146.16,562.9,Not nested,N/A,1,0.92791,0.223117,Cfb,Temperate (C),main_catchment,226204
+226205,FALSE,60,Latrobe River at Noojee (226205),VIC,-37.90701017,146.0221188,296.1,Level 1,226204,2,0.98241,0.175886,Cfb,Temperate (C),sub_catchment,226204
+226209,TRUE,61,Moe R River at Darnum (226209),VIC,-38.206,146,215.7,Level 1,226402,0,0.04204,0.221471,Cfb,Temperate (C),sub_catchment,226402
+226218,TRUE,61,Narracan Creek at Thorpdale (226218),VIC,-38.27191618,146.1865277,65.7,Not nested,N/A,0,0.27455,0.195311,Cfb,Temperate (C),no_nested,NA
+226220,TRUE,54,Loch River at Noojee (226220),VIC,-37.866667,146.006111,104.2,Level 2,226205,0,0.9995,0.135273,Cfb,Temperate (C),sub_catchment,226204
+226222,FALSE,33,Latrobe River at Near Noojee (226222),VIC,-37.881944,145.8925,64.7,Level 2,226205,0,0.99895,0.139098,Cfb,Temperate (C),sub_catchment,226204
+226226,TRUE,61,Tanjil River at Tanjil Junction (226226),VIC,-37.98,146.19,299.2,Not nested,N/A,0,0.99719,0.164909,Cfb,Temperate (C),no_nested,NA
+226402,TRUE,63,Moe Drain River at Trafalgar East (226402),VIC,-38.176,146.21,609.4,Not nested,N/A,1,0.17959,0.695874,Cfb,Temperate (C),main_catchment,226402
+226407,TRUE,47,Morwell River at Boolarra (226407),VIC,-38.4075,146.304722,115,Not nested,N/A,0,0.90456,0.157274,Cfb,Temperate (C),no_nested,NA
+226410,TRUE,57,Traralgon Creek at Koornalla (226410),VIC,-38.323,146.53,83.9,Level 1,226023,0,0.95118,0.149265,Cfb,Temperate (C),sub_catchment,226023
+227200,TRUE,52,Tarra River at Yarram (227200),VIC,-38.538,146.68,222.1,Not nested,N/A,1,0.79018,0.304255,Cfb,Temperate (C),main_catchment,227200
+227202,TRUE,62,Tarwin River at Meeniyan (227202),VIC,-38.582,145.99,1069.5,Not nested,N/A,2,0.17936,0.187268,Cfb,Temperate (C),main_catchment,227202
+227205,TRUE,54,Merriman Creek at Calignee South (227205),VIC,-38.35208581,146.6547464,39.2,Not nested,N/A,0,0.97901,0.14814,Cfb,Temperate (C),no_nested,NA
+227210,TRUE,61,Bruthen Creek at Carrajung Lower (227210),VIC,-38.39502395,146.74407,17.8,Not nested,N/A,0,0.98507,0.17187,Cfb,Temperate (C),no_nested,NA
+227211,TRUE,61,Agnes River at Toora (227211),VIC,-38.64,146.37,66.2,Not nested,N/A,0,0.7321,0.143744,Cfb,Temperate (C),no_nested,NA
+227213,TRUE,58,Jack River at Jack River (227213),VIC,-38.52579869,146.538118,35,Not nested,N/A,0,0.99976,0.13833,Cfb,Temperate (C),no_nested,NA
+227219,TRUE,54,Bass River at Loch (227219),VIC,-38.358,145.72,53.9,Level 1,227231,0,0.00108,0.203736,Cfb,Temperate (C),sub_catchment,227231
+227225,TRUE,52,Tarra River at Fischers (227225A),VIC,-38.469722,146.555278,20.3,Level 1,227200,0,0.9998,0.104902,Cfb,Temperate (C),sub_catchment,227200
+227226,TRUE,51,Tarwin River East Branch  at Dumbalk North (227226),VIC,-38.499722,146.160833,127.1,Level 1,227202,0,0.34155,0.185084,Cfb,Temperate (C),sub_catchment,227202
+227227,TRUE,44,Wilkur Creek at Leongatha (227227),VIC,-38.393333,145.957222,105.1,Level 1,227202,0,0.16987,0.182923,Cfb,Temperate (C),sub_catchment,227202
+227231,TRUE,48,Bass River at Glen Forbes South (227231),VIC,-38.467,145.51,233.7,Not nested,N/A,1,0.03428,0.358404,Cfb,Temperate (C),main_catchment,227231
+227236,FALSE,41,Powlett River at D/S Foster Ck Junction (227236),VIC,-38.559,145.71,233.8,Not nested,N/A,0,4.2e-4,0.198385,Cfb,Temperate (C),no_nested,NA
+227237,TRUE,42,Franklin River at Toora (227237),VIC,-38.63,146.31,73.6,Not nested,N/A,0,0.876,0.156544,Cfb,Temperate (C),no_nested,NA
+230205,TRUE,60,Deep Creek at Bulla (D/S of Emu Ck Ju (230205),VIC,-37.632,144.8,861.2,Not nested,N/A,0,0.19453,0.260152,Cfb,Temperate (C),no_nested,NA
+230209,TRUE,52,Barringo Creek at Barringo (U/S Of Diversion) (230209),VIC,-37.41050387,144.6260551,5.5,Not nested,N/A,0,1,0.080181,Cfb,Temperate (C),no_nested,NA
+230210,TRUE,52,Saltwater Creek at Bullengarook (230210),VIC,-37.471944,144.524167,39,Not nested,N/A,0,0.99562,0.131838,Cfb,Temperate (C),no_nested,NA
+231211,TRUE,43,Lerderderg River at U/S Goodman Ck Junction (231211),VIC,-37.63,144.43,234.5,Not nested,N/A,1,0.98488,0.117132,Cfb,Temperate (C),main_catchment,231211
+231213,TRUE,59,Lerderderg River at Sardine Creek O'brien Crossing (231213),VIC,-37.496111,144.359722,153.4,Level 1,231211,0,0.97845,0.13992,Cfb,Temperate (C),sub_catchment,231211
+231225,TRUE,44,Werribee River at Ballan (U/S Old Western H- (231225),VIC,-37.598,144.25,108.2,Not nested,N/A,0,0.66524,0.266808,Cfb,Temperate (C),no_nested,NA
+231231,TRUE,36,Toolern Creek at Melton South (231231),VIC,-37.72796,144.57898,85.8,Not nested,N/A,0,0.43508,0.219601,Cfb,Temperate (C),no_nested,NA
+232214,TRUE,42,Black Creek at U/S Of Bungal Dam (232214),VIC,-37.62982,144.06236,11.7,Not nested,N/A,0,0.00424,0.180654,Cfb,Temperate (C),no_nested,NA
+232215,TRUE,42,Woollen Creek at U/S Of Bungal Dam (232215),VIC,-37.6337175,144.0807662,8.8,Not nested,N/A,0,0.07321,0.178829,Cfb,Temperate (C),no_nested,NA
+233214,TRUE,61,Barwon River East Branch at Forrest (233214),VIC,-38.52871645,143.730405,16.6,Not nested,N/A,0,1,0.442992,Cfb,Temperate (C),no_nested,NA
+233223,FALSE,45,Warrambine Creek at Warrambine (233223),VIC,-37.928637,143.8663116,53.5,Not nested,N/A,0,0.02093,0.219409,Cfb,Temperate (C),no_nested,NA
+234200,TRUE,57,Woady Yaloak River River at Pitfield (234200),VIC,-37.809,143.59,309.5,Level 1,234201,0,0.5259,0.301163,Cfb,Temperate (C),sub_catchment,234201
+234201,TRUE,58,Woady Yaloak River at Cressy (Yarima) (234201),VIC,-38.012,143.64,1149.2,Not nested,N/A,1,0.26132,0.348426,Cfb,Temperate (C),main_catchment,234201
+234203,FALSE,48,Pirron YalloCreek C River at Pirron Yallock (above H'Wy (234203),VIC,-38.354,143.42,164.6,Not nested,N/A,0,0.2271,0.4825,Cfb,Temperate (C),no_nested,NA
+234209,FALSE,43,Dean Creek at Lake Colac (234209),VIC,-38.33843869,143.5583248,53.7,Not nested,N/A,0,7.7e-4,0.292642,Cfb,Temperate (C),no_nested,NA
+235202,FALSE,60,Gellibrand River River at Upper Gelliberand (235202),VIC,-38.564,143.66,51.6,Level 2,235227,0,0.99277,0.266967,Cfb,Temperate (C),sub_catchment,235224
+235203,FALSE,46,Curdies River River at Curdie (235203),VIC,-38.445,142.96,780.5,Not nested,N/A,1,0.09045,0.3092,Cfb,Temperate (C),main_catchment,235203
+235204,FALSE,43,Little Aire Creek at Beech Forest (235204),VIC,-38.6548305,143.5291815,11.1,Level 1,235219,0,0.9009,0.206489,Cfb,Temperate (C),sub_catchment,235219
+235205,FALSE,62,Arkins Creek West Branch at Wyelangta (235205),VIC,-38.638056,143.443056,4.4,Level 1,235224,0,1,0.127714,Cfb,Temperate (C),sub_catchment,235224
+235209,FALSE,54,Aire River at Beech Forest (235209),VIC,-38.66849499,143.5812749,25.1,Level 1,235219,0,1,0.163358,Cfb,Temperate (C),sub_catchment,235219
+235210,FALSE,55,Lardner Creek at Gellibrand (235210),VIC,-38.535,143.54,51.6,Level 2,235227,0,0.99784,0.14661,Cfb,Temperate (C),sub_catchment,235224
+235211,FALSE,55,Kennedys Creek at Kennedys Ck (235211),VIC,-38.588,143.26,266.3,Level 1,235224,0,0.41577,0.271904,Cfb,Temperate (C),sub_catchment,235224
+235219,FALSE,51,Aire River at Wyelangta (235219),VIC,-38.7031718,143.4772919,90.3,Not nested,N/A,2,0.9705,0.152745,Cfb,Temperate (C),main_catchment,235219
+235224,FALSE,52,Gellibrand River at Burrupa (235224),VIC,-38.7,143.25,1038.3,Not nested,N/A,3,0.80966,0.366771,Cfb,Temperate (C),main_catchment,235224
+235227,FALSE,42,Gellibrand River at Bunkers Hill (235227),VIC,-38.5241,143.4829,314.1,Level 1,235224,3,0.98424,0.168899,Cfb,Temperate (C),sub_catchment,235224
+235233,FALSE,42,Barham River East Branch at Apollo Bay Paradise (235233),VIC,-38.75502396,143.6249731,43.9,Not nested,N/A,0,0.99878,0.128114,Cfb,Temperate (C),no_nested,NA
+235234,TRUE,40,Love Creek at Gellibrand (235234),VIC,-38.483,143.57,76.6,Level 2,235227,0,0.95727,0.117438,Cfb,Temperate (C),sub_catchment,235224
+235237,FALSE,38,Scotts Creek at Curdie (Digneys Br) (235237),VIC,-38.448,142.99,344.7,Level 1,235203,0,0.08281,0.299475,Cfb,Temperate (C),sub_catchment,235203
+236202,TRUE,52,Hopkins River at Wickliffe (236202),VIC,-37.694023,142.725571,1394.3,Level 2,236210,0,0.09047,0.468117,Cfb,Temperate (C),sub_catchment,236209
+236203,TRUE,60,Mount Emu Creek at Skipton (236203),VIC,-37.68769856,143.3600674,1251.5,Level 2,236216,1,0.17793,0.667601,Cfb,Temperate (C),sub_catchment,236209
+236204,TRUE,59,Fiery Creek at Streatham (236204),VIC,-37.68052,143.0657,986.4,Level 2,236210,0,0.09843,0.338246,Cfb,Temperate (C),sub_catchment,236209
+236205,FALSE,55,Merri River at Woodford (236205),VIC,-38.316,142.48,902.2,Not nested,N/A,0,0.00495,0.290915,Cfb,Temperate (C),no_nested,NA
+236209,FALSE,61,Hopkins River at Hopkins Falls (236209),VIC,-38.33543732,142.6251911,8453.8,Not nested,N/A,2,0.06103,0.590519,Cfb,Temperate (C),main_catchment,236209
+236210,FALSE,61,Hopkins River at Framlingham (236210),VIC,-38.24379422,142.7030202,5191.7,Level 1,236209,2,0.04795,0.583294,Cfb,Temperate (C),sub_catchment,236209
+236212,FALSE,46,BruCreeknell Creek at Cudgee (236212),VIC,-38.346,142.65,219.2,Not nested,N/A,0,0.02484,0.233585,Cfb,Temperate (C),no_nested,NA
+236213,TRUE,46,Mount Emu Creek at Mena Park (236213),VIC,-37.531111,143.466389,464.1,Level 3,236203,0,0.30201,0.416917,Cfb,Temperate (C),sub_catchment,236209
+236216,TRUE,40,Mount Emu Creek at Taroon (Ayrford Road Bridge) (236216),VIC,-38.30559215,142.8812902,2984.6,Level 1,236209,1,0.0845,0.660071,Cfb,Temperate (C),sub_catchment,236209
+237200,FALSE,61,Moyne River at Toolong (237200),VIC,-38.31991057,142.2264285,559,Not nested,N/A,0,0.00166,0.476065,Cfb,Temperate (C),no_nested,NA
+237202,FALSE,53,Fitzroy River at Heywood (237202),VIC,-38.126,141.62,261.4,Not nested,N/A,0,0.59744,0.141341,Csb,Temperate (C),no_nested,NA
+237205,FALSE,51,Darlot Creek at Homerton Br (237205),VIC,-38.15,141.77,732.3,Not nested,N/A,0,0.22856,0.640706,Csb,Temperate (C),no_nested,NA
+237206,FALSE,48,Eumeralla River at Codrington (237206),VIC,-38.258,141.94,432.8,Not nested,N/A,0,0.20269,0.51895,Csb,Temperate (C),no_nested,NA
+237207,FALSE,46,Surry River at Heathmere (237207),VIC,-38.243,141.66,303.6,Not nested,N/A,0,0.6077,0.124646,Csb,Temperate (C),no_nested,NA
+238204,TRUE,51,Wannon River River at Dunkeld (238204),VIC,-37.631,142.34,576.9,Not nested,N/A,1,0.4873,0.540598,Cfb,Temperate (C),main_catchment,238204
+238208,TRUE,63,Jimmy Creek at Jimmy Creek (238208),VIC,-37.373333,142.507778,22.5,Level 1,238204,0,0.95699,0.025163,Cfb,Temperate (C),sub_catchment,238204
+238219,FALSE,51,Grange Burn at Morgiana (238219),VIC,-37.70876208,141.8325532,987.2,Not nested,N/A,0,0.01516,0.565782,Csb,Temperate (C),no_nested,NA
+238223,FALSE,46,Wando River at Wando Vale (238223),VIC,-37.496,141.43,175.7,Not nested,N/A,0,0.15325,0.192394,Csb,Temperate (C),no_nested,NA
+238229,FALSE,50,Chetwynd River at Chetwynd (238229),VIC,-37.321,141.48,70.6,Not nested,N/A,0,0.03677,0.190414,Csb,Temperate (C),no_nested,NA
+238230,FALSE,47,Stokes River at Teakettle (238230),VIC,-37.87,141.41,201.1,Not nested,N/A,0,0.7987,0.148723,Csb,Temperate (C),no_nested,NA
+238231,FALSE,41,Glenelg River at Big Cord (238231),VIC,-37.312,142.37,58.4,Not nested,N/A,0,0.99312,0.020584,Cfb,Temperate (C),no_nested,NA
+238235,FALSE,51,Crawford River at Lower Crawford (238235),VIC,-37.98,141.46,600.4,Not nested,N/A,0,0.55944,0.139925,Csb,Temperate (C),no_nested,NA
+302200,TRUE,43,Swan river at The Grange (302200),TAS,-42.0467,148.075,457.2,Not nested,N/A,0,0.92285,0.085704,Cfb,Temperate (C),no_nested,NA
+302208,FALSE,51,Meredith Reiver at Swansea (302208),TAS,-42.1217,148.04,86.1,Not nested,N/A,0,0.99662,0.053196,Cfb,Temperate (C),no_nested,NA
+303203,FALSE,48,Coal River at Baden (303203),TAS,-42.435,147.4533,54.1,Not nested,N/A,0,0.37848,0.166935,Cfb,Temperate (C),no_nested,NA
+304040,FALSE,63,Florentine River at U/S Derwent Junction (304040),TAS,-42.4417,146.515,444.6,Not nested,N/A,0,0.9845,0.078661,Cfb,Temperate (C),no_nested,NA
+304497,FALSE,57,Nive River at Gowan Brae (304497),TAS,-42.030556,146.419722,177.6,Not nested,N/A,0,0.83599,0.006965,Cfb,Temperate (C),no_nested,NA
+304499,FALSE,56,Tyenna River at Newbury (304499),TAS,-42.706389,146.711111,206.1,Not nested,N/A,0,0.97898,0.08807,Cfb,Temperate (C),no_nested,NA
+305202,FALSE,46,Snug Rivulet at U/S Snug Tiers Rd Bridge (305202),TAS,-43.071111,147.236944,17.4,Not nested,N/A,0,0.99296,0.036272,Cfb,Temperate (C),no_nested,NA
+306119,FALSE,45,Huon River above Frying PanCreek (306119),TAS,-43.0367,146.84,1822.5,Not nested,N/A,0,0.94728,0.099015,Cfb,Temperate (C),no_nested,NA
+307473,FALSE,48,Davey River at D/S Crossing Rv  (307473),TAS,-43.1412,145.95,697.9,Not nested,N/A,0,0.87327,5e-6,Cfb,Temperate (C),no_nested,NA
+308145,FALSE,53,Franklin River at Mt Fincham Track (308145),TAS,-42.241667,145.767222,774,Not nested,N/A,1,0.96094,0.004036,Cfb,Temperate (C),main_catchment,308145
+308799,FALSE,41,Collingwood river at B/L Alma (308799),TAS,-42.164167,145.928056,268.3,Level 1,308145,0,0.96901,0.004677,Cfb,Temperate (C),sub_catchment,308145
+312061,FALSE,63,Hellyer River at Guilford Junction (312061),TAS,-41.419444,145.670556,99.4,Not nested,N/A,0,0.99473,0.159306,Cfb,Temperate (C),no_nested,NA
+314207,FALSE,52,Leven River at at Bannons Bridge (314207),TAS,-41.250833,146.09,499.6,Not nested,N/A,0,0.93658,0.120321,Cfb,Temperate (C),no_nested,NA
+314212,FALSE,51,Cam River U/S Somerset WS (314212),TAS,-41.06,145.8367,225.5,Not nested,N/A,0,0.9391,0.209657,Cfb,Temperate (C),no_nested,NA
+314213,FALSE,46,Black River at South Forest (314213),TAS,-40.872222,145.297778,319,Not nested,N/A,0,0.98161,0.120588,Cfb,Temperate (C),no_nested,NA
+314214,FALSE,54,Duck River at Scotchtown Road (314214),TAS,-40.8733,145.1183,359.2,Not nested,N/A,0,0.63903,0.320397,Cfb,Temperate (C),no_nested,NA
+315450,FALSE,59,Forth River at U/S Lemonthyme (315450),TAS,-41.611667,146.130556,309.6,Not nested,N/A,0,0.94278,0.008511,Cfb,Temperate (C),no_nested,NA
+316624,FALSE,49,Arm River at U/S Mersey (316624),TAS,-41.6894,146.2154,86.3,Not nested,N/A,0,0.98871,0.064329,Cfb,Temperate (C),no_nested,NA
+317200,FALSE,53,Rubican River at Tidal Limit (317200),TAS,-41.2567,146.5667,259.6,Not nested,N/A,0,0.66934,0.180355,Cfb,Temperate (C),no_nested,NA
+318076,TRUE,58,North Esk River at Ballroom (318076),TAS,-41.494444,147.384167,374.2,Not nested,N/A,0,0.92181,0.115667,Cfb,Temperate (C),no_nested,NA
+318150,FALSE,48,River at South Esk at Llewellyn (318150),TAS,-41.8167,147.5633,2282.4,Level 1,318181,2,0.85147,0.158308,Cfb,Temperate (C),sub_catchment,318181
+318181,FALSE,63,South Esk River at U/S Macquarie R (at Per (318181),TAS,-41.5983,147.2033,3294.7,Not nested,N/A,1,0.76201,0.158655,Cfb,Temperate (C),main_catchment,318181
+318191,TRUE,37,Break O'Day River at at Killymoon (318191),TAS,-41.5967,148.0567,185.7,Level 2,318150,0,0.69499,0.270539,Cfb,Temperate (C),sub_catchment,318181
+319204,FALSE,47,Pipers River D/S  Yarrow Creek (319204),TAS,-41.0667,147.11,303,Not nested,N/A,0,0.79355,0.139274,Cfb,Temperate (C),no_nested,NA
+401009,FALSE,54,Maragle Creek at Maragle (401009),NSW,-35.926111,148.100833,215.5,Not nested,N/A,0,0.82601,0.106561,Cfb,Temperate (C),no_nested,NA
+401012,TRUE,48,Murray River at Biggara (401012),NSW,-36.318333,148.051944,1257.2,Not nested,N/A,0,0.94789,0.01841,Cfb,Temperate (C),no_nested,NA
+401013,TRUE,45,Jingellic Creek at Jingellic (401013),NSW,-35.8972,147.6917,392,Not nested,N/A,0,0.73289,0.132516,Cfb,Temperate (C),no_nested,NA
+401015,FALSE,45,Bowna Creek at Yambla (401015),NSW,-35.916667,146.976944,273.5,Not nested,N/A,0,0.10171,0.194137,Cfa,Temperate (C),no_nested,NA
+401017,TRUE,34,Mannus Creek at Yarramundi (401017),NSW,-35.77,147.93,199.4,Not nested,N/A,0,0.20276,0.194394,Cfb,Temperate (C),no_nested,NA
+401203,TRUE,63,Mitta Mitta River at Hinnomunjie (401203),VIC,-36.948056,147.606944,1520.4,Not nested,N/A,1,0.77292,0.211253,Cfb,Temperate (C),main_catchment,401203
+401208,TRUE,56,Cudgewa Creek at Berringama (401208),VIC,-36.213333,147.677778,356.2,Not nested,N/A,0,0.84718,0.099481,Cfb,Temperate (C),no_nested,NA
+401210,FALSE,63,Snowy Creek at Below Granite Flat (401210),VIC,-36.568611,147.413611,412.9,Not nested,N/A,0,0.97714,0.028576,Cfb,Temperate (C),no_nested,NA
+401212,TRUE,61,Nariel Creek at Upper Nariel (401212),VIC,-36.446111,147.829444,254.7,Not nested,N/A,0,0.97209,0.025154,Cfb,Temperate (C),no_nested,NA
+401215,TRUE,58,Morass Creek at Uplands (401215),VIC,-36.86621971,147.7035132,536.7,Not nested,N/A,0,0.64189,0.145377,Cfb,Temperate (C),no_nested,NA
+401216,TRUE,60,Big River at Jokers Creek (401216),VIC,-36.933056,147.4725,358.1,Level 1,401203,0,0.82987,0.042804,Cfb,Temperate (C),sub_catchment,401203
+401217,TRUE,48,Gibbo River at Gibbo Park (401217),VIC,-36.756111,147.708611,389.2,Not nested,N/A,0,0.93866,0.019382,Cfb,Temperate (C),no_nested,NA
+401220,FALSE,40,Tallangatta Creek at McCallums (401220),VIC,-36.213,147.34,454.7,Not nested,N/A,0,0.72153,0.079653,Cfb,Temperate (C),no_nested,NA
+402204,FALSE,53,Yackandandah Creek at Osbornes Flat (402204),VIC,-36.303333,146.906111,280.5,Not nested,N/A,1,0.61585,0.192153,Cfa,Temperate (C),main_catchment,402204
+402206,FALSE,44,Running Creek at Running Creek (402206),VIC,-36.54,147.044444,127.4,Not nested,N/A,0,0.93035,0.06241,Cfb,Temperate (C),no_nested,NA
+402213,FALSE,47,Kinchington Creek at Osbornes Flat (402213),VIC,-36.316389,146.894444,120.3,Level 1,402204,1,0.4013,0.150679,Cfa,Temperate (C),sub_catchment,402204
+402217,FALSE,39,Flaggy Creek at Myrtleford Road Bridge (402217),VIC,-36.385833,146.876389,22.5,Level 2,402213,0,0.41846,0.103361,Cfa,Temperate (C),sub_catchment,402204
+403200,FALSE,59,Ovens River at Wangaratta (403200),VIC,-36.35066081,146.3209358,5117.2,Level 1,403209A,3,0.73293,0.33915,Cfa,Temperate (C),sub_catchment,403209A
+403205,FALSE,57,Ovens Rivers at Bright (403205),VIC,-36.72564366,146.9525954,493.7,Level 3,403230,1,0.96691,0.053135,Cfb,Temperate (C),sub_catchment,403209A
+403209A,FALSE,47,Reedy Creek at Wangaratta North (403209A),VIC,-36.3325,146.344722,5486.9,Not nested,N/A,2,0.72192,0.340268,Cfa,Temperate (C),main_catchment,403209A
+403213,FALSE,59,Fifteen Mile Creek at Greta South (403213),VIC,-36.619444,146.244722,227.1,Not nested,N/A,0,0.86662,0.061865,Cfb,Temperate (C),no_nested,NA
+403214,FALSE,59,Happy Valley Creek at Rosewhite (403214),VIC,-36.577778,146.820278,137.6,Level 3,403230,0,0.69697,0.100645,Cfb,Temperate (C),sub_catchment,403209A
+403217,FALSE,48,Rose River at Matong North (403217),VIC,-36.824722,146.583611,177.8,Level 3,403230,0,0.96851,0.031016,Cfb,Temperate (C),sub_catchment,403209A
+403221,FALSE,56,Reedy Creek at Woolshed (403221),VIC,-36.311667,146.601111,211.5,Level 1,403209A,0,0.62348,0.168857,Cfa,Temperate (C),sub_catchment,403209A
+403222,FALSE,54,Buffalo River at Abbeyard (403222),VIC,-36.910833,146.700556,414.8,Level 3,403223,0,0.96425,0.018487,Cfb,Temperate (C),sub_catchment,403209A
+403223,FALSE,51,King River at Docker Road Bridge (403223),VIC,-36.5163133,146.3894165,1083.1,Level 2,403200,2,0.76512,0.265919,Cfb,Temperate (C),sub_catchment,403209A
+403224,FALSE,46,Hurdle Creek at Bobinawarrah (403224),VIC,-36.513,146.45,152.3,Level 2,403200,0,0.62315,0.140072,Cfb,Temperate (C),sub_catchment,403209A
+403226,FALSE,50,Boggy Creek at Angleside (403226),VIC,-36.605556,146.362222,107.9,Level 3,403223,0,0.63922,0.092625,Cfb,Temperate (C),sub_catchment,403209A
+403230,FALSE,53,Ovens River at Rocky Point (403230),VIC,-36.5334707,146.6683095,2966.7,Level 2,403200,4,0.90487,0.243154,Cfb,Temperate (C),sub_catchment,403209A
+403232,FALSE,47,Morses Creek at Wandiligong (403232),VIC,-36.751111,146.979722,125.3,Level 4,403205,0,0.99024,0.079015,Cfb,Temperate (C),sub_catchment,403209A
+403233,FALSE,44,Buckland River at Harris Lane (403233),VIC,-36.72149292,146.8820491,457.1,Level 3,403230,0,0.94718,0.024844,Cfb,Temperate (C),sub_catchment,403209A
+404204,FALSE,53,Boosey Creek at Tungamah (404204),VIC,-36.12376902,145.8319105,830.3,Not nested,N/A,0,0.10097,0.510794,Cfa,Temperate (C),no_nested,NA
+404207,FALSE,61,Holland Creek at Kelfeera (404207),VIC,-36.612222,146.058611,454.7,Not nested,N/A,0,0.65326,0.395918,Cfb,Temperate (C),no_nested,NA
+405205,TRUE,45,Murrindindi River at Murrindindi above Colwells (405205),VIC,-37.413889,145.564167,107.8,Not nested,N/A,0,0.97086,0.132,Cfb,Temperate (C),no_nested,NA
+405209,TRUE,48,Acheron River at Taggerty (405209),VIC,-37.317778,145.713889,625.8,Not nested,N/A,0,0.93734,0.146156,Cfb,Temperate (C),no_nested,NA
+405212,FALSE,56,Sunday Creek at Tallarook (405212),VIC,-37.1,145.06,333.2,Not nested,N/A,0,0.45429,0.660667,Cfb,Temperate (C),no_nested,NA
+405214,FALSE,61,Delatite River at Tonga Br (405214),VIC,-37.159,146.11,359.8,Not nested,N/A,0,0.53438,0.627669,Cfb,Temperate (C),no_nested,NA
+405215,FALSE,45,Howqua River at Glen Esk (405215),VIC,-37.229444,146.207222,369.5,Not nested,N/A,0,0.95607,0.453968,Cfb,Temperate (C),no_nested,NA
+405217,TRUE,44,Yea River at Devlins Bridge (405217),VIC,-37.383056,145.473333,360.2,Not nested,N/A,0,0.75922,0.16527,Cfb,Temperate (C),no_nested,NA
+405218,TRUE,62,Jamieson River at Gerrang Bridge (405218),VIC,-37.291667,146.1875,366.8,Not nested,N/A,0,0.95338,0.598175,Cfb,Temperate (C),no_nested,NA
+405219,TRUE,49,Goulburn River at Dohertys (405219),VIC,-37.3325,146.130278,699.1,Not nested,N/A,1,0.95495,0.627162,Cfb,Temperate (C),main_catchment,405219
+405226,FALSE,44,Pranjip Creek at Moorlim (405226),VIC,-36.621111,145.306667,788.4,Not nested,N/A,0,0.04183,0.686897,Cfb,Temperate (C),no_nested,NA
+405227,TRUE,49,Big River at Jamieson (405227),VIC,-37.3675,146.056944,628.1,Not nested,N/A,1,0.98933,0.125635,Cfb,Temperate (C),main_catchment,405227
+405228,FALSE,46,Hughes Creek at Tarcombe Rd (405228),VIC,-36.95,145.28,480.6,Not nested,N/A,0,0.14263,0.187411,Cfb,Temperate (C),no_nested,NA
+405229,TRUE,52,Wanalta Creek at Wanalta (405229),VIC,-36.635,144.87,108.7,Not nested,N/A,0,0.53053,0.175526,Cfb,Temperate (C),no_nested,NA
+405230,TRUE,47,Cornella Creek at Colbinabbin (405230),VIC,-36.604,144.81,259.3,Not nested,N/A,0,0.41681,0.163917,Cfb,Temperate (C),no_nested,NA
+405231,TRUE,46,King Parrot Creek at Flowerdale (405231),VIC,-37.347,145.29,182.7,Not nested,N/A,0,0.97829,0.240708,Cfb,Temperate (C),no_nested,NA
+405234,TRUE,54,Seven Creeks River at D/S of Polly McQuinn Weir (405234),VIC,-36.888,145.68,154.8,Level 1,405237,0,0.14744,0.529223,Cfb,Temperate (C),sub_catchment,405237
+405237,TRUE,52,Seven Creeks at Euroa Township (405237),VIC,-36.762369,145.585843,341.5,Not nested,N/A,1,0.13489,0.659453,Cfb,Temperate (C),main_catchment,405237
+405238,FALSE,46,Mollison Creek at Pyalong (405238),VIC,-37.120278,144.856944,164.3,Level 1,405240,0,0.23295,0.344173,Cfb,Temperate (C),sub_catchment,405240
+405240,FALSE,45,Sugarloaf Creek at Ash Br (405240),VIC,-37.061,145.06,611.3,Not nested,N/A,1,0.14903,0.634451,Cfb,Temperate (C),main_catchment,405240
+405241,TRUE,48,Rubicon River at Rubicon (405241),VIC,-37.291,145.83,127.7,Not nested,N/A,0,0.9696,0.61207,Cfb,Temperate (C),no_nested,NA
+405245,FALSE,50,Ford Creek at Mansfield (405245),VIC,-37.038611,146.053889,117.3,Not nested,N/A,0,0.03768,0.246765,Cfb,Temperate (C),no_nested,NA
+405246,FALSE,45,Castle Creek at Arcadia (405246),VIC,-36.59083189,145.3511279,202.7,Not nested,N/A,0,0.04142,0.601381,Cfb,Temperate (C),no_nested,NA
+405248,TRUE,50,Major Creek at Graytown (405248),VIC,-36.853611,144.914444,292.1,Not nested,N/A,0,0.67626,0.095684,Cfb,Temperate (C),no_nested,NA
+405251,FALSE,47,Brankeet Creek at Ancona (405251),VIC,-36.968611,145.783889,118.6,Not nested,N/A,0,0.74215,0.148209,Cfb,Temperate (C),no_nested,NA
+405263,TRUE,35,Goulburn River at U/S of Snake Creek Junction (405263),VIC,-37.462778,146.247778,327.6,Level 1,405219,0,0.94247,0.135937,Cfb,Temperate (C),sub_catchment,405219
+405264,TRUE,46,Big River at D/S of Frenchman Creek Junction (405264),VIC,-37.520556,146.076667,336.5,Level 1,405227,0,0.99063,0.127733,Cfb,Temperate (C),sub_catchment,405227
+405274,TRUE,44,Home Creek at Yarck (405274),VIC,-37.106111,145.605,181.4,Not nested,N/A,0,0.26622,0.226042,Cfb,Temperate (C),no_nested,NA
+406208,TRUE,63,Campaspe River at Ashborne (406208),VIC,-37.387778,144.450556,37.9,Level 1,406213,0,0.86208,0.204446,Cfb,Temperate (C),sub_catchment,406213
+406213,TRUE,44,Campaspe River at Redesdale (406213),VIC,-37.016111,144.539167,638,Not nested,N/A,1,0.19307,0.211282,Cfb,Temperate (C),main_catchment,406213
+406214,TRUE,49,Axe Creek at Longlea (406214),VIC,-36.773889,144.428333,236.2,Not nested,N/A,0,0.57363,0.567066,Cfb,Temperate (C),no_nested,NA
+406224,FALSE,40,Mount Pleasant Creek at Runnymede (406224),VIC,-36.546389,144.637222,242.3,Not nested,N/A,0,0.14701,0.200156,Cfb,Temperate (C),no_nested,NA
+406226,TRUE,41,Mount Ida Creek at Derrinal (406226),VIC,-36.881,144.65,173,Not nested,N/A,0,0.40232,0.178374,Cfb,Temperate (C),no_nested,NA
+406235,TRUE,36,Wild DuCreek Creek at U/S of Heathcote-Mia Mia (406235),VIC,-36.948,144.66,213.4,Not nested,N/A,0,0.14373,0.17575,Cfb,Temperate (C),no_nested,NA
+406250,TRUE,34,Coliban River at Springhill-Tylden Rd (406250),VIC,-37.32,144.37,78.2,Not nested,N/A,0,0.64396,0.146324,Cfb,Temperate (C),no_nested,NA
+407213,TRUE,44,McCallums Creek at Carisbrook (407213),VIC,-37.085,143.81,467.7,Not nested,N/A,0,0.38204,0.403727,Cfb,Temperate (C),no_nested,NA
+407214,TRUE,63,Creswick Creek at Clunes (407214),VIC,-37.296944,143.789444,305.7,Not nested,N/A,0,0.28526,0.235117,Cfb,Temperate (C),no_nested,NA
+407215,TRUE,37,Loddon River at Newstead (407215),VIC,-37.108889,144.058889,1027.5,Not nested,N/A,2,0.66177,0.188488,Cfb,Temperate (C),main_catchment,407215
+407217,TRUE,58,Loddon River at Vaughan D/S Fryers Creek (407217),VIC,-37.15795783,144.2084168,294.7,Level 1,407215,0,0.81284,0.111772,Cfb,Temperate (C),sub_catchment,407215
+407220,TRUE,37,Bet Bet Creek at Norwood (407220),VIC,-36.993611,143.644167,351,Level 1,407211,0,0.17505,0.190878,Cfb,Temperate (C),sub_catchment,407211
+407221,TRUE,59,Larni Barramal Yaluk at Yandoit (407221),VIC,-37.2064268,144.100373,167.5,Level 1,407215,0,0.7741,0.115907,Cfb,Temperate (C),sub_catchment,407215
+407230,TRUE,48,Joyces Creek at Strathlea (407230),VIC,-37.162222,143.960833,150.8,Not nested,N/A,0,0.33978,0.153763,Cfb,Temperate (C),no_nested,NA
+407246,TRUE,45,Bullock Creek at Marong (407246),VIC,-36.72893939,144.1360524,186.3,Not nested,N/A,0,0.39265,0.658451,Cfb,Temperate (C),no_nested,NA
+407253,FALSE,44,Piccaninny Creek at Minto (407253),VIC,-36.452222,144.468889,679.5,Not nested,N/A,0,0.4568,0.60199,BSk,Dry (B),no_nested,NA
+408200,TRUE,53,Avoca River at Coonooer (408200),VIC,-36.438056,143.298333,2677.9,Not nested,N/A,1,0.32702,0.202457,BSk,Dry (B),main_catchment,408200
+408202,TRUE,51,Avoca River at Amphitheatre (408202),VIC,-37.181944,143.405556,76.6,Level 2,408206,0,0.24152,0.172685,Cfb,Temperate (C),sub_catchment,408200
+408206,TRUE,34,Avoca River at Archdale Junction (408206),VIC,-36.885,143.5,667.5,Level 1,408200,1,0.3372,0.174821,Cfb,Temperate (C),sub_catchment,408200
+410024,TRUE,63,Goodradigbee River at Wee Jasper (Kashmir) (410024),NSW,-35.1672,148.6855,989.3,Not nested,N/A,1,0.98458,0.048587,Cfb,Temperate (C),main_catchment,410024
+410026,TRUE,52,Yass River at Yass (410026),NSW,-34.8367,148.9103,1229.1,Not nested,N/A,0,0.4322,0.69625,Cfb,Temperate (C),no_nested,NA
+410033,TRUE,57,Murrumbidgee River at Mittagang Crossing (410033),NSW,-36.17,149.09,1894.8,Level 1,410761,0,0.71373,0.297846,Cfb,Temperate (C),sub_catchment,410761
+410038,TRUE,51,Adjungbilly Creek at Darbalara (410038),NSW,-35.0192,148.2457,389.2,Not nested,N/A,0,0.63199,0.204863,Cfb,Temperate (C),no_nested,NA
+410044,TRUE,39,Muttama Creek at Coolac (410044),NSW,-34.9319,148.1616,1062.5,Not nested,N/A,0,0.10423,0.250717,Cfa,Temperate (C),no_nested,NA
+410047,TRUE,48,Tarcutta Creek at Old Borambola (410047),NSW,-35.1639,147.6543,1646,Not nested,N/A,0,0.4558,0.356722,Cfa,Temperate (C),no_nested,NA
+410057,TRUE,63,Goobarragandra River at Lacmalac (410057),NSW,-35.33,148.348889,664.7,Not nested,N/A,0,0.97476,0.254553,Cfb,Temperate (C),no_nested,NA
+410061,TRUE,63,Adelong Creek at Batlow Road (410061),NSW,-35.332222,148.069167,146.6,Not nested,N/A,0,0.57641,0.21061,Cfb,Temperate (C),no_nested,NA
+410062,TRUE,56,Numeralla River at Numeralla School (410062),NSW,-36.1793,149.3485,674.1,Level 1,410761,0,0.73511,0.097031,Cfb,Temperate (C),sub_catchment,410761
+410088,TRUE,58,Goodradigbee River at Brindabella (No.2&No.3-Cab (410088),NSW,-35.42,148.73,428.1,Level 1,410024,0,0.98261,0.008351,Cfb,Temperate (C),sub_catchment,410024
+410091,TRUE,38,Billabong Creek at Walbundrie (410091),NSW,-35.69,146.72,2636.3,Not nested,N/A,0,0.1332,0.17223,Cfa,Temperate (C),no_nested,NA
+410141,TRUE,38,Micaligo Creek at Michelago (410141),NSW,-35.7053,149.1488,190.6,Level 1,410761,0,0.7315,0.078082,Cfb,Temperate (C),sub_catchment,410761
+410156,TRUE,36,Kyeamba Creek at Book Book (410156),NSW,-35.35,147.55,144.4,Not nested,N/A,0,0.06104,0.24856,Cfa,Temperate (C),no_nested,NA
+410705,TRUE,60,Molonglo River at Burbong (410705),NSW,-35.335556,149.316111,498,Not nested,N/A,0,0.6304,0.185333,Cfb,Temperate (C),no_nested,NA
+410713,TRUE,57,Paddy's River at Riverlea (410713),ACT,-35.3843,148.9656,226.5,Not nested,N/A,0,0.73243,0.065645,Cfb,Temperate (C),no_nested,NA
+410730,TRUE,57,Cotter River at Gingera (410730),ACT,-35.591944,148.822222,129.2,Not nested,N/A,0,0.9662,0.001362,Cfb,Temperate (C),no_nested,NA
+410731,TRUE,51,Gudgenby River at Tennent (410731),ACT,-35.575,149.066111,669.6,Not nested,N/A,0,0.93617,0.056212,Cfb,Temperate (C),no_nested,NA
+410734,TRUE,53,Queanbeyan River at Tinderry (410734),NSW,-35.613889,149.348889,564.4,Not nested,N/A,0,0.78177,0.076393,Cfb,Temperate (C),no_nested,NA
+410761,TRUE,44,Murrumbidgee River at Lobb Holes (410761),ACT,-35.54,149.101944,5163.1,Not nested,N/A,3,0.70482,0.227066,Cfb,Temperate (C),main_catchment,410761
+411003,TRUE,34,Butmaroo Creek at Butmaroo (411003),NSW,-35.2567,149.5422,63.9,Not nested,N/A,0,0.56136,0.102489,Cfb,Temperate (C),no_nested,NA
+412028,TRUE,51,Abercrombie River at Abercrombie  (412028),NSW,-33.954722,149.325278,2639.3,Not nested,N/A,1,0.58155,0.144278,Cfb,Temperate (C),main_catchment,412028
+412029,TRUE,52,Boorowa River at Prossers Crossing (412029),NSW,-34.1441,148.8101,1550.6,Not nested,N/A,0,0.08017,0.1934,Cfa,Temperate (C),no_nested,NA
+412050,TRUE,42,Crookwell River at Narrawa North (412050),NSW,-34.310556,149.167222,759.3,Not nested,N/A,0,0.11408,0.202804,Cfb,Temperate (C),no_nested,NA
+412066,TRUE,55,Abercrombie River at Hadley No. 2 (412066),NSW,-34.112778,149.5975,1636.6,Level 1,412028,0,0.503,0.144062,Cfb,Temperate (C),sub_catchment,412028
+415201,TRUE,56,Wimmera River at Glenorchy Weir Tail Gauge (415201),VIC,-36.909,142.64,1973.8,Not nested,N/A,2,0.23347,0.471637,Cfb,Temperate (C),main_catchment,415201
+415206,TRUE,59,Wimmera River at Glynwylln (415206),VIC,-36.95390887,142.8600891,1386.5,Level 1,415201,3,0.27442,0.176578,Cfb,Temperate (C),sub_catchment,415201
+415207,TRUE,57,Wimmera River at Eversley (415207),VIC,-37.185278,143.184722,305.8,Level 2,415206,0,0.5551,0.144031,Cfb,Temperate (C),sub_catchment,415201
+415220,TRUE,43,Avon River at Wimmera HWY (415220),VIC,-36.64,142.98,526.5,Not nested,N/A,0,0.19966,0.416643,Cfb,Temperate (C),no_nested,NA
+415223,TRUE,50,Burnt Creek at Wonwondah East (415223),VIC,-36.88537671,142.2340353,82,Not nested,N/A,0,0.08399,0.549091,Cfb,Temperate (C),no_nested,NA
+415226,TRUE,47,Richardson River at Carrs Plains (415226),VIC,-36.743611,142.785278,129.7,Not nested,N/A,0,0.10739,0.313004,Cfb,Temperate (C),no_nested,NA
+415237,TRUE,44,Concongella Creek at Stawell (415237),VIC,-37.026389,142.821389,239.6,Level 1,415201,0,0.16001,0.189971,Cfb,Temperate (C),sub_catchment,415201
+415238,TRUE,41,Wattle Creek at Navarre (415238),VIC,-36.902,143.11,139.3,Level 2,415206,0,0.4657,0.152612,Cfb,Temperate (C),sub_catchment,415201
+415245,TRUE,34,Mount Cole Creek at Crowlands (415245),VIC,-37.165,143.09,153.1,Level 2,415206,0,0.36482,0.19282,Cfb,Temperate (C),sub_catchment,415201
+416003,FALSE,43,Tenterfield Creek at Clifton (416003),NSW,-29.029167,151.725833,555.1,Not nested,N/A,0,0.62,0.223241,Cfb,Temperate (C),no_nested,NA
+416008,FALSE,32,Beadt River at Haystack (416008),NSW,-29.219167,151.383056,898,Not nested,N/A,0,0.78624,0.175842,Cfa,Temperate (C),no_nested,NA
+416010,FALSE,46,Macintyre River at Wallangra (416010),NSW,-29.2642,150.8984,2142.9,Not nested,N/A,1,0.57847,0.450051,Cfa,Temperate (C),main_catchment,416010
+416016,FALSE,46,Macintyre River at Inverell (Middle Ck) (416016),NSW,-29.7936,151.1263,752.8,Level 1,416010,0,0.61882,0.664076,Cfa,Temperate (C),sub_catchment,416010
+416020,FALSE,41,Ottleys Creek at Coolatai (416020),NSW,-29.234,150.7581,385.1,Not nested,N/A,0,0.60892,0.165128,Cfa,Temperate (C),no_nested,NA
+416023,FALSE,42,Deepwater River at Bolivia (416023),NSW,-29.2929,151.9234,538.9,Level 1,416032,0,0.55415,0.22156,Cfb,Temperate (C),sub_catchment,416032
+416032,FALSE,47,Mole River at Donaldson (416032),NSW,-29.017,151.5986,1585.9,Not nested,N/A,1,0.75056,0.237814,Cfb,Temperate (C),main_catchment,416032
+418005,FALSE,50,Copes Creek at Kimberley (418005),NSW,-29.916944,151.114167,237.5,Not nested,N/A,0,0.85344,0.16664,Cfa,Temperate (C),no_nested,NA
+418014,FALSE,47,Gwydir River at Yarrowyck (418014),NSW,-30.4675,151.362778,826.2,Not nested,N/A,0,0.3766,0.241796,Cfb,Temperate (C),no_nested,NA
+418015,FALSE,46,Horton River at Rider (Killara) (418015),NSW,-29.83,150.35,1958.1,Not nested,N/A,1,0.56977,0.129798,Cfa,Temperate (C),main_catchment,418015
+418017,FALSE,40,Myall Creek at Molroy (418017),NSW,-29.7992,150.5832,872.6,Not nested,N/A,0,0.58151,0.181482,Cfa,Temperate (C),no_nested,NA
+418021,FALSE,42,Laura Creek at Laura (418021),NSW,-30.2293,151.1857,346.9,Not nested,N/A,0,0.44359,0.183297,Cfb,Temperate (C),no_nested,NA
+418025,FALSE,41,Halls Creek at Bingara (418025),NSW,-29.9361,150.5716,121.8,Not nested,N/A,0,0.64683,0.165758,Cfa,Temperate (C),no_nested,NA
+418027,FALSE,47,Horton River at Horton Dam Site (418027),NSW,-30.2081,150.4281,206.9,Level 1,418015,0,0.72379,0.116422,Cfa,Temperate (C),sub_catchment,418015
+419005,FALSE,59,Namoi River at North Cuerindi (419005),NSW,-30.678611,150.778056,2535.9,Not nested,N/A,1,0.4956,0.188443,Cfa,Temperate (C),main_catchment,419005
+419010,FALSE,41,Macdonald River at Woolbrook (419010),NSW,-30.9669,151.3448,843.9,Level 1,419005,0,0.22729,0.178929,Cfb,Temperate (C),sub_catchment,419005
+419016,FALSE,47,CoCreekburn River at Mulla Crossing (419016),NSW,-31.0614,151.1254,894.5,Not nested,N/A,1,0.85877,0.141036,Cfb,Temperate (C),main_catchment,419016
+419029,FALSE,34,Halls Creek at Ukolan (419029),NSW,-30.7054,150.8259,357.4,Not nested,N/A,0,0.8527,0.13392,Cfa,Temperate (C),no_nested,NA
+419035,FALSE,37,Goonoo Goonoo Creek at Timbumburi (419035),NSW,-31.2726,150.9147,454.1,Not nested,N/A,0,0.17143,0.182393,Cfa,Temperate (C),no_nested,NA
+419054,FALSE,45,Swamp Oak Creek at Limbri (419054),NSW,-31.0396,151.1694,393.1,Level 1,419016,0,0.85612,0.140966,Cfb,Temperate (C),sub_catchment,419016
+420003,TRUE,32,Belar Creek at Warkton (Blackburns) (420003),NSW,-31.3861,149.2011,130.9,Level 1,420017,0,0.65498,0.089408,Cfa,Temperate (C),sub_catchment,420017
+420017,TRUE,37,Castlereagh River at Hidden Valley (420017),NSW,-31.4197,149.3103,1156.7,Not nested,N/A,1,0.58693,0.196286,Cfa,Temperate (C),main_catchment,420017
+421018,FALSE,39,Bell River at Newrea (421018),NSW,-32.6808,148.9478,1635,Not nested,N/A,1,0.16214,0.241317,Cfa,Temperate (C),main_catchment,421018
+421026,TRUE,36,Turon River at Sofala (421026),NSW,-33.0819,149.689,885.8,Not nested,N/A,0,0.78975,0.152075,Cfb,Temperate (C),no_nested,NA
+421042,FALSE,43,Talbragar River at Elong Elong (421042),NSW,-32.0939,149.0598,3192,Not nested,N/A,0,0.40913,0.160233,Cfa,Temperate (C),no_nested,NA
+421048,FALSE,31,Little River at Obley No.2 (421048),NSW,-32.7072,148.5511,577.6,Not nested,N/A,0,0.43956,0.129937,Cfa,Temperate (C),no_nested,NA
+421050,FALSE,36,Bell River at Molong (421050),NSW,-33.03,148.95,368.2,Level 1,421018,0,0.21621,0.22435,Cfa,Temperate (C),sub_catchment,421018
+422202B,FALSE,63,Dogwood Creek at Gilweir (422202B),QLD,-26.708889,150.178889,2987.4,Not nested,N/A,0,0.89412,0.164403,Cfa,Temperate (C),no_nested,NA
+422306A,TRUE,63,Swan Creek at Swanfels (422306A),QLD,-28.164444,152.283333,81.9,Not nested,N/A,0,0.96712,0.06651,Cfa,Temperate (C),no_nested,NA
+422313B,TRUE,41,Emu Creek at Emu Vale (422313B),QLD,-28.228333,152.226667,153.4,Not nested,N/A,0,0.83808,0.0967,Cfa,Temperate (C),no_nested,NA
+422319B,TRUE,52,Dalrymple Creek at Allora (422319B),QLD,-28.035833,152.014444,245.7,Not nested,N/A,0,0.68002,0.120026,Cfa,Temperate (C),no_nested,NA
+422321B,TRUE,46,Spring Creek at Killarney (422321B),QLD,-28.353889,152.333056,33.3,Level 1,422394A,0,0.62867,0.170978,Cfa,Temperate (C),sub_catchment,422394A
+422334A,TRUE,51,Kings Creek at Aides Bridge (422334A),QLD,-27.926389,151.8625,513.5,Not nested,N/A,0,0.35994,0.281159,Cfa,Temperate (C),no_nested,NA
+422338A,TRUE,47,Canal Creek at Leyburn (422338A),QLD,-28.0321,151.5853,395.6,Not nested,N/A,0,0.92635,0.157071,Cfa,Temperate (C),no_nested,NA
+422394A,TRUE,49,Condamine River at Elbow Valley (422394A),QLD,-28.371111,152.141944,327.8,Not nested,N/A,1,0.68968,0.255453,Cfa,Temperate (C),main_catchment,422394A
+424002,FALSE,46,Paroo River at Willarra Crossing (424002),NSW,-29.2387,144.4553,35247.5,Not nested,N/A,1,0.08985,0.355058,BSh,Dry (B),main_catchment,424002
+424201A,TRUE,52,Paroo River at Caiwarro (424201A),QLD,-28.6891,144.7859,22886.1,Level 1,424002,0,0.11568,0.339726,BSh,Dry (B),sub_catchment,424002
+602004,FALSE,45,Kalgan R River at Stevens Farm (602004),WA,-34.8861,118,2431.3,Not nested,N/A,0,0.49342,0.232153,Csb,Temperate (C),no_nested,NA
+603003,FALSE,47,Denmark River at Kompup (603003),WA,-34.6994,117.2169,230.2,Level 1,603136,1,0.91173,0.152452,Csb,Temperate (C),sub_catchment,603136
+603004,FALSE,38,Hay River at Sunny Glen (603004),WA,-34.9108,117.4783,1234.1,Not nested,N/A,1,0.62394,0.115125,Csb,Temperate (C),main_catchment,603004
+603005,TRUE,36,Mitchell River at Beigpiegup (603005),WA,-34.8276,117.3929,51.5,Level 1,603004,0,0.99799,2.37e-4,Csb,Temperate (C),sub_catchment,603004
+603007,TRUE,36,Sleeman River at Sleeman Rd Bridge (603007),WA,-34.9583,117.5032,79.7,Not nested,N/A,0,0.35039,0.561872,Csb,Temperate (C),no_nested,NA
+603136,FALSE,61,Denmark River at Mt Lindesay (603136),WA,-34.8667,117.315,494,Not nested,N/A,1,0.95291,0.171185,Csb,Temperate (C),main_catchment,603136
+603190,FALSE,59,Yate Flat Creek at Woonanup (603190),WA,-34.7038,117.2921,57.8,Level 2,603003,0,0.94146,0.169222,Csb,Temperate (C),sub_catchment,603136
+604001,FALSE,42,Kent River at Rocky Glen (604001),WA,-34.6227,117.0353,1117.5,Level 1,604053,0,0.53016,0.145005,Csb,Temperate (C),sub_catchment,604053
+604053,FALSE,63,Kent River at Styx Junction (604053),WA,-34.889167,117.087222,1841.4,Not nested,N/A,1,0.7108,0.054168,Csb,Temperate (C),main_catchment,604053
+605012,FALSE,63,Frankland R River at Mount Frankland (605012),WA,-34.9062,116.7885,4733,Not nested,N/A,0,0.37778,0.090256,Csb,Temperate (C),no_nested,NA
+606001,FALSE,46,Deep River at Teds Pool (606001),WA,-34.764167,116.615278,473.7,Not nested,N/A,0,0.99825,0.004625,Csb,Temperate (C),no_nested,NA
+606002,FALSE,39,Weld River at Wattle Block (606002),WA,-34.696667,116.513889,60.5,Level 1,606195,0,0.99851,0.025772,Csb,Temperate (C),sub_catchment,606195
+606185,FALSE,39,Shannon River at Dog Pool (606185),WA,-34.7648,116.3773,379.4,Not nested,N/A,0,0.99651,0.026589,Csb,Temperate (C),no_nested,NA
+606195,FALSE,57,Weld River at Ordnance Rd Crossing (606195),WA,-34.8069,116.5752,245.8,Not nested,N/A,1,0.9911,0.030046,Csb,Temperate (C),main_catchment,606195
+607003,FALSE,51,Warren River at Wheatley Farm (607003),WA,-34.3694,116.2777,2986.7,Level 1,607220,3,0.74418,0.096262,Csb,Temperate (C),sub_catchment,607220
+607004,FALSE,47,Perup River at Quabicup Hill (607004),WA,-34.3311,116.4585,665.1,Level 2,607003,0,0.96054,0.097379,Csb,Temperate (C),sub_catchment,607220
+607007,FALSE,40,Tone River at Bullilup (607007),WA,-34.2503,116.679,977.7,Level 2,607003,0,0.44955,0.166352,Csb,Temperate (C),sub_catchment,607220
+607013,FALSE,42,Lefroy Brook River at Rainbow Trail (607013),WA,-34.4275,116.016,248,Level 1,607220,0,0.80838,0.309425,Csb,Temperate (C),sub_catchment,607220
+607144,FALSE,60,Wilgarup River at Quintarrup (607144),WA,-34.3486,116.3475,472,Level 2,607003,0,0.82439,0.119461,Csb,Temperate (C),sub_catchment,607220
+607155,FALSE,43,Dombakup Brook at Malimup Track (607155),WA,-34.578611,115.972222,124.9,Not nested,N/A,0,0.93581,0.055321,Csb,Temperate (C),no_nested,NA
+607220,FALSE,55,Warren River at Barker Rd Crossing (607220),WA,-34.5217,115.8994,3936.3,Not nested,N/A,2,0.78195,0.120918,Csb,Temperate (C),main_catchment,607220
+608002,FALSE,46,Carey Brook at Staircase Road (608002),WA,-34.392778,115.842222,44.5,Not nested,N/A,0,1.00001,0.050723,Csb,Temperate (C),no_nested,NA
+608151,FALSE,63,Donnelly River at Strickland (608151),WA,-34.3272,115.7846,770.4,Not nested,N/A,0,0.8285,0.12992,Csb,Temperate (C),no_nested,NA
+609002,FALSE,52,Scott River at Brennans Ford (609002),WA,-34.2761,115.3022,593.8,Not nested,N/A,0,0.81607,0.077673,Csb,Temperate (C),no_nested,NA
+609005,FALSE,43,Balgarup River at Mandelup Pool (609005),WA,-33.9075,117.1422,84.1,Not nested,N/A,0,0.17309,0.266893,Csb,Temperate (C),no_nested,NA
+609010,FALSE,43,Northern Arthur River at Lake Toolibin Inflow (609010),WA,-32.9048,117.614,439.8,Not nested,N/A,0,0.10111,0.239157,Csa,Temperate (C),no_nested,NA
+609018,FALSE,38,St John Brook River at Barrabup Pool (609018),WA,-33.9435,115.6914,550.3,Not nested,N/A,0,0.96255,0.065875,Csb,Temperate (C),no_nested,NA
+610001,FALSE,51,Margaret River at Willmots Farm (610001),WA,-33.9422,115.0549,442.7,Not nested,N/A,1,0.79966,0.109151,Csb,Temperate (C),main_catchment,610001
+610008,FALSE,30,Margaret River North at Whicher Range (610008),WA,-33.806667,115.443611,15.7,Level 1,610001,0,0.99974,0.083876,Csb,Temperate (C),sub_catchment,610001
+611004,FALSE,41,Preston River at Boyanup Bridge (611004),WA,-33.479,115.734,807.4,Not nested,N/A,1,0.67997,0.129211,Csa,Temperate (C),main_catchment,611004
+611111,FALSE,63,Thomson Brook River at Woodperry Homestead (611111),WA,-33.6284,115.9476,102,Level 1,611004,0,0.76734,0.081844,Csb,Temperate (C),sub_catchment,611004
+612001,FALSE,53,Collie R East River at Coolangatta Farm (612001),WA,-33.3303,116.2632,1342.1,Not nested,N/A,3,0.8414,0.085516,Csb,Temperate (C),main_catchment,612001
+612014,FALSE,47,Bingham River at Palmer (612014),WA,-33.2776,116.2756,366.1,Level 1,612001,0,0.99389,0.08846,Csb,Temperate (C),sub_catchment,612001
+612025,FALSE,39,Camballan Creek at James Well (612025),WA,-33.4557,116.4258,167.6,Level 1,612001,0,0.79975,0.150832,Csb,Temperate (C),sub_catchment,612001
+612034,FALSE,59,Collie River at South Branch (612034),WA,-33.387,116.1634,668,Not nested,N/A,0,0.81412,0.407001,Csb,Temperate (C),no_nested,NA
+612230,FALSE,54,Collie R East Trib River at James Crossing (612230),WA,-33.3814,116.5811,167.2,Level 1,612001,0,0.50722,0.127963,Csa,Temperate (C),sub_catchment,612001
+613002,FALSE,51,Harvey River at Dingo Road (613002),WA,-33.085833,116.038889,147.2,Not nested,N/A,0,0.99712,0.009804,Csb,Temperate (C),no_nested,NA
+613146,FALSE,60,Clarke Brook at Hillview Farm (613146),WA,-32.997778,115.921944,16.9,Not nested,N/A,0,0.89096,0.343678,Csa,Temperate (C),no_nested,NA
+614006,FALSE,46,Murray River at Baden Powell Wtr Spout (614006),WA,-32.7722,116.0843,6750.1,Not nested,N/A,3,0.42,0.120014,Csa,Temperate (C),main_catchment,614006
+614037,FALSE,38,Big Brook River at O'Neil Rd (614037),WA,-32.5113,116.1902,150.2,Not nested,N/A,0,0.96102,0.06822,Csa,Temperate (C),no_nested,NA
+614044,FALSE,56,Yarragil Brook at Yarragil Formation (614044),WA,-32.811111,116.155556,73.3,Level 1,614006,0,0.99989,0.083438,Csa,Temperate (C),sub_catchment,614006
+614196,FALSE,48,Williams River at Saddleback Rd Bridge (614196),WA,-32.9934,116.4278,1407.4,Level 1,614006,0,0.2465,0.181799,Csa,Temperate (C),sub_catchment,614006
+614224,FALSE,55,Hotham River at Marradong Rd Bridge (614224),WA,-32.8656,116.3981,3961.1,Level 1,614006,0,0.32875,0.20608,Csa,Temperate (C),sub_catchment,614006
+616001,FALSE,49,Wooroloo Brook River at Karls Ranch (616001),WA,-31.7337,116.1164,519,Not nested,N/A,0,0.67498,0.168492,Csa,Temperate (C),no_nested,NA
+616002,FALSE,49,Darkin River at Pine Plantation (616002),WA,-32.068333,116.2925,669.3,Not nested,N/A,0,0.97911,0.012149,Csa,Temperate (C),no_nested,NA
+616006,FALSE,41,BroCreekman River at Tanamerah (616006),WA,-31.3442,116.0916,964.2,Level 1,616019,0,0.5022,0.221634,Csa,Temperate (C),sub_catchment,616019
+616013,TRUE,42,Helena River  at Ngangaguringuring (616013),WA,-31.939722,116.403611,327.9,Level 1,616216,0,0.95658,0.021687,Csa,Temperate (C),sub_catchment,616216
+616019,FALSE,45,BroCreekman River at Yalliawirra (616019),WA,-31.6744,116.1178,1525.2,Not nested,N/A,1,0.56135,0.388562,Csa,Temperate (C),main_catchment,616019
+616041,FALSE,40,Wungong Brook River at Vardi Rd (616041),WA,-32.2479,116.1124,81.2,Not nested,N/A,0,0.98158,0.146399,Csa,Temperate (C),no_nested,NA
+616065,FALSE,30,Canning River at Glen Eagle (616065),WA,-32.2275,116.171944,520.9,Not nested,N/A,0,0.99671,0.079651,Csa,Temperate (C),no_nested,NA
+616178,FALSE,49,Jane Brook River at National Park (616178),WA,-31.884,116.0948,73,Not nested,N/A,0,0.91826,0.11882,Csa,Temperate (C),no_nested,NA
+616216,TRUE,54,Helena River at Poison Lease (616216),WA,-31.9731,116.2903,593.9,Not nested,N/A,1,0.96498,0.041832,Csa,Temperate (C),main_catchment,616216
+617002,TRUE,50,Hill River at Hill R Springs (617002),WA,-30.2771,115.3666,915,Not nested,N/A,0,0.40066,0.184291,Csa,Temperate (C),no_nested,NA
+617003,FALSE,48,Gingin Brook River at Bookine Bookine (617003),WA,-31.3194,115.627,1404.1,Not nested,N/A,0,0.59308,0.206553,Csa,Temperate (C),no_nested,NA
+701002,TRUE,51,Greenough River at Karlanew Peak (701002),WA,-28.8242,114.8455,11608.3,Not nested,N/A,0,0.01186,0.210003,Csa,Temperate (C),no_nested,NA
+701007,TRUE,45,Chapman River at Utakarra (701007),WA,-28.7629,114.6688,1931.6,Not nested,N/A,0,0.02433,0.29871,Csa,Temperate (C),no_nested,NA
+701009,TRUE,38,Irwin River at Mountain Bridge (701009),WA,-29.238,115.0351,5254,Not nested,N/A,0,0.03503,0.234399,Csa,Temperate (C),no_nested,NA
+704139,TRUE,63,Gascoyne River at Nine Mile Bridge (704139),WA,-24.8276,113.7691,72876.7,Not nested,N/A,1,0.00167,0.096191,BWh,Dry (B),main_catchment,704139
+704193,TRUE,57,Gascoyne River at Fishy Pool (704193),WA,-24.9497,114.6442,71234.8,Level 1,704139,0,0.00161,0.096354,BWh,Dry (B),sub_catchment,704139
+705001,TRUE,46,Minilya River at Minilya Bridge (705001),WA,-23.8163,114.0103,4642.6,Not nested,N/A,0,0.00317,0.117522,BWh,Dry (B),no_nested,NA
+707002,FALSE,49,Robe River at Yarraloola (707002),WA,-21.6162,115.9225,7258.1,Not nested,N/A,0,0.00846,0.042532,BSh,Dry (B),no_nested,NA
+707005,TRUE,35,Cane River at Toolunga (707005),WA,-22.0226,115.5945,2329.7,Not nested,N/A,0,0.00716,0.051453,BSh,Dry (B),no_nested,NA
+708011,TRUE,41,Fortescue River at Newman (708011),WA,-23.4014,119.7943,2878.9,Not nested,N/A,0,0.00183,0.047927,BWh,Dry (B),no_nested,NA
+709010,FALSE,36,Turner River at Pincunah (709010),WA,-21.2305,118.8338,885.2,Not nested,N/A,0,0.00233,0.08288,BWh,Dry (B),no_nested,NA
+710003,FALSE,44,De Grey River at Coolenar Pool (710003),WA,-20.3114,119.249,53384.3,Not nested,N/A,1,0.00715,0.060452,BWh,Dry (B),main_catchment,710003
+710229,TRUE,48,Shaw River at North Pole Mine (710229),WA,-21.0943,119.3173,6502,Level 1,710003,0,0.00355,0.075618,BWh,Dry (B),sub_catchment,710003
+802055,TRUE,40,Fitzroy River at Fitzroy Crossing (802055),WA,-18.2963,125.5263,46401.6,Not nested,N/A,0,0.18258,0.047622,BSh,Dry (B),no_nested,NA
+804001,FALSE,34,Isdell River at Dales Yard (804001),WA,-17.008889,125.4275,1834.8,Not nested,N/A,0,0.43408,0.05501,BSh,Dry (B),no_nested,NA
+809310,FALSE,46,Ord River at Bedford Downs (809310),WA,-17.425833,127.600556,547.8,Level 1,809316,0,0.28869,0.052686,BSh,Dry (B),sub_catchment,809316
+809315,FALSE,49,Negri River at Mistake Ck Homestead (809315),NT,-17.1775,129.0925,7464.2,Not nested,N/A,0,0.33361,0.026634,BSh,Dry (B),no_nested,NA
+809316,TRUE,45,Ord River at Old Ord Homestead (809316),WA,-17.3738,128.8537,19409.4,Not nested,N/A,1,0.14347,0.039173,BSh,Dry (B),main_catchment,809316
+809321,TRUE,44,Dunham River at Dunham Gorge (809321),WA,-16.1863,128.3,1635.7,Not nested,N/A,0,0.28321,0.016892,BSh,Dry (B),no_nested,NA
+809322,TRUE,43,Wilson River at Odonnell Range (809322),WA,-16.6475,128.0925,2527.4,Not nested,N/A,0,0.33601,0.036486,BSh,Dry (B),no_nested,NA
+912101A,TRUE,43,Gregory River at Gregory Downs (912101A),QLD,-18.643611,139.253056,12577.3,Not nested,N/A,1,0.26104,0.099146,BSh,Dry (B),main_catchment,912101A
+912105A,TRUE,35,Gregory River at Riversleigh No. 2 (912105A),QLD,-18.970833,138.803333,11392.9,Level 1,912101A,0,0.23359,0.107161,BSh,Dry (B),sub_catchment,912101A
+915011A,TRUE,30,Porcupine Creek at Mt Emu Plains (915011A),QLD,-20.1775,144.524444,565.3,Not nested,N/A,0,0.46227,0.106953,BSh,Dry (B),no_nested,NA
+915206A,TRUE,47,Dugald River at Railway Crossing (915206A),QLD,-20.2013,140.2233,657.4,Not nested,N/A,0,0.28622,0.059603,BSh,Dry (B),no_nested,NA
+917107A,FALSE,48,Elizabeth Creek at Mount Surprise (917107A),QLD,-18.133611,144.306667,458.3,Not nested,N/A,0,0.72983,0.075641,Aw,Tropical (A),no_nested,NA
+919003A,TRUE,46,Mitchell River at O.K. Bridge (919003A),QLD,-16.471389,144.290556,7731.7,Not nested,N/A,1,0.73181,0.100555,Aw,Tropical (A),main_catchment,919003A
+919005A,FALSE,48,Rifle Creek at Fonthill (919005A),QLD,-16.6788,145.2267,366.7,Level 1,919003A,0,0.8434,0.068585,Aw,Tropical (A),sub_catchment,919003A
+919201A,TRUE,47,Palmer River at Goldfields (919201A),QLD,-16.108056,144.778611,531.7,Not nested,N/A,0,0.98042,0.016392,Aw,Tropical (A),no_nested,NA
+919309A,TRUE,44,Walsh River at Trimbles Crossing (919309A),QLD,-16.545278,143.784722,8656.4,Not nested,N/A,0,0.76688,0.132702,Aw,Tropical (A),no_nested,NA
+925001A,TRUE,54,Wenlock river at Moreton (925001A),QLD,-12.454444,142.637778,3302.1,Not nested,N/A,0,0.90058,0.023478,Aw,Tropical (A),no_nested,NA
+926002A,FALSE,46,Dulhunty River at Dougs Pad (926002A),QLD,-11.831667,142.42,330.2,Not nested,N/A,0,0.98678,0.009575,Aw,Tropical (A),no_nested,NA
+A0020101,TRUE,50,Diamantina River at Birdsville (A0020101),QLD,-25.9088,139.3667,118974.1,Not nested,N/A,0,0.00709,0.136643,BWh,Dry (B),no_nested,NA
+A0030501,TRUE,48,Cooper Creek at Cullyamurra Water Hole (A0030501),SA,-27.7013,140.8433,233250.3,Not nested,N/A,1,0.12429,0.479383,BWh,Dry (B),main_catchment,A0030501
+A2390519,FALSE,48,Mosquito Creek at Struan (A2390519),SA,-37.0938,140.776,1549,Not nested,N/A,0,0.14247,0.525257,Csb,Temperate (C),no_nested,NA
+A2390523,FALSE,39,Stony Creek at Woakwine Range (A2390523),SA,-37.7034,140.3622,485.4,Not nested,N/A,0,0.37573,0.41207,Csb,Temperate (C),no_nested,NA
+A2390531,FALSE,44,Morambro Creek at Bordertown-Naracoorte Road Bridge (A2390531),SA,-36.689167,140.661111,404.9,Not nested,N/A,0,0.10564,0.196108,Csb,Temperate (C),no_nested,NA
+A4260533,FALSE,38,Bremer River at near Hartley (A4260533),SA,-35.2087,139.0063,473.5,Not nested,N/A,0,0.03883,0.363045,BSk,Dry (B),no_nested,NA
+A5030502,FALSE,50,Scott Creek at Scott Bottom (A5030502),SA,-35.099167,138.673889,26.8,Not nested,N/A,0,0.97794,0.208642,Csb,Temperate (C),no_nested,NA
+A5040523,FALSE,38,Sixth Creek at Castambul (A5040523),SA,-34.873056,138.754444,43.5,Not nested,N/A,0,0.94207,0.195779,Csb,Temperate (C),no_nested,NA
+A5050517,FALSE,37,North Para River at Penrice (A5050517),SA,-34.463333,139.058333,116.3,Not nested,N/A,0,0.04179,0.339314,BSk,Dry (B),no_nested,NA
+A5060500,FALSE,45,Wakefield River at Near Rhynie (A5060500),SA,-34.13,138.63,492.6,Not nested,N/A,0,0.08385,0.282316,BSk,Dry (B),no_nested,NA
+A5070500,FALSE,48,Hill River at near Andrews (A5070500),SA,-33.61,138.63,237,Level 1,A5070503,0,0.01412,0.270893,BSk,Dry (B),sub_catchment,A5070503
+A5070503,FALSE,36,Broughton River at Mooroola (A5070503),SA,-33.5331,138.5181,2538,Not nested,N/A,1,0.03041,0.394135,BSk,Dry (B),main_catchment,A5070503
+A5090503,FALSE,40,Kanyaka Creek at Old Kanyaka Ruins (A5090503),SA,-32.09,138.29,186.7,Not nested,N/A,0,0.11546,0.178194,BSk,Dry (B),no_nested,NA
+A5130501,FALSE,45,Rocky River upstream Gorge Falls (A5130501),SA,-35.955,136.697778,190.5,Not nested,N/A,0,0.95977,0.005389,Csb,Temperate (C),no_nested,NA
+G0010005,TRUE,33,Ranken River at Soudan Homestead (G0010005),NT,-20.045278,137.020833,6639.9,Not nested,N/A,0,0.00958,0.093899,BWh,Dry (B),no_nested,NA
+G0050115,FALSE,45,Hugh River at South Road Crossing (G0050115),NT,-24.351667,133.433333,3335.6,Not nested,N/A,0,0.00329,0.077475,BWh,Dry (B),no_nested,NA
+G0060005,FALSE,36,Trephina Creek at Trephina Gorge (G0060005),NT,-23.533611,134.380556,436.3,Not nested,N/A,0,0.00508,0.077231,BWh,Dry (B),no_nested,NA
+G8110004,TRUE,38,East Baines River at VIC Highway (G8110004),NT,-15.766944,130.033611,2443.2,Not nested,N/A,0,0.66391,0.010827,BSh,Dry (B),no_nested,NA
+G8140001,TRUE,46,Katherine River at Railway Bridge (G8140001),NT,-14.463333,132.256944,8248.4,Level 2,G8140067,0,0.82111,0.248796,Aw,Tropical (A),sub_catchment,G8140040
+G8140008,TRUE,36,Fergusson River at Old Railway Br (G8140008),NT,-14.0712,131.9762,1737.5,Level 2,G8140067,0,0.61788,0.016213,Aw,Tropical (A),sub_catchment,G8140040
+G8140011,TRUE,31,Dry River at Manbulloo Boundary (G8140011),NT,-15.0841,132.4109,4794.5,Level 2,G8140067,0,0.86642,0.020942,Aw,Tropical (A),sub_catchment,G8140040
+G8140040,TRUE,43,Daly River at Mount Nancar (G8140040),NT,-13.8308,130.7358,47745.4,Not nested,N/A,3,0.80254,0.107009,Aw,Tropical (A),main_catchment,G8140040
+G8140063,TRUE,53,Douglas River at D/S Old Douglas H/S (G8140063),NT,-13.798,131.3396,842.1,Level 1,G8140040,0,0.84791,0.079183,Aw,Tropical (A),sub_catchment,G8140040
+G8140067,TRUE,42,Daly River at U/S Dorisvale Crossing (G8140067),NT,-14.3633,131.5737,33280,Level 1,G8140040,3,0.7901,0.128114,Aw,Tropical (A),sub_catchment,G8140040
+G8150010,TRUE,42,Finniss River at Batchelor Damsite (G8150010),NT,-13.025,130.9512,367.6,Level 1,G8150180,0,0.78856,0.057251,Aw,Tropical (A),sub_catchment,G8150180
+G8150098,TRUE,45,BlaCreekmore River at Tumbling Waters (G8150098),NT,-12.7813,130.9413,159.3,Not nested,N/A,0,0.67026,0.034971,Aw,Tropical (A),no_nested,NA
+G8150180,TRUE,44,Finniss River at Gitchams (G8150180),NT,-12.9696,130.7621,1044.2,Not nested,N/A,1,0.77065,0.033658,Aw,Tropical (A),main_catchment,G8150180
+G8170002,TRUE,40,Adelaide River at Railway Bridge (G8170002),NT,-13.240556,131.108333,643.5,Not nested,N/A,0,0.6165,0.043145,Aw,Tropical (A),no_nested,NA
+G9070142,TRUE,31,McArthur River Upstream of Bailey's Grave (G9070142),NT,-16.778056,135.760556,4015.5,Not nested,N/A,0,0.55346,0.076336,BSh,Dry (B),no_nested,NA
