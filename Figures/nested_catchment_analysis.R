@@ -1,13 +1,6 @@
-# Evidence ratio analysis
+# Evidence ratio analysis for nested catchments
 
 # Figures produced in this R file ----------------------------------------------
-
-# 1. Main --> evidence_ratio_aus_map.pdf
-# 2. Supplementary --> evidence_ratio_vs_catchment_area.pdf
-# 3. Supplementary --> evidence_ratio_vs_record_length.pdf
-# 4. Supplementary --> evidence_ratio_vs_prop_forested.pdf
-# 5. Supplementary --> sens_slope_evidence_ratio.pdf
-# 6. Other --> sens_slope_map.pdf
 
 
 # CODE
@@ -30,6 +23,8 @@ source("./Functions/DREAM.R")
 source("./Functions/objective_function_setup.R")
 source("./Functions/result_set.R")
 source("./Functions/boxcox_logsinh_transforms.R")
+
+
 
 
 # Import data ------------------------------------------------------------------
