@@ -46,11 +46,19 @@ data <- readr::read_csv(
 
 gauge_information <- readr::read_csv(
   "./Data/Tidy/gauge_information_CAMELS.csv",
+  col_select = c(
+    "gauge",
+    "lat",
+    "lon",
+    "state",
+    "status",
+    "parent_catchment",
+    "river_di"
+  ),
   show_col_types = FALSE
 )
 
-lat_lon_gauge <- gauge_information |>
-  select(gauge, lat, lon)
+
 
 
 best_CO2_non_CO2_per_gauge <- read_csv(
@@ -89,14 +97,11 @@ evidence_ratio_calc <- best_CO2_non_CO2_per_gauge |>
 lat_long_evidence_ratio <- evidence_ratio_calc |>
   select(!c(AIC_difference)) |>
   left_join(
-    lat_lon_gauge,
+    gauge_information,
     by = join_by(gauge)
   )
 
 ### Add qualitative labels instead of using numerical evidence ratio ###########
-state_gauge <- gauge_information |>
-  select(gauge, state)
-
 binned_lat_lon_evidence_ratio <- lat_long_evidence_ratio |>
   mutate(
     binned_evidence_ratio = case_when(
@@ -108,10 +113,6 @@ binned_lat_lon_evidence_ratio <- lat_long_evidence_ratio |>
       between(evidence_ratio, 1E6, Inf) ~ "Extremely Strong",
       .default = NA
     )
-  ) |>
-  left_join(
-    state_gauge,
-    by = join_by(gauge)
   ) |>
   mutate(
     binned_evidence_ratio = factor(
@@ -162,7 +163,10 @@ a3_direction_binned_lat_lon_evidence_ratio <- binned_lat_lon_evidence_ratio |>
       impact_of_CO2_term,
       levels = c("No CO2 Term", "Negative-Intercept", "Positive-Intercept", "Negative-Slope", "Positive-Slope")
     )
-  )
+  ) #|>
+  #filter(river_di < 0.05)
+
+
 
 
 # Make final plot --------------------------------------------------------------
@@ -193,6 +197,11 @@ WA_data <- a3_direction_binned_lat_lon_evidence_ratio |>
 
 TAS_data <- a3_direction_binned_lat_lon_evidence_ratio |>
   filter(state == "TAS")
+
+
+
+
+
 
 
 ### Generate inset plots #######################################################
@@ -414,6 +423,38 @@ ggsave(
   height = 200, # 210,
   units = "mm"
 )
+
+
+
+
+# Compare evidence ratio between wild and non-wild catchments ------------------
+stat_comparison_wild_non_wild <- a3_direction_binned_lat_lon_evidence_ratio |> 
+  mutate(
+    wild = river_di < 0.05 # 0.05 from CAMELS-AUSv2
+  )
+
+stat_comparison_wild_non_wild |> 
+  ggplot(aes(x = wild, y = evidence_ratio)) +
+  geom_boxplot(staplewidth = 0.5) +
+  scale_y_continuous(
+    transform = scales::pseudo_log_trans(base = 10),
+    breaks = c(-10, 0, 10^seq(from = 0, to = 16, by = 1))
+    ) +
+  labs(
+    x = "Is \"Wild\" Catchment (river_di < 0.05)",
+    y = "Evidence Ratio"
+  ) +
+  theme_bw()
+
+
+wilcox.test(
+  evidence_ratio ~ wild, 
+  data = stat_comparison_wild_non_wild,
+  alternative = "two.sided"
+  ) 
+# Retain the null hypothesis (no difference in evidence ratio between the two groups)
+
+
 
 
 # Relationship between evidence ratio and catchment area -----------------------
