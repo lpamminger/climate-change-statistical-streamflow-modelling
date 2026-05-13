@@ -72,7 +72,7 @@ data <-  data |>
 
 # Collinearity of rainfall and CO2 ---------------------------------------------
 
-## Calculate correlation coefficient ===========================================
+## Calculate correlation coefficient and R2 ====================================
 correlation_of_p_mm_and_CO2 <- data |> 
   summarise(
     cor = cor(x = p_mm, y = CO2),
@@ -93,6 +93,21 @@ correlation_of_p_mm_and_CO2 <- data |>
   ) |> 
   arrange(desc(R2))
 
+
+## Summary statistic of correlation and R2 =====================================
+correlation_of_p_mm_and_CO2 |>
+  left_join(
+    evidence_ratio,
+    by = join_by(gauge)
+  ) |> 
+  mutate(
+    moderately_strong_or_greater = evidence_ratio > 100
+  ) |> 
+  summarise(
+    mean_R2 = mean(R2),
+    sd_R2 = sd(R2)#,
+   # .by = moderately_strong_or_greater
+  )
 
 ## Plot CO2 against p_mm =======================================================
 CO2_precip_correlation <- data |>
