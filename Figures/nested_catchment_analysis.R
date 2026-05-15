@@ -226,10 +226,24 @@ a3_direction_binned_lat_lon_evidence_ratio <- a3_direction_binned_lat_lon_eviden
 
 # Make final plot --------------------------------------------------------------
 
+## Load shapefiles
 aus_map <- generate_aus_map_sf()
 
+major_streamflow_network_sf <- st_read(
+  "./Data/Maps/filtered_streamflow_network_major_sf"
+  )
 
-### Custom colour palette
+minor_streamflow_network_sf <- st_read(
+  "./Data/Mapsfiltered_streamflow_network_minor_sf"
+  )
+
+# only include minor on the inset plots - make the linewidth < major
+
+boundary_sf <- st_read(
+  "./Data/Maps/filtered_catchment_boundaries_sf"
+  )
+
+## Custom colour palette
 custom_palette <- function(x) {
   rev(c("#67001f", "#b2182b", "#d6604d", "#f4a582", "#fddbc7", "#f7f7f7"))
 }
@@ -238,19 +252,54 @@ custom_palette <- function(x) {
 ## Generate Insets =============================================================
 ### Filter data by state #######################################################
 
+# this is a bad way of doing this --> use map
 QLD_data <- a3_direction_binned_lat_lon_evidence_ratio |>
   filter(state == "QLD")
+QLD_major_network_sf <- major_streamflow_network_sf |> 
+  filter(state == "QLD")
+QLD_minor_network_sf <- minor_streamflow_network_sf |> 
+  filter(state == "QLD")
+QLD_boundaries <- boundary_sf |> 
+  filter(state == "QLD")
+
 
 NSW_data <- a3_direction_binned_lat_lon_evidence_ratio |>
   filter(state == "NSW")
+NSW_major_network_sf <- major_streamflow_network_sf |> 
+  filter(state == "NSW")
+NSW_minor_network_sf <- minor_streamflow_network_sf |> 
+  filter(state == "NSW")
+NSW_boundaries <- boundary_sf |> 
+  filter(state == "NSW")
+
 
 VIC_data <- a3_direction_binned_lat_lon_evidence_ratio |>
   filter(state == "VIC")
+VIC_major_network_sf <- major_streamflow_network_sf |> 
+  filter(state == "VIC")
+VIC_minor_network_sf <- minor_streamflow_network_sf |> 
+  filter(state == "VIC")
+VIC_boundaries <- boundary_sf |> 
+  filter(state == "VIC")
+
 
 WA_data <- a3_direction_binned_lat_lon_evidence_ratio |>
   filter(state == "WA")
+WA_major_network_sf <- major_streamflow_network_sf |> 
+  filter(state == "WA")
+WA_minor_network_sf <- minor_streamflow_network_sf |> 
+  filter(state == "WA")
+WA_boundaries <- boundary_sf |> 
+  filter(state == "WA")
+
 
 TAS_data <- a3_direction_binned_lat_lon_evidence_ratio |>
+  filter(state == "TAS")
+TAS_major_network_sf <- major_streamflow_network_sf |> 
+  filter(state == "TAS")
+TAS_minor_network_sf <- minor_streamflow_network_sf |> 
+  filter(state == "TAS")
+TAS_boundaries <- boundary_sf |> 
   filter(state == "TAS")
 
 
@@ -265,12 +314,25 @@ inset_plot_QLD <- aus_map |>
   filter(state == "QLD") |>
   ggplot() +
   geom_sf() +
+  geom_sf(
+    data = QLD_boundaries
+  ) +
   geom_point(
     data = QLD_data,
     aes(x = lon, y = lat, fill = binned_evidence_ratio, shape = impact_of_CO2_term),
     show.legend = FALSE,
     size = 2.5,
     stroke = 0.1
+  ) +
+  geom_sf(
+    data = QLD_major_network_sf,
+    colour = "blue",
+    linewidth = 0.1
+  ) +
+  geom_sf(
+    data = QLD_minor_network_sf,
+    colour = "blue",
+    linewidth = 0.02
   ) +
   geom_text(
     data = QLD_data,
@@ -293,12 +355,25 @@ inset_plot_NSW <- aus_map |>
   filter(state == "NSW") |>
   ggplot() +
   geom_sf() +
+  geom_sf(
+    data = NSW_boundaries
+  ) +
   geom_point(
     data = NSW_data,
     aes(x = lon, y = lat, fill = binned_evidence_ratio, shape = impact_of_CO2_term),
     show.legend = FALSE,
     size = 2.5,
     stroke = 0.1
+  ) +
+  geom_sf(
+    data = NSW_major_network_sf,
+    colour = "blue",
+    linewidth = 0.1
+  ) +
+  geom_sf(
+    data = NSW_minor_network_sf,
+    colour = "blue",
+    linewidth = 0.02
   ) +
   geom_text(
     data = NSW_data,
@@ -321,12 +396,25 @@ inset_plot_VIC <- aus_map |>
   filter(state == "VIC") |>
   ggplot() +
   geom_sf() +
+  geom_sf(
+    data = VIC_boundaries
+  ) +
   geom_point(
     data = VIC_data,
     aes(x = lon, y = lat, fill = binned_evidence_ratio, shape = impact_of_CO2_term),
     show.legend = FALSE,
     size = 2.5,
     stroke = 0.1
+  ) +
+  geom_sf(
+    data = VIC_major_network_sf,
+    colour = "blue",
+    linewidth = 0.1
+  ) +
+  geom_sf(
+    data = VIC_minor_network_sf,
+    colour = "blue",
+    linewidth = 0.02
   ) +
   geom_text(
     data = VIC_data,
@@ -349,12 +437,25 @@ inset_plot_WA <- aus_map |>
   filter(state == "WA") |>
   ggplot() +
   geom_sf() +
+  geom_sf(
+    data = WA_boundaries
+  ) +
   geom_point(
     data = WA_data,
     aes(x = lon, y = lat, fill = binned_evidence_ratio, shape = impact_of_CO2_term),
     show.legend = FALSE,
     size = 2.5,
     stroke = 0.1
+  ) +
+  geom_sf(
+    data = WA_network_sf,
+    colour = "blue",
+    linewidth = 0.1
+  ) +
+  geom_sf(
+    data = WA_minor_network_sf,
+    colour = "blue",
+    linewidth = 0.02
   ) +
   geom_text(
     data = WA_data,
@@ -377,12 +478,25 @@ inset_plot_TAS <- aus_map |>
   filter(state == "TAS") |>
   ggplot() +
   geom_sf() +
+  geom_sf(
+    data = TAS_boundaries
+  ) +
   geom_point(
     data = TAS_data,
     aes(x = lon, y = lat, fill = binned_evidence_ratio, shape = impact_of_CO2_term),
     show.legend = FALSE,
     size = 2.5,
     stroke = 0.1,
+  ) +
+  geom_sf(
+    data = TAS_network_sf,
+    colour = "blue",
+    linewidth = 0.1
+  ) +
+  geom_sf(
+    data = TAS_minor_network_sf,
+    colour = "blue",
+    linewidth = 0.02
   ) +
   geom_text(
     data = TAS_data,
@@ -406,12 +520,20 @@ inset_plot_TAS <- aus_map |>
 single_map_aus <- aus_map |>
   ggplot() +
   geom_sf() +
+  geom_sf(
+    data = boundary_sf
+  ) +
   geom_point(
     data = a3_direction_binned_lat_lon_evidence_ratio,
     mapping = aes(x = lon, y = lat, fill = binned_evidence_ratio, shape = impact_of_CO2_term),
     size = 3,
     colour = "black",
     stroke = 0.1
+  ) +
+  geom_sf(
+    data = major_streamflow_network_sf,
+    colour = "blue",
+    linewidth = 0.1
   ) +
   geom_text(
     data = a3_direction_binned_lat_lon_evidence_ratio,
