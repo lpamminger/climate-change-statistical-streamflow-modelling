@@ -36,6 +36,35 @@ best_CO2_non_CO2_per_gauge <- read_csv(
 )
 
 
+# add mortons ET to data -------------------------------------------------------
+mortons_wet_daily <- read_csv(
+  "Data/Raw/et_morton_wet_SILO.csv",
+  show_col_types = FALSE
+)
+
+
+mortons_wet_annual <- mortons_wet_daily |>
+  pivot_longer(
+    cols = !c(year, month, day),
+    names_to = "gauge",
+    values_to = "APET"
+  ) |>
+  summarise(
+    APET = sum(APET),
+    #n = n(),
+    .by = c(year, gauge)
+  ) |>
+  # filter out incomplete years
+  filter(n >= 365)
+
+
+## join to data
+data <- data |> 
+  left_join(
+    mortons_wet_annual,
+    by = join_by(gauge, year)
+  )
+
 # Get gauges with moderately_strong (100) or greater ---------------------------
 evidence_ratio <- best_CO2_non_CO2_per_gauge |>
   select(gauge, contains_CO2, AIC) |>
@@ -174,7 +203,8 @@ VIF_assessment <- function(gauge, data) {
   
   # filter by gauge
   gauge_data <- data |> 
-    filter(gauge == {{ gauge }})
+    filter(gauge == {{ gauge }}) |> 
+    drop_na()
   
   # check if any drought is TRUE
   drought_check <- gauge_data |> pull(drought) |> any()
@@ -182,10 +212,10 @@ VIF_assessment <- function(gauge, data) {
   if(drought_check) {
     
     # need to convert drought to factor for lm
-    drought_gauge_data <- data |> 
+    drought_gauge_data <- gauge_data |> 
       mutate(drought = as.factor(drought))
       
-    lm(q_mm ~ drought + p_mm + standardised_warm_season_to_annual_rainfall_ratio + CO2, data = drought_gauge_data) |> 
+    lm(q_mm ~ drought + p_mm + standardised_warm_season_to_annual_rainfall_ratio + CO2 + APET, data = drought_gauge_data) |> 
       ols_vif_tol() |> 
       add_column(
         gauge = {{ gauge }},
@@ -194,7 +224,7 @@ VIF_assessment <- function(gauge, data) {
     
   } else {
     
-    lm(q_mm ~ p_mm + standardised_warm_season_to_annual_rainfall_ratio + CO2, data = gauge_data) |> 
+    lm(q_mm ~ p_mm + standardised_warm_season_to_annual_rainfall_ratio + CO2 + APET, data = gauge_data) |> 
       ols_vif_tol() |> 
       add_column(
         gauge = {{ gauge }},
@@ -205,24 +235,45 @@ VIF_assessment <- function(gauge, data) {
 }
 
 
+
 VIF_results <- map(
   .x = data |> pull(gauge) |> unique(),
   .f = VIF_assessment,
   data = data
 ) |> 
-  list_rbind()
+  list_rbind() 
 
+# Look at VIF results
+VIF_results |> 
+  filter(VIF > 4)
+
+# problem gauge = 701007 (near zero annual flow)
+# 208026, 121003A
+#data |> 
+#  filter(gauge %in% c("701007", "208026", "121003A")) |> 
+#  ggplot(aes(x = year, y = q_mm)) + 
+#  geom_line() +
+#  facet_wrap(~gauge, scales = "free_y", nrow = 3)
 
 VIF_plot <- VIF_results |> 
   ggplot(aes(x = Variables, y = VIF)) +
-  geom_boxplot() +
+  geom_boxplot(
+    staplewidth = 0.5
+  ) +
+  labs(
+    y = "Variance Inflation Factor (VIF)",
+    x = "Independent Variables"
+  ) +
+  scale_x_discrete(
+    labels = c("APET", bquote(CO[2]), "Drought", "Precipitation", "Rainfall Seasonality")
+  ) +
   theme_bw()
 
 ggsave(
   filename = "./Figures/Other/VIF_independent_variables_boxplot.pdf",
   plot = VIF_plot,
   device = "pdf",
-  width = 200,
+  width = 250,
   height = 200,
   units = "mm"
 )
