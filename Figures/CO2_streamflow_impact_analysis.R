@@ -1261,6 +1261,72 @@ all_timeseries_data <- timeseries_data_obs_CO2_off_CO2_on |>
   )
 
 
+## Divide plots for extended figures (6 pages worth) ===========================
+# divide all_timeseries_data into lots of 7 using split
+# Only use moderately strong or greater catchments
+moderately_strong_or_greater_catchments <- evidence_ratio_calc |> 
+  filter(evidence_ratio > 100) |> 
+  pull(gauge)
+
+
+chunk <- 14
+n <- length(moderately_strong_or_greater_catchments)
+split_group <- rep(rep(1:ceiling(n/chunk), each = chunk))[1:n]
+split_tibble <- tibble(
+  "gauge" = moderately_strong_or_greater_catchments,
+  "split" = split_group
+)
+
+
+# left_join and split
+all_timeseries_data <- all_timeseries_data |> 
+  filter(gauge %in% moderately_strong_or_greater_catchments) |> 
+  left_join(
+    split_tibble,
+    by = join_by(gauge)
+  )
+
+
+chunked_timeseries_data <- all_timeseries_data |> # converting table to list by groups https://stackoverflow.com/questions/7060272/split-up-a-dataframe-by-number-of-rows
+  group_by(split) |> 
+  group_map(~ .x)
+
+
+
+
+## Calculate NSE for all_timeseries_data =======================================
+# all_timeseries_data has been filtered to only include moderately_strong_or_greater_catchments
+# thus, CO2 model is the best model
+# the easiest way to add NSE is in the caption
+# the next easiest way is to add NSE to make_facet_labels
+# - could make a wrapper around make facet labels - that appends NSE to letter
+
+nash_sutcliffe_efficiency <- function(observed, modelled) {
+  1 - (sum((observed - modelled)^2) / sum((observed - mean(observed))^2))
+}
+
+
+NSE_moderately_strong_or_greater_gauges <- all_timeseries_data |> 
+  select(gauge, year, type, streamflow) |> 
+  filter(type != "Counterfactual") |> 
+  pivot_wider(
+    names_from = type,
+    values_from = streamflow
+  ) |> 
+  summarise(
+    NSE_CO2_model = nash_sutcliffe_efficiency(observed = Observed, modelled = `CO2 Model`),
+    NSE_non_CO2_model = nash_sutcliffe_efficiency(observed = Observed, modelled = `non-CO2 Model`),
+    .by = gauge
+  ) |> 
+  # signif + label
+  mutate(
+    lab_NSE_CO2_model = paste0("NSE = ", format(round(NSE_CO2_model, 2), nsmall = 2)),
+    lab_NSE_non_CO2_model = paste0("NSE = ", format(round(NSE_non_CO2_model, 2), nsmall = 2))
+  )  
+
+
+
+
 # Split up into a4 size and repeat
 # Here
 # It needs to be A, B, C, D labels rather than facet_labels
@@ -1285,11 +1351,13 @@ make_facet_labels <- function(data, facet_column, x_axis_column, y_axis_column, 
     add_column(
       xlab = data |> pull(x_axis_column) |> min(),
       .before = 2
-    ) |>  # add row numbers to tibble
+    ) |>  
+    # add row numbers to tibble
     mutate(
       row_number = row_number(),
       .before = 1
-    ) |>  # add label type based on row number
+    ) |>  
+    # add label type based on row number
     mutate(
       label_name = label_type[row_number]
     ) |> 
@@ -1302,10 +1370,33 @@ make_facet_labels <- function(data, facet_column, x_axis_column, y_axis_column, 
 }
 
 
+add_NSE_to_facet_labels <- function(data, NSE_data, facet_column, x_axis_column, y_axis_column, label_type = LETTERS, hjust = 0, vjust = 0) {
+  
+  # make facet labels
+  facet_labels <- make_facet_labels(
+    data = data,
+    facet_column = {{ facet_column }},
+    x_axis_column = {{ x_axis_column }},
+    y_axis_column = {{ y_axis_column }},
+    label_type = label_type,
+    hjust = hjust,
+    vjust = vjust
+  )
+  
+  
+  NSE_data |> 
+    select(gauge, lab_NSE_CO2_model) |> 
+    # this filters out gauges
+    right_join(
+      facet_labels,
+      by = join_by(gauge)
+    )
+  
+}
 
 
 
-plot_and_save_timeseries_data <- function(plotting_data, label_data, identifier) {
+plot_and_save_timeseries_data <- function(plotting_data, label_data, NSE_label_data, identifier) {
   
   plot <- plotting_data |> 
     ggplot(aes(x = year, y = streamflow, colour = type, shape = type)) +
@@ -1318,6 +1409,15 @@ plot_and_save_timeseries_data <- function(plotting_data, label_data, identifier)
       fontface = "bold",
       size = 8,
       size.unit = "pt"
+    ) +
+    geom_text(
+      mapping = aes(x = xlab, y = ylab, label = lab_NSE_CO2_model),
+      data = NSE_label_data,
+      inherit.aes = FALSE,
+      #fontface = "bold",
+      size = 8,
+      size.unit = "pt",
+      hjust = -4.1
     ) +
     scale_colour_brewer(palette = "Set1") +
     labs(
@@ -1385,7 +1485,7 @@ create_caption <- function(label_data, identifier) {
 
 
 
-save_plot_and_caption_timeseries_data <- function(data_chunk, identifier) {
+save_plot_and_caption_timeseries_data <- function(data_chunk, NSE_data, identifier) {
   
   label_data <- make_facet_labels(
     data = data_chunk,
@@ -1397,9 +1497,21 @@ save_plot_and_caption_timeseries_data <- function(data_chunk, identifier) {
     vjust = -0.05
   )
   
+  NSE_label_data <- add_NSE_to_facet_labels(
+    data = data_chunk,
+    NSE_data = NSE_data,
+    facet_column = "gauge",
+    x_axis_column = "year",
+    y_axis_column = "streamflow",
+    label_type = letters,
+    hjust = 0.0005,
+    vjust = -0.05
+  )
+  
   plot_and_save_timeseries_data(
     plotting_data = data_chunk, 
-    label_data = label_data, 
+    label_data = label_data,
+    NSE_label_data = NSE_label_data,
     identifier = identifier
     )
   
@@ -1409,35 +1521,6 @@ save_plot_and_caption_timeseries_data <- function(data_chunk, identifier) {
   )
   
 }
-
-# divide all_timeseries_data into lots of 7 using split
-# Only use moderately strong or greater catchments
-moderately_strong_or_greater_catchments <- evidence_ratio_calc |> 
-  filter(evidence_ratio > 100) |> 
-  pull(gauge)
-
-chunk <- 14
-n <- length(moderately_strong_or_greater_catchments)
-split_group <- rep(rep(1:ceiling(n/chunk), each = chunk))[1:n]
-split_tibble <- tibble(
-  "gauge" = moderately_strong_or_greater_catchments,
-  "split" = split_group
-)
-
-# left_join and split
-all_timeseries_data <- all_timeseries_data |> 
-  filter(gauge %in% moderately_strong_or_greater_catchments) |> 
-  left_join(
-    split_tibble,
-    by = join_by(gauge)
-  )
-
-chunked_timeseries_data <- all_timeseries_data |> # converting table to list by groups https://stackoverflow.com/questions/7060272/split-up-a-dataframe-by-number-of-rows
-  group_by(split) |> 
-  group_map(~ .x)
-
-
-
 
 
 
@@ -2012,7 +2095,8 @@ ggsave(
 sink(file = "Figures/Extended_Data/streamflow_time_captions_extended_data.txt") # filename must change
 iwalk(
   .x = chunked_timeseries_data,
-  .f = save_plot_and_caption_timeseries_data
+  .f = save_plot_and_caption_timeseries_data,
+  NSE_data = NSE_moderately_strong_or_greater_gauges
 )
 sink()
 stop_here()
