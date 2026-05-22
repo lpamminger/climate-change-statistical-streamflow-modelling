@@ -9,7 +9,7 @@
 # 6. Other --> streamflow_CO2_percentage_change_vs_prop_forested.pdf
 # 7. Other --> CO2_model_vs_non_CO2_model_rainfall_runoff.pdf - The transformed_realspace is different depending on model used. This means 2 observed transformed streamflow is required.
 # 8. Other --> complete_timeseries_plot.pdf
-
+# 8. Other --> streamflow_aridity_percentage_change_map_2010s.pdf
 
 
 
@@ -1095,6 +1095,68 @@ plotting_best_CO2_non_CO2_streamflow |>
   )
 
 
+# Comparing percentage changes with aridity ------------------------------------
+# file created in ET_analysis.R
+aridity_information <- read_csv(
+  file = "./Data/Tidy/aridity_information.csv",
+  show_col_types = FALSE
+)
+
+
+aridity_and_streamflow_changes <- percentage_difference_CO2_model_non_CO2_model_2010s |> 
+  select(
+    gauge,
+    CO2_impact_on_streamflow_percent,
+    state
+  ) |> 
+  left_join(
+    aridity_information,
+    by = join_by(gauge, state)
+  ) 
+
+
+aridity_and_streamflow_changes |> 
+  select(
+    gauge,
+    CO2_impact_on_streamflow_percent,
+    state
+  ) |> 
+  left_join(
+    aridity_information,
+    by = join_by(gauge)
+  ) |> 
+  ggplot(aes(x = dryness_zone, y = CO2_impact_on_streamflow_percent)) +
+  geom_boxplot() +
+  geom_boxplot(staplewidth = 0.5) +
+  labs(
+    x = NULL,
+    y = "Percentage Streamflow Change (2012-2021)"
+  ) +
+  theme_bw()
+
+
+aridity_labels <- c("Arid", "Semi-Arid", "Sub-Humid", "Humid") 
+split_index <- aridity_and_streamflow_changes |> 
+  mutate(dryness_zone = factor(dryness_zone, labels = aridity_labels)) |> 
+  pull(dryness_zone)
+
+split_aridity_streamflow_changes <- split(aridity_and_streamflow_changes, split_index)
+
+streamflow_aridity_maps <- map2(
+  .x = split_aridity_streamflow_changes,
+  .y = aridity_labels,
+  .f = make_CO2_streamflow_percentage_change_map
+)
+
+
+streamflow_aridity_percentage_change_map_2010s <- streamflow_aridity_maps[[1]] + 
+  streamflow_aridity_maps[[2]] + 
+  streamflow_aridity_maps[[3]] + 
+  streamflow_aridity_maps[[4]] +
+  plot_layout(guides = "collect") & theme(legend.position = "bottom")
+
+
+
 
 # Rainfall-runoff and streamflow time graphs for best CO2 and nonCO2 models ----
 
@@ -2170,7 +2232,16 @@ ggsave(
   )
 
 
-
+# 9.streamflow_aridity_percentage_change_map_2010s
+ggsave(
+  filename = "streamflow_aridity_percentage_change_map_2010s.pdf",
+  path = "Figures/Other",
+  plot = streamflow_aridity_percentage_change_map_2010s,
+  device = "pdf",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
 
 
 

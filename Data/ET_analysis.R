@@ -114,7 +114,7 @@ ggsave(
 # Find the PET trend in data using linear slope --------------------------------
 
 ## Filter catchment with an evidence ratio > 100 ===============================
-gauges_moderately_strong_evidence_ratio <- best_CO2_non_CO2_per_gauge |>
+evidence_ratio <- best_CO2_non_CO2_per_gauge |>
   select(gauge, contains_CO2, AIC) |>
   distinct() |>
   pivot_wider(
@@ -134,7 +134,9 @@ gauges_moderately_strong_evidence_ratio <- best_CO2_non_CO2_per_gauge |>
       AIC_difference < 0 ~ exp(0.5 * abs(AIC_difference)), # when CO2 model is better
       AIC_difference > 0 ~ -exp(0.5 * abs(AIC_difference)) # when non-CO2 model is better
     )
-  ) |>
+  ) 
+
+gauges_moderately_strong_evidence_ratio <- evidence_ratio |>
   filter(evidence_ratio > 100) |>
   pull(gauge)
 
@@ -581,6 +583,100 @@ ggsave(
 
 
 
+# Categories catchment using McVicar aridity index -----------------------------
+# Arid --> Ep/P > 1.35
+# Semi-arid --> 1 < Ep/P < 1.35
+# Subhumid --> 0.76 < Ep/P < 1
+# Humid --> Ep/P < 0.76
+
+# Use total Ep/P over timeseries or use annual average? - Try both
+# Once categorised comapre the evdidence ratio between the climate types using
+# boxplot
+define_aridity <- data |> 
+  left_join(
+    evap_areal_potential_annual,
+    by = join_by(gauge, year)
+  ) |> 
+  mutate(
+    aridity = annual_APET_mm / p_mm
+  ) |> 
+  summarise(
+    mean_aridity = mean(aridity, na.rm = TRUE),
+    sum_precip = sum(p_mm, na.rm = TRUE),
+    sum_APET = sum(annual_APET_mm, na.rm = TRUE),
+    .by = gauge
+  ) |> 
+  mutate(
+    mean_aridity_from_sum = sum_APET / sum_precip
+  ) |> 
+  # sort aridity into labels
+  mutate(
+    dryness_zone = case_when(
+      mean_aridity_from_sum > 1.35 ~ "Arid",
+      between(mean_aridity_from_sum, 1, 1.35) ~ "Semi-Arid",
+      between(mean_aridity_from_sum, 0.76, 1) ~ "Sub-Humid",
+      mean_aridity_from_sum < 0.76 ~ "Humid",
+      .default = NA
+    )
+  ) |> 
+  # add evidence ratio
+  left_join(
+    evidence_ratio,
+    by = join_by(gauge)
+  ) |> 
+  left_join(
+    lat_lon_gauge,
+    by = join_by(gauge)
+  )
+
+# see if the results make sense - looks good to me
+generate_aus_map_sf() |>
+  ggplot() +
+  geom_sf() +
+  geom_point(
+    mapping = aes(x = lon, y = lat, colour = dryness_zone),
+    data = define_aridity,
+    inherit.aes = FALSE
+  ) +
+  theme_bw()
+
+write_csv(
+  define_aridity,
+  file = "./Data/Tidy/aridity_information.csv"
+  )
+
+count_labels <-  define_aridity |> 
+  filter(evidence_ratio > 100) |> 
+  count(dryness_zone) |> 
+  mutate(
+    count_label = paste0("n = ", n)
+  ) |> 
+  mutate(
+    y_lab = 50 # -25
+  )
+
+
+define_aridity |> 
+  # set the order for the boxplot labels
+  mutate(
+    dryness_zone = factor(dryness_zone, levels = c("Arid", "Semi-Arid", "Sub-Humid", "Humid")) 
+  ) |> 
+  filter(evidence_ratio > 100) |> 
+  ggplot(aes(x = dryness_zone, y = evidence_ratio)) +
+  geom_boxplot(staplewidth = 0.5) +
+  geom_text(
+    aes(y = y_lab, label = count_label),
+    data = count_labels
+  ) +
+  scale_y_continuous(
+    transform = scales::pseudo_log_trans(base = 10),
+    breaks = c(-10, 0, 10^seq(from = 0, to = 16, by = 1))
+  ) +
+  labs(
+    x = NULL,
+    y = "Evidence Ratio"
+  ) +
+  theme_bw()
 
 
 
@@ -925,7 +1021,8 @@ filtered_data_for_budyko <- correlations_data |>
       year %in% decade_2 ~ 2,
       .default = NA
     )
-  )
+  ) |> 
+  drop_na()
 
 
 
@@ -974,53 +1071,123 @@ AET_comparison_calc <- filtered_data_for_budyko |>
 
 
 ## Find AET differences between decades using different approaches =============
+storage_error <- 0.15 # from Han et al, 2020 https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2020WR027392
+
+
 AET_comparison <- AET_comparison_calc |>
   select(gauge, decade, ave_budyko_AET, ave_waterbalance_AET) |>
   mutate(
-    AET_waterbalance_minus_budyko_ave = ave_waterbalance_AET - ave_budyko_AET
-  )
-
-
-ecdf_AET_comparison_function_decade_1 <- AET_comparison |>
-  filter(decade == 1) |>
-  pull(AET_waterbalance_minus_budyko_ave) |>
-  ecdf()
-
-ecdf_AET_comparison_function_decade_2 <- AET_comparison |>
-  filter(decade == 2) |>
-  pull(AET_waterbalance_minus_budyko_ave) |>
-  ecdf()
-
-
-AET_comparison <- AET_comparison |>
+    AET_waterbalance_minus_budyko_ave = ave_waterbalance_AET - ave_budyko_AET,
+    percent_AET_waterbalance_minus_budyko_ave = (ave_waterbalance_AET - ave_budyko_AET) / ave_budyko_AET 
+  ) |> 
+  # add uncertainty
   mutate(
-    ecdf = case_when(
-      decade == 1 ~ ecdf_AET_comparison_function_decade_1(AET_waterbalance_minus_budyko_ave),
-      decade == 2 ~ ecdf_AET_comparison_function_decade_2(AET_waterbalance_minus_budyko_ave),
-      .default = NA
+    error_ave_waterbalance_AET = ave_waterbalance_AET * storage_error,
+    error_ave_budyko_AET = ave_budyko_AET * storage_error,
+  ) |> 
+  # calculate bounds
+  mutate(
+    lower_ave_waterbalance_AET = ave_waterbalance_AET - error_ave_waterbalance_AET,
+    upper_ave_waterbalance_AET = ave_waterbalance_AET + error_ave_waterbalance_AET,
+    lower_ave_budyko_AET = ave_budyko_AET - error_ave_budyko_AET,
+    upper_ave_budyko_AET = ave_budyko_AET + error_ave_budyko_AET
+  ) |> 
+  mutate(
+    lower_bound = (lower_ave_waterbalance_AET - lower_ave_budyko_AET),
+    upper_bound = (upper_ave_waterbalance_AET - upper_ave_budyko_AET),
+  ) |> 
+  # swap if upper_bound < lower_bound
+  mutate(
+    new_lower_bound = if_else(upper_bound > lower_bound, lower_bound, upper_bound),
+    new_upper_bound = if_else(upper_bound > lower_bound, upper_bound, lower_bound),
+    # all percentage changes relative to ave_budyko_AET
+    percent_new_lower_bound = lower_bound / ave_budyko_AET,
+    percent_new_upper_bound = upper_bound / ave_budyko_AET
+  ) |> 
+  # remove calculation columns
+  select(
+    gauge, 
+    decade, 
+    new_lower_bound,
+    AET_waterbalance_minus_budyko_ave,
+    new_upper_bound,
+    percent_new_lower_bound,
+    percent_AET_waterbalance_minus_budyko_ave,
+    percent_new_upper_bound
     )
-  ) |> # change tibble to make plotting nicer
+
+
+
+
+## Make cumulative distribution functions ======================================
+# I need 6 ecdf() function calls
+# decade 1: median, lower, upper
+# decade 2: median, lower, upper
+
+# function factory?
+# the function must take the AET_comparison data
+# filter by decade
+# call ecdf()
+# return ecdf() column
+# this could be a |> function
+
+
+
+make_ecdf <- function(x) {
+  # function factory - returns a function
+  ecdf_function <- ecdf(x)
+  
+  # return cdf
+  return(ecdf_function(x))
+}
+
+# # this returns the exact same thing - makes sense since they have the same rank
+AET_comparison <- AET_comparison |> 
+  # forces by decade operation
+  group_by(decade) |> 
   mutate(
-    Decade = if_else(decade == 1, "1990-1999", "2012-2021")
+    ecdf_AET_middle = make_ecdf(AET_waterbalance_minus_budyko_ave),
+    ecdf_AET_upper = make_ecdf(new_upper_bound),
+    ecdf_AET_lower = make_ecdf(new_lower_bound)
+  ) |> 
+  mutate(
+    decade = if_else(decade == 1, "1990-1999", "2012-2021")
   )
+  
 
-
-
-AET_comparison_plot <- AET_comparison |>
-  ggplot(aes(x = AET_waterbalance_minus_budyko_ave, y = ecdf, colour = Decade)) +
-  geom_step() +
-  labs(
-    x = bquote(Delta*"AET [mm]"),
-    y = "Cumulative Probability"
+# AET is in mm - this is why the uncertainty is small 
+# (% change in small value is small)
+# (% change in large value is large)
+# if I did relative change?
+# using percentages did not fix the issue
+AET_comparison_plot <- AET_comparison |> 
+  mutate(decade = as.factor(decade)) |> 
+  ggplot(
+    aes(x = ecdf_AET_middle, y = AET_waterbalance_minus_budyko_ave, colour = decade)
   ) +
+  geom_step() +
+  pammtools::geom_stepribbon(
+    aes(ymin = new_lower_bound, ymax = new_upper_bound, fill = decade),
+    alpha = 0.1,
+    colour = NA
+  ) +
+  # flip the axis - for some reason this produces nicer results
+  coord_flip() +
   theme_bw() +
   scale_color_brewer(palette = "Set1") +
+  labs(
+    y = bquote(Delta*"AET [mm]"),
+    x = "Cumulative Probability",
+    colour = "Decade",
+    fill = "Decade"
+  ) +
   theme(
     legend.position = "inside",
     legend.position.inside = c(0.1, 0.9),
     legend.background = element_blank(),
     legend.box.background = element_rect(colour = "black")
   )
+
 
 ggsave(
   filename = "./Figures/Supplementary/AET_estimates_waterbalance_vs_budyko.pdf",
@@ -1030,6 +1197,69 @@ ggsave(
   height = 200, # 210,
   units = "mm"
 )
+
+# old ecdf 
+#ecdf_AET_comparison_function_decade_1 <- AET_comparison |>
+#  filter(decade == 1) |>
+#  pull(AET_waterbalance_minus_budyko_ave) |>
+#  ecdf()
+
+#ecdf_AET_comparison_function_decade_2 <- AET_comparison |>
+#  filter(decade == 2) |>
+#  pull(AET_waterbalance_minus_budyko_ave) |>
+#  ecdf()
+
+
+
+
+#AET_comparison <- AET_comparison |>
+#  mutate(
+#    middle_ecdf = case_when(
+#      decade == 1 ~ ecdf_AET_comparison_function_decade_1(AET_waterbalance_minus_budyko_ave),
+#      decade == 2 ~ ecdf_AET_comparison_function_decade_2(AET_waterbalance_minus_budyko_ave),
+#      .default = NA
+#    ),
+#    lower_ecdf = case_when(
+#      decade == 1 ~ ecdf_AET_comparison_function_decade_1(new_lower_bound),
+#      decade == 2 ~ ecdf_AET_comparison_function_decade_2(new_lower_bound),
+#      .default = NA
+#    ),
+#    upper_ecdf = case_when(
+#      decade == 1 ~ ecdf_AET_comparison_function_decade_1(new_upper_bound),
+#      decade == 2 ~ ecdf_AET_comparison_function_decade_2(new_upper_bound),
+#      .default = NA
+#    ),
+#  ) |> 
+  # change tibble to make plotting nicer
+#  mutate(
+#    Decade = if_else(decade == 1, "1990-1999", "2012-2021")
+#  )
+
+
+
+
+#AET_comparison_plot <- AET_comparison |>
+#  ggplot(aes(x = AET_waterbalance_minus_budyko_ave, y = middle_ecdf, colour = Decade)) +
+#  pammtools::geom_stepribbon(
+#    aes(ymin = lower_ecdf, ymax = upper_ecdf, fill = Decade),
+#    alpha = 0.1,
+#    colour = NA
+#  ) +
+#  geom_step() +
+#  labs(
+#    x = bquote(Delta*"AET [mm]"),
+#    y = "Cumulative Probability"
+#  ) +
+#  theme_bw() +
+#  scale_color_brewer(palette = "Set1") +
+#  theme(
+#    legend.position = "inside",
+#    legend.position.inside = c(0.1, 0.9),
+#    legend.background = element_blank(),
+#    legend.box.background = element_rect(colour = "black")
+#  )
+
+
 
 
 # Repeat Q_PET_ratio_map but using Water balance and Budyko delta --------------
