@@ -1157,6 +1157,42 @@ streamflow_aridity_percentage_change_map_2010s <- streamflow_aridity_maps[[1]] +
 
 
 
+# Are arid catchments more likely to have an inter-year autocorrelation term? ----
+aridity_inter_year_auto_comparison <- only_CO2_best_models |> 
+  select(gauge, streamflow_model) |>  
+  distinct() |> 
+  mutate(
+    contains_auto = str_detect(streamflow_model, "auto")
+  ) |> 
+  left_join(
+    aridity_information,
+    by = join_by(gauge)
+  ) |> 
+  filter(evidence_ratio > 100)
+
+aridity_inter_year_auto_comparison |> 
+  count(contains_auto, dryness_zone) |> 
+  arrange(dryness_zone) |> 
+  pivot_wider(
+    names_from = contains_auto,
+    values_from = n
+  ) |> 
+  mutate(
+    percentage = `TRUE` / (`TRUE` + `FALSE`)
+  )
+
+aridity_inter_year_auto_comparison |>
+  mutate(dryness_zone = factor(dryness_zone, labels = aridity_labels)) |> 
+  ggplot(aes(x = dryness_zone, fill = contains_auto)) +
+  geom_bar(
+    position = "dodge"
+  ) +
+  labs(
+    x = NULL,
+    y = "Frequency",
+    fill = "Model Contains Interyear Autocorrelation"
+  ) +
+  theme_bw()
 
 # Rainfall-runoff and streamflow time graphs for best CO2 and nonCO2 models ----
 
