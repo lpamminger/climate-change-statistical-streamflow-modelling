@@ -1112,7 +1112,8 @@ aridity_and_streamflow_changes <- percentage_difference_CO2_model_non_CO2_model_
   left_join(
     aridity_information,
     by = join_by(gauge, state)
-  ) 
+  ) |> 
+  mutate(dryness_zone = factor(dryness_zone, levels = aridity_labels)) 
 
 
 aridity_and_streamflow_changes |> 
@@ -1135,10 +1136,10 @@ aridity_and_streamflow_changes |>
   theme_bw()
 
 
-aridity_labels <- c("Arid", "Semi-Arid", "Sub-Humid", "Humid") 
+
 split_index <- aridity_and_streamflow_changes |> 
-  mutate(dryness_zone = factor(dryness_zone, labels = aridity_labels)) |> 
   pull(dryness_zone)
+
 
 split_aridity_streamflow_changes <- split(aridity_and_streamflow_changes, split_index)
 
@@ -1158,6 +1159,8 @@ streamflow_aridity_percentage_change_map_2010s <- streamflow_aridity_maps[[1]] +
 
 
 # Are arid catchments more likely to have an inter-year autocorrelation term? ----
+
+
 aridity_inter_year_auto_comparison <- only_CO2_best_models |> 
   select(gauge, streamflow_model) |>  
   distinct() |> 
@@ -1182,7 +1185,7 @@ aridity_inter_year_auto_comparison |>
   )
 
 aridity_inter_year_auto_comparison |>
-  mutate(dryness_zone = factor(dryness_zone, labels = aridity_labels)) |> 
+  mutate(dryness_zone = factor(dryness_zone, levels = aridity_labels)) |> 
   ggplot(aes(x = dryness_zone, fill = contains_auto)) +
   geom_bar(
     position = "dodge"
