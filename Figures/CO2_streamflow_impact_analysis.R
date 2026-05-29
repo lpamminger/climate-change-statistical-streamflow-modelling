@@ -1402,9 +1402,10 @@ chunked_timeseries_data <- all_timeseries_data |> # converting table to list by 
 # the next easiest way is to add NSE to make_facet_labels
 # - could make a wrapper around make facet labels - that appends NSE to letter
 
-nash_sutcliffe_efficiency <- function(observed, modelled) {
-  1 - (sum((observed - modelled)^2) / sum((observed - mean(observed))^2))
-}
+# in utility file
+#nash_sutcliffe_efficiency <- function(observed, modelled) {
+#  1 - (sum((observed - modelled)^2) / sum((observed - mean(observed))^2))
+#}
 
 
 NSE_moderately_strong_or_greater_gauges <- all_timeseries_data |> 

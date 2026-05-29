@@ -119,6 +119,7 @@ standardised_results <- results |> result_set()
 # 5. Examine results -----------------------------------------------------------
 ### probably should add ... in plot method so the user can alter the ggplot object directly i.e.,
 ### plot(standardised_results, type = "streamflow-time, ...) add theme(axis...)
+### an NSE value on the streamflow time would also be a nice touch
 plot(standardised_results, type = "streamflow-time")
 plot(standardised_results, type = "rainfall-runoff")
 plot(standardised_results, type = "examine_transform") 

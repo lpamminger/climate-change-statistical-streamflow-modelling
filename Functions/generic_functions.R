@@ -394,14 +394,42 @@ plot.result_set <- function(x, type) {
       mutate(
         observed_or_modelled = if_else(observed_or_modelled == "modelled_streamflow", "Modelled Streamflow", "Observed Streamflow")
       )
-
-
-
-
+    
+  
+  
+    # calculate nash_sutcliffe_efficiency()
+    mod_streamflow <- streamflow_results |> 
+      filter(observed_or_modelled == "Modelled Streamflow") |> 
+      pull(streamflow)
+    
+    obs_streamflow <- streamflow_results |> 
+      filter(observed_or_modelled == "Observed Streamflow") |> 
+      pull(streamflow)
+    
+    NSE <- nash_sutcliffe_efficiency(
+      observed = obs_streamflow, 
+      modelled = mod_streamflow
+      )
+    
+    NSE_label_table <- streamflow_results |> 
+      summarise(
+        xpos = min(year), 
+        ypos = max(streamflow)
+        ) |> 
+      add_column(
+        NSE_label = paste0("NSE = ", round(NSE, digits = 2))
+      )
+    
+  
     streamflow_results |>
       ggplot(aes(x = year, y = streamflow, colour = observed_or_modelled)) +
       geom_line() +
       geom_point() +
+      geom_label(
+        aes(x = xpos, y = ypos, label = NSE_label),
+        inherit.aes = FALSE,
+        data = NSE_label_table
+      ) +
       labs(
         x = "Year",
         y = "Streamflow",
