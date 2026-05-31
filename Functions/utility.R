@@ -267,3 +267,9 @@ generate_aus_map_sf <- function() {
   
   return(aus_map)
 }
+
+
+# 
+nash_sutcliffe_efficiency <- function(observed, modelled) {
+  1 - (sum((observed - modelled)^2) / sum((observed - mean(observed))^2))
+}
