@@ -287,32 +287,36 @@ count_greater_than_abs <- function(x, value) {
   return(sum(boolean_vector, na.rm = TRUE))
 }
 
+correlation_threshold <- 0.5
+
 apply(
   correlation_matrix_per_gauge,
   MARGIN = c(1, 2),
   FUN = count_greater_than_abs, # change values to test
   simplify = TRUE,
   # correlations are subject - I selected 0.6
-  value = 0.6
+  value = correlation_threshold
   # required for the drought/non-drought catchments
   #na.rm = TRUE
   ) |> 
   round(digits = 3)
 
-# address problematic values 
-# - there are 3 catchments with a CO2 and APET corr > |0.6|
-# - 15 catchment with CO2 and drought corr > |0.6|
-# - 5 catchments with drought + APET > 0.6
+# address problematic values for 
+# - p_mm, seasonality, CO2, drought
+# - p_mm and drought = 2 catchment > 0.5
+# - p_mm and seasonality = 8 catchment > 0.5
+# - drought and CO2 = 33 catchments > 0.5
  
 
-# do they have a high evidence ratio?
-cor_CO2_APET <- data |> 
+# do they these catchments have a high evidence ratio?
+cor_p_mm_seasonality <- data |> 
   filter(included_in_calibration) |> 
   summarise(
-    cor = cor(CO2, APET),
+    cor = cor(p_mm, standardised_warm_season_to_annual_rainfall_ratio),
     .by = gauge
   ) |> 
-  filter(abs(cor) > 0.6)
+  filter(abs(cor) > correlation_threshold)
+
 
 gauges_with_drought <- gauge_information |> 
   filter(drought) |> 
@@ -329,23 +333,23 @@ cor_drought_CO2 <- data |>
     cor = cor(CO2, drought),
     .by = gauge
   ) |> 
-  filter(abs(cor) > 0.6)
+  filter(abs(cor) > correlation_threshold)
 
 
-cor_drought_APET <- data |> 
+cor_drought_p_mm <- data |> 
   filter(included_in_calibration) |> 
   filter(gauge %in% gauges_with_drought) |> 
   summarise(
-    cor = cor(drought, APET),
+    cor = cor(drought, p_mm),
     .by = gauge
   ) |> 
-  filter(abs(cor) > 0.6)
+  filter(abs(cor) > correlation_threshold)
 
 
 
 
 # - identify catchments cor_CO2_APET |> pull(gauge)
-high_corr_gauges <- cor_CO2_APET |> #rbind(cor_CO2_APET, cor_drought_CO2, cor_drought_APET) |> 
+high_corr_gauges <- rbind(cor_p_mm_seasonality, cor_drought_CO2, cor_drought_p_mm) |> 
   pull(gauge) |> 
   unique()
 
@@ -355,6 +359,8 @@ evi_ratio_high_corr_gauges <- data |>
   select(gauge, evidence_ratio) |> 
   distinct() |> 
   arrange(desc(evidence_ratio))
+
+
 
 # - if so investigate streamflow time 
 # I am not convinced with the drought stuff
@@ -535,11 +541,18 @@ abc_labels <- VIF_results |>
     .by = test
   ) |> 
   mutate(x_pos = "APET") |> 
-  mutate(label_name = c("a", "b", "c", "d"))
+  mutate(label_name = c("a", "b", "c", "d")) |> 
+  mutate(
+    test = factor(test, levels = c("default_variables", "with_APET", "with_tmax", "with_APET_and_tmax"))
+  )
 
 
+# need make this nice
 
 VIF_plot <- VIF_results |> 
+  mutate(
+    test = factor(test, levels = c("default_variables", "with_APET", "with_tmax", "with_APET_and_tmax"))
+  ) |> 
   ggplot(aes(x = Variables, y = VIF)) +
   geom_boxplot(
     staplewidth = 0.5
