@@ -76,8 +76,8 @@ monthly_precipitation <- daily_precipitation |>
   )
 
 
-warm_season <- c(11, 12, 1, 2, 3, 4)
-cool_season <- 5:10 # may to oct
+warm_season <- c(11, 12, 1, 2, 3, 4) # Nov to Apr
+cool_season <- 5:10 # May to Oct
 
 # calculate seasonal ratio = warm season median rainfall / cool season median rainfall (annual rainfall)
 # ratio of median rainfalls
@@ -162,7 +162,7 @@ seasonal_rainfall_classification_gauge_info <- seasonal_rainfall_classification 
 
 
 # Plotting ---------------------------------------------------------------------
-## Checking classification is correct
+## Checking classification is correct ==========================================
 aus_map <- generate_aus_map_sf()
 
 
@@ -177,8 +177,8 @@ aus_map |>
   theme_bw()
 
 
-## Box plot
-evidence_ratio_filter <- -100
+## Box plot ====================================================================
+evidence_ratio_filter <- 100
 
 plotting_seasonal_rainfall_classification_gauge_info <- seasonal_rainfall_classification_gauge_info |>
   filter(evidence_ratio > evidence_ratio_filter)
@@ -193,7 +193,7 @@ count_occurences <- plotting_seasonal_rainfall_classification_gauge_info |>
     n_label = paste0("n = ", n)
   )
 
-plotting_seasonal_rainfall_classification_gauge_info |>
+seasonal_evidence_ratio_boxplot <- plotting_seasonal_rainfall_classification_gauge_info |>
   ggplot(aes(x = classification, y = evidence_ratio)) +
   geom_boxplot(staplewidth = 0.5) +
   geom_text(
@@ -212,10 +212,64 @@ plotting_seasonal_rainfall_classification_gauge_info |>
   ) +
   theme_bw()
 
+ggsave(
+  filename = "Figures/Other/seasonal_high_evidence_ratio_boxplot.pdf",
+  plot = seasonal_evidence_ratio_boxplot,
+  device = "pdf",
+  width = 232,
+  height = 200, # 210,
+  units = "mm"
+)
 
 
+## Box plot for streamflow percentage changes ==================================
+CO2_streamflow_percentage_changes <- read_csv(
+  "Modelling/Results/CO2_streamflow_percentage_changes.csv",
+  show_col_types = FALSE
+  )
 
-# Evidence ratio plot
+seasonal_CO2_streamflow_percentage_changes <- seasonal_rainfall_classification_gauge_info |> 
+  select(gauge, classification) |> 
+  right_join(
+    CO2_streamflow_percentage_changes,
+    by = join_by(gauge)
+  )
+
+count_occurences <- count_occurences |> 
+  mutate(
+    y_pos = -75
+  )
+
+seasonal_CO2_streamflow_percentage_changes_plot <- seasonal_CO2_streamflow_percentage_changes |> 
+  mutate(
+    decade = if_else(decade == 1, "1990-1999", "2012-2021") 
+  ) |> 
+  filter(decade == "2012-2021") |> 
+  ggplot(aes(x = classification, y = CO2_impact_on_streamflow_percent)) +
+  geom_boxplot(staplewidth = 0.5) +
+  geom_text(
+    aes(x = classification, y = y_pos, label = n_label),
+    data = count_occurences
+  ) +
+  scale_x_discrete(drop = FALSE) +
+  labs(
+    x = "Seasonal Rainfall Major Zones",
+    y = "CO2 Impact on Streamflow (%)"
+  ) +
+  theme_bw() +
+  facet_wrap(~decade, ncol = 2, scales = "fixed")
+
+ggsave(
+  filename = "Figures/Other/seasonal_CO2_streamflow_percentage_changes.pdf",
+  plot = seasonal_CO2_streamflow_percentage_changes_plot,
+  device = "pdf",
+  width = 232,
+  height = 200, # 210,
+  units = "mm"
+)
+
+
+## Evidence ratio plot =========================================================
 ### Custom colour palette
 custom_palette <- function(x) {
   rev(c("#67001f", "#b2182b", "#d6604d", "#f4a582", "#fddbc7", "#f7f7f7"))
@@ -490,6 +544,119 @@ ggsave(
 
 
 
+# Rainfall seasonality vs. best model components -------------------------------
 
-# TODO:
-# - determine what a strong rainfall seasonality (large value? - what threshold to select?)
+## Repeat seasonality calc using our values rather than BoMs ===================
+# Our seasonality are slightly different to BoMs
+# Our cool Apr - Sept --> BoM cool May - Oct 
+# Our warm Oct - March --> BoM warm Nov - Apr
+# use our seasonality metric because our models used them
+
+our_warm_season <- c(10, 11, 12, 1, 2, 3) 
+our_cool_season <- 4:9 
+
+# calculate seasonal ratio = warm season median rainfall / cool season median rainfall (annual rainfall)
+# ratio of median rainfalls
+
+our_seasonal_precipitation <- monthly_precipitation |>
+  mutate(
+    season = case_when(
+      month %in% our_warm_season ~ "warm_season",
+      month %in% our_cool_season ~ "cool_season",
+      .default = NA
+    )
+  ) |>
+  summarise(
+    seasonal_p_mm = sum(p_mm),
+    .by = c(gauge, year, season)
+  ) |> 
+  pivot_wider(
+    id_cols = c(gauge, year),
+    names_from = season,
+    values_from = seasonal_p_mm
+  ) |>
+  # seasonal ratio
+  mutate(
+    seasonal_ratio_per_year = warm_season / cool_season
+  )
+
+our_median_seasonal_ratio <- our_seasonal_precipitation |> 
+  summarise(
+    median_seasonal_ratio = median(seasonal_ratio_per_year),
+    .by = gauge
+  )
+
+
+## Identify catchment that include seasonality component in best model ========= 
+best_CO2_non_CO2 <- read_csv(
+  "Modelling/Results/CMAES/best_CO2_non_CO2_per_catchment_CMAES.csv",
+  show_col_types = FALSE
+  )
+
+contains_seasonality_term <- function(parameter_names) {
+  any(parameter_names %in% "a4")
+}
+
+best_model_with_seasonality_term <- best_CO2_non_CO2 |>
+  slice_min(
+    AIC,
+    by = gauge
+  ) |> 
+  summarise(
+    contains_seasonality_term = contains_seasonality_term(parameter),
+    .by = gauge
+  ) # add the seasonality ratio (median warm to cool)
+  
+
+## Compare =====================================================================
+compare_model_and_observed_seasonality <- best_model_with_seasonality_term |> 
+  left_join(
+    our_median_seasonal_ratio,
+    by = join_by(gauge)
+  )
+
+# join the BoM labels - I acknowledge they use different months
+compare_model_and_observed_seasonality <- seasonal_rainfall_classification_gauge_info |> 
+  select(gauge, classification, evidence_ratio) |> 
+  right_join(
+    compare_model_and_observed_seasonality,
+    by = join_by(gauge)
+  )
+
+# I think we count them 
+# the seasonal ratio doesn't show winter dominated rainfall well 1/0.8
+# count number of TRUE/FALSE per classification
+
+compare_model_and_observed_seasonality |> 
+  #filter(evidence_ratio > 100) |> 
+  summarise(
+    model_contains_seasonality_term = sum(contains_seasonality_term),
+    n = n(),
+    .by = classification
+  ) |> 
+  mutate(
+    percentage = round(model_contains_seasonality_term / n, digits = 2) * 100
+  )
+
+
+compare_model_and_observed_seasonality |> 
+  ggplot(aes(x = contains_seasonality_term)) +
+  geom_bar() +
+  labs(
+    x = "Best Model Contains Rainfall-Seasonality Term",
+    y = "Count"
+  ) +
+  theme_bw() +
+  facet_wrap(~classification, scales = "free_y")
+
+
+
+
+
+
+
+
+
+
+
+
