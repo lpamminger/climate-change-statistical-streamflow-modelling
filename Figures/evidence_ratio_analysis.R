@@ -92,6 +92,7 @@ evidence_ratio_calc <- best_CO2_non_CO2_per_gauge |>
   arrange(evidence_ratio)
 
 
+
 ## Tidy evidence ratio data for plotting =======================================
 
 lat_long_evidence_ratio <- evidence_ratio_calc |>
@@ -166,6 +167,12 @@ a3_direction_binned_lat_lon_evidence_ratio <- binned_lat_lon_evidence_ratio |>
   ) #|>
   #filter(river_di < 0.05)
 
+
+## save evidence ratio for other analysis
+write_csv(
+  a3_direction_binned_lat_lon_evidence_ratio,
+  "./Modelling/Results/CMAES/evidence_ratio_results.csv",
+)
 
 
 

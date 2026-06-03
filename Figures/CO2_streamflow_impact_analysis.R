@@ -444,37 +444,13 @@ write_csv(trends_in_counterfactual_flow, "./Modelling/Other/trends_in_counterfac
 ## Percentage difference plot ==================================================
 
 ### Calculate evidence ratio for possible filtering ############################
-evidence_ratio_calc <- best_CO2_non_CO2_per_gauge |>
-  select(gauge, contains_CO2, AIC) |>
-  distinct() |>
-  pivot_wider(
-    names_from = contains_CO2,
-    values_from = AIC
-  ) |>
-  mutate(
-    CO2_model = `TRUE`,
-    non_CO2_model = `FALSE`,
-    .keep = "unused"
-  ) |>
-  mutate(
-    AIC_difference = CO2_model - non_CO2_model # CO2 is smaller than non-CO2 then negative and CO2 is better
-  ) |>
-  mutate(
-    evidence_ratio = case_when(
-      AIC_difference < 0 ~ exp(0.5 * abs(AIC_difference)), # when CO2 model is better
-      AIC_difference > 0 ~ -exp(0.5 * abs(AIC_difference)) # when non-CO2 model is better
-    )
-  ) |>
-  select(gauge, evidence_ratio) |>
-  arrange(evidence_ratio)
-
+evidence_ratio_calc <- read_csv(
+  "Modelling/Results/CMAES/evidence_ratio_results.csv",
+  show_col_types = FALSE
+  )
 
 
 plot_ready_percentage_difference_a3_on_off_data <- percentage_difference_a3_on_off_data |>
-  left_join(
-    lat_lon_gauge,
-    by = join_by(gauge)
-  ) |>
   left_join(
     evidence_ratio_calc,
     by = join_by(gauge)
@@ -1037,10 +1013,6 @@ difference_best_CO2_non_CO2_streamflow <- best_CO2_non_CO2_streamflow |>
 ### add lat-lon and evidence ratio for plotting
 plotting_best_CO2_non_CO2_streamflow <- difference_best_CO2_non_CO2_streamflow |>
   left_join(
-    lat_lon_gauge,
-    by = join_by(gauge)
-  ) |>
-  left_join(
     evidence_ratio_calc,
     by = join_by(gauge)
   ) |>
@@ -1051,6 +1023,12 @@ plotting_best_CO2_non_CO2_streamflow <- difference_best_CO2_non_CO2_streamflow |
   # filter evidence ratio
   filter(evidence_ratio > 100)
 
+
+# save results
+write_csv(
+  plotting_best_CO2_non_CO2_streamflow,
+  "Modelling/Results/CO2_streamflow_percentage_changes.csv"
+)
 
 
 # jump to here
