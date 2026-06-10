@@ -463,8 +463,8 @@ plot.result_set <- function(x, type) {
       mutate(
         observed_or_modelled = if_else(observed_or_modelled == "modelled_streamflow", "Modelled Streamflow", "Observed Streamflow")
       )
-
-
+    
+    
     streamflow_results |>
       ggplot(aes(x = precipitation, y = streamflow, colour = observed_or_modelled)) +
       geom_smooth(
