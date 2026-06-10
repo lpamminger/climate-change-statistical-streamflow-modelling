@@ -61,7 +61,10 @@ aus_map_crs <- st_crs(aus_map)
 
 working_crs <- aus_map_crs[[1]]
 
-
+plot_ready_decade_differences <- read_csv(
+  "Modelling/decade_streamflow_CO2_differences.csv",
+  show_col_types = FALSE
+)
 
 # Add catchment boundary to evidence ratio plot --------------------------------
 ## Add state column to CAMELS_AUS_boundaries for filtering =====================
@@ -561,5 +564,473 @@ ggsave(
 
 
 # REPEAT FOR CHANGE IN STREAMFLOW ANALYSIS -------------------------------------
-# TODO:
+
+## Filter gauges with evidence ratio > 100 ======================================
+high_evi_gauges <- evidence_ratio |> 
+  filter(evidence_ratio > 100) |> 
+  pull(gauge)
+
+
+### CAMELSAUS boundary #########################################################
+### hopefully CAMELS boundaries and evidence ratio does not conflict
+### i.e., catchment boundary not shown for high evi gauges
+### IT IS A PROBLEM - DO THE RECURSIVE THING with deleted files
+### I need to find the parent catchment of the effected gauge
+
+
+# get parent catchment for all high evidence gauges
+x <- gauge_information |> 
+  select(gauge, status, parent_catchment) |> 
+  filter(gauge %in% high_evi_gauges)
+
+# we don't change anything for the no_nested (i.e., keep)
+# there way a recursive function I made that identified the main catchment
+# for each catchment - look for it
+# recursive function
+# rough code is: function(gauge, data)
+# it is in prepare data
+
+
+
+
+high_evi_CAMELSAUS_boundary <- CAMELSAUS_boundary |> 
+  filter(gauge %in% high_evi_gauges)
+
+high_evi_state_CAMELSAUS_boundary <- map(
+  .x = states,
+  .f = filter_by_state,
+  data = high_evi_CAMELSAUS_boundary
+) |> 
+  `names<-`(states)
+
+### Major streamflow network ###################################################
+high_evi_major_streamflow_network <- major_streamflow_network |> 
+  filter(gauge %in% high_evi_gauges)
+
+high_evi_state_major_streamflow_network <- map(
+  .x = states,
+  .f = filter_by_state,
+  data = high_evi_major_streamflow_network
+) |> 
+  `names<-`(states)
+
+
+### Minor streamflow network ###################################################
+high_evi_minor_streamflow_network <- minor_streamflow_network |> 
+  filter(gauge %in% high_evi_gauges)
+
+high_evi_state_minor_streamflow_network <- map(
+  .x = states,
+  .f = filter_by_state,
+  data = high_evi_minor_streamflow_network
+) |> 
+  `names<-`(states)
+
+
+## Limits and breaks ===========================================================
+make_limits <- function(timeseries) {
+  # round up to next whole number
+  limits <- timeseries |> range()
+  sign_limits <- sign(limits)
+  
+  sign_limits * ceiling(abs(limits))
+}
+
+CO2_impact_on_streamflow_percent_limits <- plot_ready_decade_differences |>
+  pull(CO2_impact_on_streamflow_percent) |>
+  make_limits() |>
+  as.double()
+
+scale_size_limits <- plot_ready_decade_differences |>
+  pull(IQR_CO2_impact_on_streamflow_percentage) |>
+  range(na.rm = TRUE) |> # can round up if I want to
+  round(digits = 0)
+
+percentage_IQR_breaks <- c(0, 2.5, 5, 10, 15, 50, 100) # custom breaks
+
+hard_coded_breaks_CO2_impact_of_streamflow <- c(-75, -50, -25, -10, -1, 0, 1, 10, 25, 50, 75)
+
+dot_transparency <- 0.8
+
+
+## Custom colour palette =======================================================
+big_palette <- function(x) {
+  c(
+    "#67001f",
+    "#b2182b",
+    "#d6604d",
+    "#f4a582",
+    "#fddbc7",
+    "white",
+    "white",
+    "#d1e5f0",
+    "#92c5de",
+    "#4393c3",
+    "#2166ac",
+    "#053061"
+  )
+}
+
+
+
+## Plotting function ===========================================================
+
+### No uncertainty map ###
+make_CO2_streamflow_percentage_change_map <- function(data, title) {
+  ## Generate Insets ===========================================================
+  QLD_data <- data |>
+    filter(state == "QLD")
+  
+  NSW_data <- data |>
+    filter(state == "NSW")
+  
+  VIC_data <- data |>
+    filter(state == "VIC")
+  
+  WA_data <- data |>
+    filter(state == "WA")
+  
+  TAS_data <- data |>
+    filter(state == "TAS")
+  
+  
+  ### Generate inset plots #######################################################
+  inset_dot_size <- 1.8
+  
+  inset_plot_QLD <- aus_map |>
+    filter(state == "QLD") |>
+    ggplot() +
+    geom_sf() +
+    geom_sf(
+      data = high_evi_state_CAMELSAUS_boundary[["QLD"]],
+      colour = "black",
+      fill = NA,
+      linewidth = catchment_border_linewidth
+    ) +
+    geom_sf(
+      data = high_evi_state_major_streamflow_network[["QLD"]],
+      colour = "blue",
+      linewidth = streamflow_network_linewidth
+    ) +
+    geom_sf(
+      data = high_evi_state_minor_streamflow_network[["QLD"]],
+      colour = "blue",
+      linewidth = minor_streamflow_network_linewidth
+    ) +
+    geom_point(
+      data = QLD_data,
+      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
+      show.legend = FALSE,
+      size = inset_dot_size,
+      alpha = dot_transparency,
+      colour = "black",
+      stroke = 0.1,
+      shape = 21
+    ) +
+    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+      aesthetics = "fill",
+      palette = big_palette,
+      breaks = hard_coded_breaks_CO2_impact_of_streamflow,
+      limits = CO2_impact_on_streamflow_percent_limits,
+      show.limits = TRUE,
+      guide = "colorsteps"
+    ) +
+    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    guides(size = guide_bins(show.limits = TRUE)) +
+    theme_void()
+  
+  
+  inset_plot_NSW <- aus_map |>
+    filter(state == "NSW") |>
+    ggplot() +
+    geom_sf() +
+    geom_sf(
+      data = high_evi_state_CAMELSAUS_boundary[["NSW"]],
+      colour = "black",
+      fill = NA,
+      linewidth = catchment_border_linewidth
+    ) +
+    geom_sf(
+      data = high_evi_state_major_streamflow_network[["NSW"]],
+      colour = "blue",
+      linewidth = streamflow_network_linewidth
+    ) +
+    geom_sf(
+      data = high_evi_state_minor_streamflow_network[["NSW"]],
+      colour = "blue",
+      linewidth = minor_streamflow_network_linewidth
+    ) +
+    geom_point(
+      data = NSW_data,
+      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
+      show.legend = FALSE,
+      size = inset_dot_size,
+      alpha = dot_transparency,
+      colour = "black",
+      stroke = 0.1,
+      shape = 21
+    ) +
+    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+      aesthetics = "fill",
+      palette = big_palette,
+      breaks = hard_coded_breaks_CO2_impact_of_streamflow,
+      limits = CO2_impact_on_streamflow_percent_limits,
+      show.limits = TRUE,
+      guide = "colorsteps"
+    ) +
+    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    guides(size = guide_bins(show.limits = TRUE)) +
+    theme_void()
+  
+  
+  inset_plot_VIC <- aus_map |>
+    filter(state == "VIC") |>
+    ggplot() +
+    geom_sf() +
+    geom_sf(
+      data = high_evi_state_CAMELSAUS_boundary[["VIC"]],
+      colour = "black",
+      fill = NA,
+      linewidth = catchment_border_linewidth
+    ) +
+    geom_sf(
+      data = high_evi_state_major_streamflow_network[["VIC"]],
+      colour = "blue",
+      linewidth = streamflow_network_linewidth
+    ) +
+    geom_sf(
+      data = high_evi_state_minor_streamflow_network[["VIC"]],
+      colour = "blue",
+      linewidth = minor_streamflow_network_linewidth
+    ) +
+    geom_point(
+      data = VIC_data,
+      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
+      show.legend = FALSE,
+      size = inset_dot_size,
+      alpha = dot_transparency,
+      colour = "black",
+      stroke = 0.1,
+      shape = 21
+    ) +
+    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+      aesthetics = "fill",
+      palette = big_palette,
+      breaks = hard_coded_breaks_CO2_impact_of_streamflow,
+      limits = CO2_impact_on_streamflow_percent_limits,
+      show.limits = TRUE,
+      guide = "colorsteps"
+    ) +
+    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    guides(size = guide_bins(show.limits = TRUE)) +
+    theme_void()
+  
+  
+  inset_plot_WA <- aus_map |>
+    filter(state == "WA") |>
+    ggplot() +
+    geom_sf() +
+    geom_sf(
+      data = high_evi_state_CAMELSAUS_boundary[["WA"]],
+      colour = "black",
+      fill = NA,
+      linewidth = catchment_border_linewidth
+    ) +
+    geom_sf(
+      data = high_evi_state_major_streamflow_network[["WA"]],
+      colour = "blue",
+      linewidth = streamflow_network_linewidth
+    ) +
+    geom_sf(
+      data = high_evi_state_minor_streamflow_network[["WA"]],
+      colour = "blue",
+      linewidth = minor_streamflow_network_linewidth
+    ) +
+    geom_point(
+      data = WA_data,
+      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
+      show.legend = FALSE,
+      size = inset_dot_size,
+      alpha = dot_transparency,
+      colour = "black",
+      stroke = 0.1,
+      shape = 21
+    ) +
+    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+      aesthetics = "fill",
+      palette = big_palette,
+      breaks = hard_coded_breaks_CO2_impact_of_streamflow,
+      limits = CO2_impact_on_streamflow_percent_limits,
+      show.limits = TRUE,
+      guide = "colorsteps"
+    ) +
+    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    guides(size = guide_bins(show.limits = TRUE)) +
+    theme_void()
+  
+  
+  inset_plot_TAS <- aus_map |>
+    filter(state == "TAS") |>
+    ggplot() +
+    geom_sf() +
+    geom_point(
+      data = TAS_data,
+      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
+      show.legend = FALSE,
+      size = inset_dot_size,
+      alpha = dot_transparency,
+      colour = "black",
+      stroke = 0.1,
+      shape = 21
+    ) +
+    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+      aesthetics = "fill",
+      palette = big_palette,
+      breaks = hard_coded_breaks_CO2_impact_of_streamflow,
+      limits = CO2_impact_on_streamflow_percent_limits,
+      show.limits = TRUE,
+      guide = "colorsteps"
+    ) +
+    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    guides(size = guide_bins(show.limits = TRUE)) +
+    theme_void()
+  
+  
+  ## Put it together =============================================================
+  single_map_aus <- aus_map |>
+    ggplot() +
+    geom_sf() +
+    geom_sf(
+      data = high_evi_CAMELSAUS_boundary,
+      colour = "black",
+      fill = NA,
+      linewidth = catchment_border_linewidth
+    ) +
+    geom_sf(
+      data = high_evi_major_streamflow_network,
+      colour = "blue",
+      linewidth = streamflow_network_linewidth
+    ) +
+    geom_sf(
+      data = high_evi_minor_streamflow_network,
+      colour = "blue",
+      linewidth = minor_streamflow_network_linewidth
+    ) +
+    geom_point(
+      data = data,
+      mapping = aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
+      alpha = dot_transparency,
+      size = inset_dot_size,
+      colour = "black",
+      shape = 21,
+      inherit.aes = FALSE,
+      stroke = 0.1
+    ) +
+    theme_bw() +
+    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+      aesthetics = "fill",
+      palette = big_palette,
+      breaks = hard_coded_breaks_CO2_impact_of_streamflow,
+      limits = CO2_impact_on_streamflow_percent_limits,
+      show.limits = TRUE,
+      guide = "colorsteps"
+    ) +
+    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    # expand map
+    coord_sf(xlim = c(95, 176), ylim = c(-60, 0)) +
+    # magnify WA
+    geom_magnify(
+      from = c(114, 118, -35.5, -30),
+      to = c(93, 112, -36, -10),
+      shadow = FALSE,
+      expand = 0,
+      plot = inset_plot_WA,
+      proj = "single"
+    ) +
+    # magnify VIC
+    geom_magnify(
+      # aes(from = state == "VIC"), # use aes rather than manually selecting area
+      from = c(141, 149.5, -39, -34),
+      to = c(95, 136, -38, -60),
+      shadow = FALSE,
+      plot = inset_plot_VIC,
+      proj = "single"
+    ) +
+    # magnify QLD
+    geom_magnify(
+      from = c(145, 155, -29.2, -15),
+      to = c(157, 178, -29.5, 1.5),
+      shadow = FALSE,
+      expand = 0,
+      plot = inset_plot_QLD,
+      proj = "single"
+    ) +
+    # magnify NSW
+    geom_magnify(
+      from = c(146.5, 154, -38, -28.1),
+      to = c(157, 178, -61, -30.5),
+      shadow = FALSE,
+      expand = 0,
+      plot = inset_plot_NSW,
+      proj = "single"
+    ) +
+    # magnify TAS
+    geom_magnify(
+      from = c(144, 149, -40, -44),
+      to = c(140, 155, -45, -61),
+      shadow = FALSE,
+      expand = 0,
+      plot = inset_plot_TAS,
+      proj = "single"
+    ) +
+    labs(
+      x = NULL, # "Latitude",
+      y = NULL, # "Longitude",
+      fill = bquote("Average Impact of" ~ CO[2] ~ "on Streamflow (%)"),
+      size = "Percentage Impact Uncertainty (IQR)",
+      title = {{ title }}
+    ) +
+    theme(
+      legend.key = element_rect(fill = "white"),
+      legend.title = element_text(hjust = 0.5),
+      # legend.background = element_rect(colour = "black"), #this cuts off the negative sign
+      axis.text = element_blank(),
+      legend.position = "inside",
+      legend.position.inside = c(0.351, 0.9),
+      legend.box = "horizontal", # side-by-side legends
+      panel.grid = element_blank(),
+      axis.ticks = element_blank(),
+      plot.title = element_text(margin = margin(l = 25, r = 0, t = 30, b = -30), size = 12, face = "bold") # push title into plot
+    ) +
+    guides(
+      fill = guide_coloursteps(
+        barwidth = unit(10, "cm"),
+        show.limits = TRUE,
+        even.steps = TRUE,
+        title.position = "top",
+        direction = "horizontal"
+      ),
+      size = guide_bins(
+        override.aes = aes(stroke = 0.5),
+        show.limits = TRUE,
+        direction = "horizontal",
+        title.position = "top", # warnings says its ignore these parameter - The warnings are wrong
+        barwidth = unit(1, "cm")
+      )
+    )
+  
+  return(single_map_aus)
+}
+
+
+
+
+## Map of percentage differences between decades ===============================
+percentage_difference_CO2_model_non_CO2_model_2010s <- plot_ready_decade_differences |>
+  filter(decade == 2)
+
+make_CO2_streamflow_percentage_change_map(
+  percentage_difference_CO2_model_non_CO2_model_2010s, 
+  "TEST"
+  )
 
