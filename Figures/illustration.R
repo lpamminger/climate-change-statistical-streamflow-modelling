@@ -259,12 +259,17 @@ illustration_plots <- function(gauge, plot_label) {
     labs(
       x = "Annual Precipitation (mm)",
       y = "Log-sinh Annual Streamflow",
-      fill = "Observed Rainfall-Runoff Year",
+      fill = bquote(atop(CO[2]~"ppm", "(Rainfall-Runoff Year)")), #"atop("Observed ", "("*CO[2]~"ppm)")
       colour = "Modelled Rainfall-Runoff Relationship",
       title = plot_label
     ) +
     scale_colour_manual(values = c("#440154FF", "#33638DFF", "#55C667FF", "#B8DE29FF")) +
-    scale_fill_continuous(palette = "viridis") + # options: viridis, plasma, RdYlBu
+    # labels hard coded found using data |> filter(year %in% c(1960, 1980, 2000, 2020)) |> pull(CO2) |> unique()
+    scale_fill_continuous(
+      palette = "viridis", # options: viridis, plasma, RdYlBu
+      breaks = c(1960, 1980, 2000, 2020), 
+      labels = paste0(c(317, 339, 370, 414), "\n", c("(1960)", "(1980)", "(2000)", "(2020)"))
+      ) + 
     theme_bw() +
     theme(
       legend.title.position = "top",
@@ -286,6 +291,7 @@ illustration_plots <- function(gauge, plot_label) {
 
   return(plot)
 }
+
 
 # plots - pick two gauges to illustration (intercept, slope)
 illustration <- illustration_plots(gauge = "606195", plot_label = "A") | illustration_plots(gauge = "238235", plot_label = "B")
@@ -399,4 +405,11 @@ model_fit_gauge_A <- percentage_change_based_on_rainfall(gauge = "606195", mean_
 
 model_fit_gauge_B <- percentage_change_based_on_rainfall(gauge = "238235", mean_annual_rainfall_data = mean_annual_rainfall)
 (model_fit_gauge_B$realspace_streamflow[1] - model_fit_gauge_B$realspace_streamflow[4]) / model_fit_gauge_B$realspace_streamflow[1]
+
+
+
+
+
+
+
 
