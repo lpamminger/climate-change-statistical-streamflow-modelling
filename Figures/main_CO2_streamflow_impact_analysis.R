@@ -800,7 +800,11 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
 
 
 
-
+# This is required in catchment boundary plots
+write_csv(
+  x = plot_ready_decade_differences,
+  file = "Modelling/decade_streamflow_CO2_differences.csv"
+)
 
 ## Map of percentage differences between decades ===============================
 percentage_difference_CO2_model_non_CO2_model_1990s <- plot_ready_decade_differences |>

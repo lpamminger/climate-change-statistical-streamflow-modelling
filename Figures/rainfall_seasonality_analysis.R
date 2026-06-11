@@ -524,7 +524,7 @@ single_map_aus <- aus_map |>
     panel.border = element_blank(),
     panel.grid = element_blank(),
     axis.ticks = element_blank(),
-    legend.spacing = unit(0.1, "cm"),
+    legend.spacing = unit(0.1, "cm")
   ) +
   guides(
     fill = guide_legend(override.aes = list(size = 5, shape = 21), nrow = 3), # Wrap legend with nrow

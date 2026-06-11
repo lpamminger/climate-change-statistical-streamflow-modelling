@@ -531,33 +531,27 @@ single_map_aus <- aus_map |>
     shape = bquote("Impact of" ~ CO[2] ~ "Term")
   ) +
   theme(
-    # legend.key = element_rect(fill = "grey80"),
-    legend.title = element_text(hjust = 0.5),
+    legend.title = element_text(hjust = 0.5, size = 7),
+    legend.text = element_text(size = 6),
     legend.background = element_rect(colour = "black"),
+    legend.margin = margin(t = 1, r = 1, b = 1, l = 1, unit = "pt"),
     axis.text = element_blank(),
     legend.position = "inside",
-    legend.position.inside = c(0.346, 0.9), # constants used to move the legend in the right place
+    legend.position.inside = c(0.36, 0.9), # constants used to move the legend in the right place
     legend.box = "horizontal", # side-by-side legends
-    panel.border = element_blank(),
+    panel.border = element_rect(colour = "black"),
     panel.grid = element_blank(),
-    axis.ticks = element_blank()
+    axis.ticks = element_blank(),
+    legend.key.spacing = unit(0, "pt")
   ) +
   guides(
-    fill = guide_legend(override.aes = list(size = 5, shape = 21), nrow = 3), # Wrap legend with nrow
-    shape = guide_legend(override.aes = list(size = 5, fill = "grey50"), nrow = 3)
+    fill = guide_legend(override.aes = list(size = 3, shape = 21), nrow = 3), # Wrap legend with nrow
+    shape = guide_legend(override.aes = list(size = 3, fill = "grey50"), nrow = 3)
   )
 
 
 #single_map_aus
 
-ggsave(
-  filename = "./Figures/Other/evidence_ratio_aus_map_with_catchment_boundaries.pdf",
-  plot = single_map_aus,
-  device = "pdf",
-  width = 232,
-  height = 200, # 210,
-  units = "mm"
-)
 
 
 
@@ -572,29 +566,45 @@ high_evi_gauges <- evidence_ratio |>
 
 
 ### CAMELSAUS boundary #########################################################
-### hopefully CAMELS boundaries and evidence ratio does not conflict
-### i.e., catchment boundary not shown for high evi gauges
-### IT IS A PROBLEM - DO THE RECURSIVE THING with deleted files
-### I need to find the parent catchment of the effected gauge
+### Is it more important to have a consistent plot or just show the boundaries
+### - if I just show boundaries of high evidence need to redo major networks
 
 
-# get parent catchment for all high evidence gauges
-x <- gauge_information |> 
-  select(gauge, status, parent_catchment) |> 
-  filter(gauge %in% high_evi_gauges)
+find_parent_catchment <- function(gauge, data) {
+  
+  force(gauge)
+  force(data)
+  filtered_data <- data |> 
+    filter(gauge == {{ gauge }})
+  
+  nested_status <- filtered_data |> pull(nested_status)
+  
+  
+  # if nested status is "Not Nested" return gauge
+  if(nested_status == "Not nested") {
+    return(gauge)
+  }
+  else {
+    next_station_ds <- filtered_data |> pull(next_station_ds)
+    
+    find_parent_catchment(gauge = next_station_ds, data = data)
+  }
+}
 
-# we don't change anything for the no_nested (i.e., keep)
-# there way a recursive function I made that identified the main catchment
-# for each catchment - look for it
-# recursive function
-# rough code is: function(gauge, data)
-# it is in prepare data
-
+parent_catchment_for_high_evi_gauges <- map_chr(
+  .x = high_evi_gauges,
+  .f = find_parent_catchment,
+  data = gauge_information
+)
 
 
 
 high_evi_CAMELSAUS_boundary <- CAMELSAUS_boundary |> 
-  filter(gauge %in% high_evi_gauges)
+  filter(gauge %in% parent_catchment_for_high_evi_gauges) |> 
+  # there is a catchment boundary without a dot - manually remove
+  # high_evi_state_CAMELSAUS_boundary[["NSW"]] |> ggplot() + geom_sf(aes(colour = gauge))
+  # It is 410713
+  filter(gauge != "410713")
 
 high_evi_state_CAMELSAUS_boundary <- map(
   .x = states,
@@ -603,9 +613,12 @@ high_evi_state_CAMELSAUS_boundary <- map(
 ) |> 
   `names<-`(states)
 
+
+
+
 ### Major streamflow network ###################################################
 high_evi_major_streamflow_network <- major_streamflow_network |> 
-  filter(gauge %in% high_evi_gauges)
+  filter(gauge %in% parent_catchment_for_high_evi_gauges)
 
 high_evi_state_major_streamflow_network <- map(
   .x = states,
@@ -617,7 +630,7 @@ high_evi_state_major_streamflow_network <- map(
 
 ### Minor streamflow network ###################################################
 high_evi_minor_streamflow_network <- minor_streamflow_network |> 
-  filter(gauge %in% high_evi_gauges)
+  filter(gauge %in% parent_catchment_for_high_evi_gauges)
 
 high_evi_state_minor_streamflow_network <- map(
   .x = states,
@@ -646,7 +659,6 @@ scale_size_limits <- plot_ready_decade_differences |>
   range(na.rm = TRUE) |> # can round up if I want to
   round(digits = 0)
 
-percentage_IQR_breaks <- c(0, 2.5, 5, 10, 15, 50, 100) # custom breaks
 
 hard_coded_breaks_CO2_impact_of_streamflow <- c(-75, -50, -25, -10, -1, 0, 1, 10, 25, 50, 75)
 
@@ -694,9 +706,7 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
     filter(state == "TAS")
   
   
-  ### Generate inset plots #######################################################
-  inset_dot_size <- 1.8
-  
+  ### Generate inset plots #####################################################
   inset_plot_QLD <- aus_map |>
     filter(state == "QLD") |>
     ggplot() +
@@ -721,7 +731,7 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
       data = QLD_data,
       aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
       show.legend = FALSE,
-      size = inset_dot_size,
+      size = dot_size,
       alpha = dot_transparency,
       colour = "black",
       stroke = 0.1,
@@ -735,8 +745,8 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
       show.limits = TRUE,
       guide = "colorsteps"
     ) +
-    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
-    guides(size = guide_bins(show.limits = TRUE)) +
+    #scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    #guides(size = guide_bins(show.limits = TRUE)) +
     theme_void()
   
   
@@ -764,7 +774,7 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
       data = NSW_data,
       aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
       show.legend = FALSE,
-      size = inset_dot_size,
+      size = dot_size,
       alpha = dot_transparency,
       colour = "black",
       stroke = 0.1,
@@ -778,8 +788,8 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
       show.limits = TRUE,
       guide = "colorsteps"
     ) +
-    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
-    guides(size = guide_bins(show.limits = TRUE)) +
+    #scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    #guides(size = guide_bins(show.limits = TRUE)) +
     theme_void()
   
   
@@ -807,7 +817,7 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
       data = VIC_data,
       aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
       show.legend = FALSE,
-      size = inset_dot_size,
+      size = dot_size,
       alpha = dot_transparency,
       colour = "black",
       stroke = 0.1,
@@ -821,8 +831,8 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
       show.limits = TRUE,
       guide = "colorsteps"
     ) +
-    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
-    guides(size = guide_bins(show.limits = TRUE)) +
+    #scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    #guides(size = guide_bins(show.limits = TRUE)) +
     theme_void()
   
   
@@ -850,7 +860,7 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
       data = WA_data,
       aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
       show.legend = FALSE,
-      size = inset_dot_size,
+      size = dot_size,
       alpha = dot_transparency,
       colour = "black",
       stroke = 0.1,
@@ -864,8 +874,8 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
       show.limits = TRUE,
       guide = "colorsteps"
     ) +
-    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
-    guides(size = guide_bins(show.limits = TRUE)) +
+    #scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    #guides(size = guide_bins(show.limits = TRUE)) +
     theme_void()
   
   
@@ -873,11 +883,27 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
     filter(state == "TAS") |>
     ggplot() +
     geom_sf() +
+    geom_sf(
+      data = high_evi_state_CAMELSAUS_boundary[["TAS"]],
+      colour = "black",
+      fill = NA,
+      linewidth = catchment_border_linewidth
+    ) +
+    geom_sf(
+      data = high_evi_state_major_streamflow_network[["TAS"]],
+      colour = "blue",
+      linewidth = streamflow_network_linewidth
+    ) +
+    geom_sf(
+      data = high_evi_state_minor_streamflow_network[["TAS"]],
+      colour = "blue",
+      linewidth = minor_streamflow_network_linewidth
+    ) +
     geom_point(
       data = TAS_data,
       aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
       show.legend = FALSE,
-      size = inset_dot_size,
+      size = dot_size,
       alpha = dot_transparency,
       colour = "black",
       stroke = 0.1,
@@ -891,8 +917,8 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
       show.limits = TRUE,
       guide = "colorsteps"
     ) +
-    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
-    guides(size = guide_bins(show.limits = TRUE)) +
+    #scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    #guides(size = guide_bins(show.limits = TRUE)) +
     theme_void()
   
   
@@ -920,7 +946,7 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
       data = data,
       mapping = aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
       alpha = dot_transparency,
-      size = inset_dot_size,
+      size = dot_size + 0.5,
       colour = "black",
       shape = 21,
       inherit.aes = FALSE,
@@ -935,7 +961,7 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
       show.limits = TRUE,
       guide = "colorsteps"
     ) +
-    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    #scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
     # expand map
     coord_sf(xlim = c(95, 176), ylim = c(-60, 0)) +
     # magnify WA
@@ -949,7 +975,6 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
     ) +
     # magnify VIC
     geom_magnify(
-      # aes(from = state == "VIC"), # use aes rather than manually selecting area
       from = c(141, 149.5, -39, -34),
       to = c(95, 136, -38, -60),
       shadow = FALSE,
@@ -987,35 +1012,34 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
       x = NULL, # "Latitude",
       y = NULL, # "Longitude",
       fill = bquote("Average Impact of" ~ CO[2] ~ "on Streamflow (%)"),
-      size = "Percentage Impact Uncertainty (IQR)",
       title = {{ title }}
     ) +
     theme(
       legend.key = element_rect(fill = "white"),
-      legend.title = element_text(hjust = 0.5),
-      # legend.background = element_rect(colour = "black"), #this cuts off the negative sign
+      legend.title = element_text(hjust = 0.5, size = 7),
+      legend.text = element_text(size = 6),
+      legend.background = element_rect(colour = "black"), #this cuts off the negative sign
+      legend.margin = margin(t = 3, r = 10, b = 3, l = 10, unit = "pt"),
       axis.text = element_blank(),
       legend.position = "inside",
-      legend.position.inside = c(0.351, 0.9),
+      legend.position.inside = c(0.36, 0.9),
       legend.box = "horizontal", # side-by-side legends
       panel.grid = element_blank(),
       axis.ticks = element_blank(),
-      plot.title = element_text(margin = margin(l = 25, r = 0, t = 30, b = -30), size = 12, face = "bold") # push title into plot
+      plot.title = element_text(
+        margin = margin(l = 25, r = 0, t = 30, b = -30), 
+        size = 12, 
+        face = "bold"
+        ) # push title into plot
     ) +
     guides(
       fill = guide_coloursteps(
-        barwidth = unit(10, "cm"),
+        barwidth = unit(9, "cm"),
+        barheight = unit(0.5, "cm"),
         show.limits = TRUE,
         even.steps = TRUE,
         title.position = "top",
         direction = "horizontal"
-      ),
-      size = guide_bins(
-        override.aes = aes(stroke = 0.5),
-        show.limits = TRUE,
-        direction = "horizontal",
-        title.position = "top", # warnings says its ignore these parameter - The warnings are wrong
-        barwidth = unit(1, "cm")
       )
     )
   
@@ -1029,8 +1053,26 @@ make_CO2_streamflow_percentage_change_map <- function(data, title) {
 percentage_difference_CO2_model_non_CO2_model_2010s <- plot_ready_decade_differences |>
   filter(decade == 2)
 
-make_CO2_streamflow_percentage_change_map(
+CO2_map_2010s <- make_CO2_streamflow_percentage_change_map(
   percentage_difference_CO2_model_non_CO2_model_2010s, 
-  "TEST"
+  NULL
   )
+
+
+
+
+# Combine graphs into one ------------------------------------------------------
+catchment_boundary_combined_map <- single_map_aus + CO2_map_2010s
+
+ggsave(
+  filename = "./Figures/Other/catchment_boundary_combined_map.pdf",
+  plot = catchment_boundary_combined_map,
+  device = "pdf",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
+
+
+
 
