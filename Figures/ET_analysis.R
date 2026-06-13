@@ -5,8 +5,6 @@
 # Figures/Other/delta_Q_delta_AET_ratio_map.pdf
 
 
-
-
 # Import libraries required ----------------------------------------------------
 pacman::p_load(tidyverse, ozmaps, sf, ggmagnify, patchwork)
 
@@ -49,7 +47,6 @@ best_CO2_non_CO2_per_gauge <- read_csv(
 )
 
 
-
 evidence_ratio_calc <- read_csv(
   "Modelling/Results/CMAES/evidence_ratio_results.csv",
   show_col_types = FALSE
@@ -60,14 +57,6 @@ master_streamflow_table <- read_csv(
   "Modelling/Results/master_streamflow_table.csv",
   show_col_types = FALSE
 )
-
-
-
-
-
-
-
-
 
 
 # Tidy APET data ---------------------------------------------------------------
@@ -108,23 +97,23 @@ evap_areal_potential_annual <- areal_potential_evap_SILO_daily |>
 # Use total Ep/P over timeseries or use annual average? - Try both
 # Once categorised comapre the evdidence ratio between the climate types using
 # boxplot
-define_aridity <- data |> 
+define_aridity <- data |>
   left_join(
     evap_areal_potential_annual,
     by = join_by(gauge, year)
-  ) |> 
+  ) |>
   mutate(
     aridity = annual_APET_mm / p_mm
-  ) |> 
+  ) |>
   summarise(
     mean_aridity = mean(aridity, na.rm = TRUE),
     sum_precip = sum(p_mm, na.rm = TRUE),
     sum_APET = sum(annual_APET_mm, na.rm = TRUE),
     .by = gauge
-  ) |> 
+  ) |>
   mutate(
     mean_aridity_from_sum = sum_APET / sum_precip
-  ) |> 
+  ) |>
   # sort aridity into labels
   mutate(
     dryness_zone = case_when(
@@ -134,12 +123,12 @@ define_aridity <- data |>
       mean_aridity_from_sum < 0.76 ~ "Humid",
       .default = NA
     )
-  ) |> 
+  ) |>
   # add evidence ratio
   left_join(
     evidence_ratio_calc,
     by = join_by(gauge)
-  ) 
+  )
 
 # see if the results make sense - looks good to me
 generate_aus_map_sf() |>
@@ -157,23 +146,23 @@ write_csv(
   file = "./Data/Tidy/aridity_information.csv"
 )
 
-count_labels <-  define_aridity |> 
-  filter(evidence_ratio > 100) |> 
-  count(dryness_zone) |> 
+count_labels <- define_aridity |>
+  filter(evidence_ratio > 100) |>
+  count(dryness_zone) |>
   mutate(
     count_label = paste0("n = ", n)
-  ) |> 
+  ) |>
   mutate(
     y_lab = 50 # -25
   )
 
 
-define_aridity |> 
+define_aridity |>
   # set the order for the boxplot labels
   mutate(
-    dryness_zone = factor(dryness_zone, levels = c("Arid", "Semi-Arid", "Sub-Humid", "Humid")) 
-  ) |> 
-  filter(evidence_ratio > 100) |> 
+    dryness_zone = factor(dryness_zone, levels = c("Arid", "Semi-Arid", "Sub-Humid", "Humid"))
+  ) |>
+  filter(evidence_ratio > 100) |>
   ggplot(aes(x = dryness_zone, y = evidence_ratio)) +
   geom_boxplot(staplewidth = 0.5) +
   geom_text(
@@ -219,15 +208,14 @@ ggsave(
 )
 
 
-
 # Find the PET trend in data using linear slope --------------------------------
 
 ## Only include gauges with evidence ratio > 100 ===============================
-high_evidence_ratio_gauges <- evidence_ratio_calc |> 
-  filter(evidence_ratio > 100) |> 
+high_evidence_ratio_gauges <- evidence_ratio_calc |>
+  filter(evidence_ratio > 100) |>
   pull(gauge)
 
-high_evidence_master_streamflow_table <- master_streamflow_table |> 
+high_evidence_master_streamflow_table <- master_streamflow_table |>
   filter(gauge %in% high_evidence_ratio_gauges)
 
 
@@ -236,7 +224,7 @@ get_slope <- function(x, y, ...) {
   lm(y ~ x, ...)$coefficients[2] |> unname() # position of slope
 }
 
-trends_in_counterfactual_flow_data <- high_evidence_master_streamflow_table |> 
+trends_in_counterfactual_flow_data <- high_evidence_master_streamflow_table |>
   select(gauge, year, realspace_streamflow_CO2_model_off, realspace_streamflow_CO2_model_on)
 
 
@@ -261,8 +249,6 @@ timeseries_APET_vs_partitioning <- evap_areal_potential_annual |>
   ) |>
   # remove other decade - don't remove NA's yet
   filter(decade != "other")
-
-
 
 
 ## Do APET trends and CO2-partitioning trends separately due to missing streamflow data years ====
@@ -320,7 +306,7 @@ map_plot <- function(plotting_variable, data, scale_range = NULL, scale_breaks =
   ## rename tibble columns for plotting
   ## This is more reliable than using braces {{ }}
   colour_palette <- noquote(colour_palette)
-  
+
   data <- data |>
     rename(
       plotting_variable = {{ plotting_variable }}
@@ -367,8 +353,6 @@ map_plot <- function(plotting_variable, data, scale_range = NULL, scale_breaks =
 
     # need a default palette and a check to see if the palette length matches breaks
   }
-
-
 
 
   ## Generate inset plots ======================================================
@@ -465,7 +449,6 @@ map_plot <- function(plotting_variable, data, scale_range = NULL, scale_breaks =
       guide = "colorsteps"
     ) +
     theme_void()
-
 
 
   inset_plot_TAS <- aus_map |>
@@ -573,7 +556,7 @@ map_plot <- function(plotting_variable, data, scale_range = NULL, scale_breaks =
       legend.position = "inside",
       legend.position.inside = c(0.346, 0.9), # constants used to move the legend in the right place
       legend.box = "horizontal", # side-by-side legends
-      #panel.border = element_blank(),
+      # panel.border = element_blank(),
       panel.grid = element_blank(),
       axis.ticks = element_blank(),
       legend.margin = margin(t = 5, b = 5, r = 20, l = 20, unit = "pt") # add extra padding around legend box to avoid -1.6 intersecting with line
@@ -616,7 +599,7 @@ map_Q_PET_ratio_1990 <- map_plot(
   scale_range = scale_range,
   scale_breaks = c(scale_range[1], 0.01, 0.1, 0.2, 0.5, 1, 2, 5, 10, 100, scale_range[2]),
   colour_palette = my_palette,
-  legend_title = bquote("abs("*Delta*"Q [mm/y] / "*Delta*"APET [mm/y])")
+  legend_title = bquote("abs(" * Delta * "Q [mm/y] / " * Delta * "APET [mm/y])")
 ) +
   geom_text(
     data = figure_label_1990,
@@ -650,7 +633,7 @@ map_Q_PET_ratio_2012 <- map_plot(
   scale_range = scale_range,
   scale_breaks = c(scale_range[1], 0.01, 0.1, 0.2, 0.5, 1, 2, 5, 10, 100, scale_range[2]),
   colour_palette = my_palette,
-  legend_title = bquote("abs("*Delta*"Q [mm/y] / "*Delta*"APET [mm/y])")
+  legend_title = bquote("abs(" * Delta * "Q [mm/y] / " * Delta * "APET [mm/y])")
 ) +
   geom_text(
     data = figure_label_2012,
@@ -679,13 +662,6 @@ ggsave(
   height = 210,
   units = "mm"
 )
-
-
-
-
-
-
-
 
 
 # Correlations -----------------------------------------------------------------
@@ -857,7 +833,6 @@ inset_plot_VIC <- aus_map |>
   theme_void()
 
 
-
 inset_plot_WA <- aus_map |>
   filter(state == "WA") |>
   ggplot() +
@@ -879,7 +854,6 @@ inset_plot_WA <- aus_map |>
   theme_void()
 
 
-
 inset_plot_TAS <- aus_map |>
   filter(state == "TAS") |>
   ggplot() +
@@ -899,7 +873,6 @@ inset_plot_TAS <- aus_map |>
     breaks = corr_breaks
   ) +
   theme_void()
-
 
 
 ## Put it together =============================================================
@@ -1010,14 +983,6 @@ ggsave(
 ## compare APET vs. CO2 - this is interesting
 
 
-
-
-
-
-
-
-
-
 # Find difference in AET between water balance and budyko ----------------------
 # Game plan:
 # 1. select 3 periods with varying lengths
@@ -1025,17 +990,17 @@ ggsave(
 # 3. produce 3 facets each with the different time spans
 
 ## What is the minimum and maximum year for each gauge
-min_and_max_year_per_gauge <- data |> 
+min_and_max_year_per_gauge <- data |>
   summarise(
     min_year = min(year),
     max_year = max(year),
     .by = gauge
-  ) |> 
+  ) |>
   filter(gauge %in% high_evidence_ratio_gauges)
 # Not all gauges have the required lengths...
 # We are taking averages, however it may error if there is nothing to average
 
-high_evidence_ratio_data <- data |> 
+high_evidence_ratio_data <- data |>
   filter(gauge %in% high_evidence_ratio_gauges)
 
 
@@ -1056,7 +1021,7 @@ chunk_data_timespans <- function(timespan, data) {
         year %in% timespan[[2]] ~ 2,
         .default = NA
       )
-    ) |> 
+    ) |>
     drop_na()
 }
 
@@ -1067,9 +1032,6 @@ timespan_data <- map(
 )
 
 
-
-
-
 ## AET from water balance vs. budyko ===========================================
 budyko_curve <- function(P, PET) {
   sqrt(PET / P * tanh(P / PET) * (1 - exp(-PET / P)))
@@ -1077,7 +1039,7 @@ budyko_curve <- function(P, PET) {
 
 
 AET_comparison_calc <- function(chunked_data) {
-  chunked_data |> 
+  chunked_data |>
     mutate(
       evapotranspiration_ratio = budyko_curve(p_mm, annual_APET_mm)
     ) |>
@@ -1107,9 +1069,8 @@ acceptable_lengths <- c(10, 20, 30) * fraction_of_acceptable
 
 # remove gauges that do not meet this criteria
 filter_acceptable_gauges <- function(AET_chunked_data, acceptable_lengths) {
-  
-  acceptable_gauges <- AET_chunked_data |> 
-    select(gauge, decade, n) |> 
+  acceptable_gauges <- AET_chunked_data |>
+    select(gauge, decade, n) |>
     pivot_wider(
       id_cols = gauge,
       names_from = decade,
@@ -1118,15 +1079,14 @@ filter_acceptable_gauges <- function(AET_chunked_data, acceptable_lengths) {
     left_join(
       min_and_max_year_per_gauge,
       by = join_by(gauge)
-    ) |> 
+    ) |>
     filter(
       (`1` >= acceptable_lengths) & (`2` >= acceptable_lengths)
-    ) |> 
+    ) |>
     pull(gauge)
-  
-  AET_chunked_data |> 
+
+  AET_chunked_data |>
     filter(gauge %in% acceptable_gauges)
-    
 }
 
 ## Calculate AET difference ====================================================
@@ -1134,13 +1094,13 @@ AET_difference <- map2(
   .x = AET_comparison,
   .y = acceptable_lengths,
   .f = filter_acceptable_gauges
-) |> 
-  list_rbind(names_to = "source") |> 
+) |>
+  list_rbind(names_to = "source") |>
   mutate(
     AET_diff = ave_waterbalance_AET - ave_budyko_AET
   )
 
-AET_difference |> 
+AET_difference |>
   summarise(
     n = n(),
     .by = c(source, decade)
@@ -1150,22 +1110,21 @@ AET_difference |>
 make_ecdf <- function(x) {
   # function factory - returns a function
   ecdf_function <- ecdf(x)
-  
+
   # return cdf
   return(ecdf_function(x))
 }
 
 
-AET_with_ecdf <- AET_difference |> 
-  group_by(source, decade) |> 
+AET_with_ecdf <- AET_difference |>
+  group_by(source, decade) |>
   mutate(
     cdf = make_ecdf(AET_diff)
   )
 
 
-
 ## Plot ========================================================================
-plot_AET_with_ecdf <- AET_with_ecdf |> 
+plot_AET_with_ecdf <- AET_with_ecdf |>
   # Hard coded from timespan comparison
   mutate(
     source = case_when(
@@ -1177,12 +1136,12 @@ plot_AET_with_ecdf <- AET_with_ecdf |>
   ) |>
   mutate(
     decade = if_else(decade == 1, "First Timespan", "Second Timespan")
-  ) |> 
+  ) |>
   ggplot(aes(x = AET_diff, y = cdf, colour = decade)) +
   geom_step() +
   scale_color_brewer(palette = "Set1") +
   labs(
-    x = bquote(Delta*"AET [mm]"),
+    x = bquote(Delta * "AET [mm]"),
     y = "Cumulative Probability",
     colour = NULL
   ) +
@@ -1196,7 +1155,6 @@ plot_AET_with_ecdf <- AET_with_ecdf |>
   facet_wrap(~source)
 
 
-
 ggsave(
   filename = "./Figures/Supplementary/varying_lengths_AET_difference_plot.pdf",
   plot = plot_AET_with_ecdf,
@@ -1207,8 +1165,6 @@ ggsave(
 )
 
 
-
-
 ## Find AET differences between decades using different approaches =============
 storage_error <- 0.03 # from Han et al, 2020 https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2020WR027392
 
@@ -1217,26 +1173,26 @@ AET_comparison <- AET_comparison[["single_decade"]] |> # get the single decade f
   select(gauge, decade, ave_budyko_AET, ave_waterbalance_AET) |>
   mutate(
     AET_waterbalance_minus_budyko_ave = ave_waterbalance_AET - ave_budyko_AET,
-    percent_AET_waterbalance_minus_budyko_ave = (ave_waterbalance_AET - ave_budyko_AET) / ave_budyko_AET 
-  ) |> 
+    percent_AET_waterbalance_minus_budyko_ave = (ave_waterbalance_AET - ave_budyko_AET) / ave_budyko_AET
+  ) |>
   # add uncertainty
   mutate(
     error_ave_waterbalance_AET = ave_waterbalance_AET * storage_error,
     error_ave_budyko_AET = ave_budyko_AET * storage_error,
-  ) |> 
+  ) |>
   # calculate bounds
   mutate(
     lower_ave_waterbalance_AET = ave_waterbalance_AET - error_ave_waterbalance_AET,
     upper_ave_waterbalance_AET = ave_waterbalance_AET + error_ave_waterbalance_AET,
     lower_ave_budyko_AET = ave_budyko_AET - error_ave_budyko_AET,
     upper_ave_budyko_AET = ave_budyko_AET + error_ave_budyko_AET,
-  ) |> 
+  ) |>
   mutate(
-    #lower_bound = (lower_ave_waterbalance_AET - lower_ave_budyko_AET),
+    # lower_bound = (lower_ave_waterbalance_AET - lower_ave_budyko_AET),
     lower_bound = (lower_ave_waterbalance_AET - upper_ave_budyko_AET),
-    #upper_bound = (upper_ave_waterbalance_AET - upper_ave_budyko_AET),
+    # upper_bound = (upper_ave_waterbalance_AET - upper_ave_budyko_AET),
     upper_bound = (upper_ave_waterbalance_AET - lower_ave_budyko_AET)
-  ) |> 
+  ) |>
   # swap if upper_bound < lower_bound
   mutate(
     new_lower_bound = if_else(upper_bound > lower_bound, lower_bound, upper_bound),
@@ -1244,21 +1200,18 @@ AET_comparison <- AET_comparison[["single_decade"]] |> # get the single decade f
     # all percentage changes relative to ave_budyko_AET
     percent_new_lower_bound = lower_bound / ave_budyko_AET,
     percent_new_upper_bound = upper_bound / ave_budyko_AET
-  ) |> 
+  ) |>
   # remove calculation columns
   select(
-    gauge, 
-    decade, 
+    gauge,
+    decade,
     new_lower_bound,
     AET_waterbalance_minus_budyko_ave,
     new_upper_bound,
     percent_new_lower_bound,
     percent_AET_waterbalance_minus_budyko_ave,
     percent_new_upper_bound
-    )
-
-
-
+  )
 
 
 ## Make cumulative distribution functions ======================================
@@ -1274,65 +1227,62 @@ AET_comparison <- AET_comparison[["single_decade"]] |> # get the single decade f
 # this could be a |> function
 
 
-
-
 make_ecdf <- function(x) {
   # function factory - returns a function
   ecdf_function <- ecdf(x)
-  
+
   # return cdf
   return(ecdf_function(x))
 }
 
 # # this returns the exact same thing - makes sense since they have the same rank
 
-#arid_gauges <- define_aridity |> 
- # filter(dryness_zone == "Semi-Arid") |> 
+# arid_gauges <- define_aridity |>
+# filter(dryness_zone == "Semi-Arid") |>
 #  pull(gauge)
 
-AET_comparison <- AET_comparison |> 
-  #filter(gauge %in% arid_gauges) |> 
+AET_comparison <- AET_comparison |>
+  # filter(gauge %in% arid_gauges) |>
   # forces by decade operation
-  group_by(decade) |> 
+  group_by(decade) |>
   mutate(
     ecdf_AET_middle = make_ecdf(AET_waterbalance_minus_budyko_ave),
     ecdf_AET_upper = make_ecdf(new_upper_bound),
     ecdf_AET_lower = make_ecdf(new_lower_bound)
-  ) |> 
+  ) |>
   mutate(
     decade = if_else(decade == 1, "1990-1999", "2012-2021")
-  ) 
-  
-  
-  
+  )
+
+
 # it is like I need to rearrange then put back together
-xmiddle <- AET_comparison |> 
-  select(decade, AET_waterbalance_minus_budyko_ave, ecdf_AET_middle) |> 
-  arrange(ecdf_AET_middle) |> 
+xmiddle <- AET_comparison |>
+  select(decade, AET_waterbalance_minus_budyko_ave, ecdf_AET_middle) |>
+  arrange(ecdf_AET_middle) |>
   rename(ecdf = ecdf_AET_middle)
 
-xlower <- AET_comparison |> 
-  select(decade, new_lower_bound, ecdf_AET_lower) |> 
-  arrange(ecdf_AET_lower) |> 
+xlower <- AET_comparison |>
+  select(decade, new_lower_bound, ecdf_AET_lower) |>
+  arrange(ecdf_AET_lower) |>
   rename(ecdf = ecdf_AET_lower)
 
-xupper <- AET_comparison |> 
-  select(decade, new_upper_bound, ecdf_AET_upper) |> 
-  arrange(ecdf_AET_upper) |> 
+xupper <- AET_comparison |>
+  select(decade, new_upper_bound, ecdf_AET_upper) |>
+  arrange(ecdf_AET_upper) |>
   rename(ecdf = ecdf_AET_upper)
 
-plotting_AET_comparison <- xmiddle |> 
+plotting_AET_comparison <- xmiddle |>
   left_join(
     xlower,
     by = join_by(ecdf, decade)
-  ) |> 
+  ) |>
   left_join(
     xupper,
     by = join_by(ecdf, decade)
-  ) 
+  )
 
 
-AET_comparison_plot <- plotting_AET_comparison |> 
+AET_comparison_plot <- plotting_AET_comparison |>
   ggplot(
     aes(x = ecdf, y = AET_waterbalance_minus_budyko_ave, colour = decade)
   ) +
@@ -1347,7 +1297,7 @@ AET_comparison_plot <- plotting_AET_comparison |>
   theme_bw() +
   scale_color_brewer(palette = "Set1") +
   labs(
-    y = bquote(Delta*"AET [mm]"),
+    y = bquote(Delta * "AET [mm]"),
     x = "Cumulative Probability",
     colour = "Decade",
     fill = "Decade"
@@ -1362,7 +1312,6 @@ AET_comparison_plot <- plotting_AET_comparison |>
 AET_comparison_plot
 
 
-
 ggsave(
   filename = "./Figures/Supplementary/3_percent_error_AET_estimates_waterbalance_vs_budyko.pdf",
   plot = AET_comparison_plot,
@@ -1373,157 +1322,27 @@ ggsave(
 )
 
 
-
-
-
-
-# Repeat Q_PET_ratio_map but using Water balance and Budyko delta --------------
-CO2_partitioning_difference <- timeseries_APET_vs_partitioning |>
-  # remove missing years
-  drop_na() |>
-  summarise(
-    sum_a3_off = sum(realspace_streamflow_CO2_model_off),
-    sum_a3_on = sum(realspace_streamflow_CO2_model_on),
-    n = n(),
-    .by = c(gauge, decade)
-  ) |>
-  mutate(
-    Q_CO2_impact_ave = (sum_a3_off - sum_a3_on)/n # mm/y ave
-  )
-
-
-deltaQ_AET_differene_wb_bd_ratio <- AET_comparison |>
-  mutate(
-    decade = if_else(decade == 1, "1990-1999", "2012-2021")
-  ) |>
-  left_join(
-    CO2_partitioning_difference,
-    by = join_by(gauge, decade)
-  ) |>
-  # remove excess columns
-  select(gauge, decade, AET_waterbalance_minus_budyko_ave, Q_CO2_impact_ave) |>
-  # delta Q over AET difference
-  mutate(
-    Q_AET_wb_bd_ratio = abs(Q_CO2_impact_ave) / abs(AET_waterbalance_minus_budyko_ave) # mm/y ave over mm/y ave
-  ) |>
-  # add lat lon
-  left_join(
-    lat_lon_gauge,
-    by = join_by(gauge)
-  )
-
-
-## plotting ====================================================================
-# custom range and breaks
-scale_range <- deltaQ_AET_differene_wb_bd_ratio |>
-  pull(Q_AET_wb_bd_ratio) |>
-  range()
-
-# round by itself does not do a good job - a single variable outside of range
-scale_range <- c(
-  round_any(scale_range[1], accuracy = 0.01, f = floor),
-  round_any(scale_range[2], accuracy = 0.01, f = ceiling)
-)
-
-### Plot 1990-1999 #############################################################
-figure_label_1990 <- tribble(
-  ~lon, ~lat, ~label_name,
-  95, 0, "A"
-)
-
-decade_label_1990 <- tribble(
-  ~lon, ~lat, ~label_name,
-  105, 0, "1990-1999"
-)
-
-map_Q_AET_ratio_1990 <- map_plot(
-  plotting_variable = Q_AET_wb_bd_ratio,
-  data = deltaQ_AET_differene_wb_bd_ratio |> filter(decade == "1990-1999"),
-  scale_range = scale_range,
-  scale_breaks = c(scale_range[1], 0.01, 0.1, 0.2, 0.5, 1, 2, 5, 10, 100, scale_range[2]),
-  colour_palette = my_palette,
-  legend_title = bquote("abs(Mean"~Delta*"Q [mm/year] / Mean"~Delta*"AET [mm/year])")
-) +
-  geom_text(
-    data = figure_label_1990,
-    aes(x = lon, y = lat, label = label_name),
-    fontface = "bold",
-    size = 10,
-    size.unit = "pt"
-  ) +
-  geom_text(
-    data = decade_label_1990,
-    aes(x = lon, y = lat, label = label_name),
-    size = 10,
-    size.unit = "pt"
-  )
-
-
-### Plot 2012-2021 #############################################################
-figure_label_2012 <- tribble(
-  ~lon, ~lat, ~label_name,
-  95, 0, "B"
-)
-
-decade_label_2012 <- tribble(
-  ~lon, ~lat, ~label_name,
-  105, 0, "2012-2021"
-)
-
-map_Q_AET_ratio_2012 <- map_plot(
-  plotting_variable = Q_AET_wb_bd_ratio,
-  data =  deltaQ_AET_differene_wb_bd_ratio |> filter(decade == "2012-2021"),
-  scale_range = scale_range,
-  scale_breaks = c(scale_range[1], 0.01, 0.1, 0.2, 0.5, 1, 2, 5, 10, 100, scale_range[2]),
-  colour_palette = my_palette,
-  legend_title = bquote("abs(Mean"~Delta*"Q [mm/year] / Mean"~Delta*"AET [mm/year])")
-) +
-  geom_text(
-    data = figure_label_2012,
-    aes(x = lon, y = lat, label = label_name),
-    fontface = "bold",
-    size = 10,
-    size.unit = "pt"
-  ) +
-  geom_text(
-    data = decade_label_2012,
-    aes(x = lon, y = lat, label = label_name),
-    size = 10,
-    size.unit = "pt"
-  )
-
-### patchwork together and save ################################################
-final_plot_delta_Q_delta_AET_ratio <- (map_Q_AET_ratio_1990 | map_Q_AET_ratio_2012) +
-  plot_layout(guides = "collect") &
-  theme(legend.position = "bottom")
-
-ggsave(
-  filename = "./Figures/Other/delta_Q_delta_AET_ratio_map.pdf",
-  plot = final_plot_delta_Q_delta_AET_ratio,
-  device = "pdf",
-  width = 297,
-  height = 210,
-  units = "mm"
-)
-
-
 # Map delta_AET ----------------------------------------------------------------
 # custom range and breaks
-AET_comparison <- AET_comparison |> 
+AET_comparison_single_decade <- AET_comparison[["single_decade"]] |>
   left_join(
     lat_lon_gauge,
     by = join_by(gauge)
+  ) |>
+  mutate(
+    AET_waterbalance_minus_budyko_ave = ave_waterbalance_AET - ave_budyko_AET
   )
 
-scale_range <- AET_comparison |>
+scale_range <- AET_comparison_single_decade |>
   pull(AET_waterbalance_minus_budyko_ave) |>
   range()
 
 # round by itself does not do a good job - a single variable outside of range
 scale_range <- c(
-  round_any(scale_range[1], accuracy = 0.01, f = floor),
-  round_any(scale_range[2], accuracy = 0.01, f = ceiling)
+  round_any(scale_range[1], accuracy = 1, f = floor),
+  round_any(scale_range[2], accuracy = 1, f = ceiling)
 )
+
 
 ### Plot 1990-1999 #############################################################
 figure_label_1990 <- tribble(
@@ -1538,11 +1357,11 @@ decade_label_1990 <- tribble(
 
 map_AET_ratio_1990 <- map_plot(
   plotting_variable = AET_waterbalance_minus_budyko_ave,
-  data = AET_comparison |> filter(decade == 1),
+  data = AET_comparison_single_decade |> filter(decade == 1),
   scale_range = scale_range,
   scale_breaks = c(scale_range[1], -150, -100, -50, -25, 0, 25, 50, 100, 150, scale_range[2]),
   colour_palette = my_palette,
-  legend_title = bquote("Mean"~Delta*"AET [mm/year]")
+  legend_title = bquote("Mean" ~ Delta * "AET [mm/year]")
 ) +
   geom_text(
     data = figure_label_1990,
@@ -1572,11 +1391,11 @@ decade_label_2012 <- tribble(
 
 map_AET_ratio_2012 <- map_plot(
   plotting_variable = AET_waterbalance_minus_budyko_ave,
-  data =  AET_comparison |> filter(decade == 2),
+  data = AET_comparison_single_decade |> filter(decade == 2),
   scale_range = scale_range,
   scale_breaks = c(scale_range[1], -150, -100, -50, -25, 0, 25, 50, 100, 150, scale_range[2]),
   colour_palette = my_palette,
-  legend_title = bquote("Mean"~Delta*"AET [mm/year]")
+  legend_title = bquote("Mean" ~ Delta * "AET [mm/year]")
 ) +
   geom_text(
     data = figure_label_2012,
@@ -1606,3 +1425,126 @@ ggsave(
   units = "mm"
 )
 
+
+# Combine final_plot_delta_AET_ratio and plot_AET_with_ecdf for plot -----------
+
+## Plot layout =================================================================
+x <- final_plot_delta_AET_ratio / plot_AET_with_ecdf # --> look vaguely like this
+
+ggsave(
+  filename = "./Figures/Other/TESTING_AET_combined.pdf",
+  plot = x,
+  device = "pdf",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
+## Use patchwork to join everything together
+# Alternative methods attempted:
+## - plot_spacer and | + / operations - too much faff
+## - individually plotting timeseries - gaps
+
+# Defining layout it the best method as I have direct control
+
+# use the area() constructor
+# top, left, bottom, right bounds (t < b and l < r)
+layout <- c(
+  area(t = 1, l = 1, b = 3, r = 3), # 1990s percentage change
+  area(t = 1, l = 4, b = 3, r = 6), # 2010s percentage change
+  area(t = 4, l = 1, b = 4, r = 6)#, # 10-year cdf
+  #area(t = 4, l = 3, b = 4, r = 4), # 20-year cdf
+  #area(t = 4, l = 5, b = 4, r = 6) # 30-year cdf
+)
+
+plot(layout) # check the patches are working
+# the layout is correct - need to change cdf
+
+
+## Need to split up the plot_AET_with_ecdf =====================================
+
+### Make abc labels 
+cde_labels <- tribble(
+  ~label_name, ~source,
+  "C", "single_decade",
+  "D", "double_decade",
+  "E", "triple_decade"
+) |> 
+  # same axis between facets = same x and y
+  add_column(
+    x_pos = -250,
+    y_pos = 0.95
+  ) |> 
+  mutate(
+    source = factor(source, levels = c("single_decade", "double_decade", "triple_decade"))
+  ) 
+
+### Plotting with facets
+AET_with_ecdf_split <- AET_with_ecdf |>
+  # Hard coded from timespan comparison
+  #mutate(
+  #  source = case_when(
+  #    source == "single_decade" ~ "1990-1999 and 2012-2021",
+  #    source == "double_decade" ~ "1982-2001 and 2002-2021",
+  #    source == "triple_decade" ~ "1962-1991 and 1992-2021",
+  #    .default = NA
+  #  )
+  #) |>
+  mutate(
+    decade = if_else(decade == 1, "First Period", "Second Period")
+  ) |>
+  mutate(
+    source = factor(source, levels = c("single_decade", "double_decade", "triple_decade"))
+  ) |> 
+  ggplot(aes(x = AET_diff, y = cdf, colour = decade)) +
+  geom_step() +
+  geom_text(
+    aes(x = x_pos, y = y_pos, label = label_name),
+    data = cde_labels,
+    inherit.aes = FALSE,
+    fontface = "bold"
+  ) +
+  scale_color_brewer(palette = "Set1") +
+  labs(
+    x = bquote(Delta * "AET [mm]"),
+    y = "Cumulative Probability",
+    colour = "Comparison Period"
+  ) +
+  theme_bw() +
+  theme(
+    legend.position = "inside",
+    legend.position.inside = c(0.1, 0.9),
+    legend.background = element_blank(),
+    legend.box.background = element_rect(colour = "black"),
+    strip.text = element_blank(),
+    strip.background = element_blank()
+  ) +
+  facet_wrap(~source)
+
+
+
+
+## Put it together =============================================================
+combined_delta_AET_map <- (map_AET_ratio_1990 + map_AET_ratio_2012 + AET_with_ecdf_split) +
+  plot_layout(design = layout, guides = "collect") &
+  theme(
+    legend.position = "bottom",
+    legend.title = element_text(size = 11),
+    legend.text = element_text(size = 9),
+    legend.background = element_blank(),
+    legend.box.background = element_rect(colour = "black")
+  )  &
+ guides(colour = guide_legend(
+   override.aes = list(linewidth = 2),
+   title.hjust = 0.5, 
+   title.position = "top", 
+   ncol = 1)
+   )
+
+ggsave(
+  filename = "./Figures/Main/combined_delta_AET_map.pdf",
+  plot = combined_delta_AET_map,
+  device = "pdf",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
