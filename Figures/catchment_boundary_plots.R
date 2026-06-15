@@ -55,6 +55,10 @@ australian_streamflow_network_sf <- st_read(
   as_tibble = TRUE
 )
 
+WA_wheat_belt <- st_read(
+  dsn = "Data/Maps/Wheatbelt_of_WA"
+)
+
 aus_map <- generate_aus_map_sf()
 
 aus_map_crs <- st_crs(aus_map)
@@ -98,6 +102,47 @@ state_CAMELSAUS_boundary <- map(
   data = CAMELSAUS_boundary
 ) |> 
   `names<-`(states)
+
+
+# How many catchments are located in the WA wheat belt? ------------------------
+WA_wheat_belt <- WA_wheat_belt |> 
+  st_transform(crs = working_crs)
+
+## Intersection
+sf_use_s2(FALSE)
+gauges_that_interect_wheat_belt <- st_intersection(
+  state_CAMELSAUS_boundary[["WA"]],
+  WA_wheat_belt
+) |> 
+  pull(gauge)
+
+# 18/49 of the WA catchments intersect the wheat belt
+# only one has a strong evidence ratio --> 701002
+evidence_ratio |> 
+  filter(gauge %in% gauges_that_interect_wheat_belt) |> 
+  arrange(desc(evidence_ratio))
+
+aus_map |> 
+  filter(state == "WA") |> 
+  ggplot() +
+  geom_sf() +
+  geom_sf(
+    data = state_CAMELSAUS_boundary[["WA"]]
+  ) +
+  geom_sf(
+    data = WA_wheat_belt,
+    fill = "yellow",
+    alpha = 0.1
+  ) +
+  geom_point(
+    aes(x = lon, y = lat),
+    data = evidence_ratio
+  ) +
+  # zoom it down
+  coord_sf(xlim = c(114, 120), ylim = c(-35, -27.5)) +
+  theme_bw()
+
+
 
 
 # Filter Australian Streamflow Network -----------------------------------------
