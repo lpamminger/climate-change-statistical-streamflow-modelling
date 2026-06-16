@@ -1165,6 +1165,56 @@ ggsave(
 )
 
 
+## Peform statistical test between decades =====================================
+
+### KS test
+# assumptions of ks.test is the two samples are independent
+# Are the difference in water balance between one decade independent to the next decade?
+# Maybe? Storage? 
+ks_test_results <- AET_with_ecdf |> 
+  ungroup() |> 
+  select(source, gauge, decade, AET_diff) |> 
+  pivot_wider(
+    id_cols = c(gauge, source),
+    names_from = decade,
+    values_from = AET_diff
+  ) |>
+  rename(
+    AET_diff_decade_1 = `1`,
+    AET_diff_decade_2 = `2`
+  ) |> 
+  summarise(
+    ks_pvalue = ks.test(x = AET_diff_decade_1, y = AET_diff_decade_2)$p.value,
+    .by = source
+  ) |> 
+  mutate(
+    signif = ks_pvalue < 0.05
+  )
+
+
+### Mann U/wilcoxon test
+wilcox_test_results <- AET_with_ecdf |> 
+  ungroup() |> 
+  select(source, gauge, decade, AET_diff) |> 
+  pivot_wider(
+    id_cols = c(gauge, source),
+    names_from = decade,
+    values_from = AET_diff
+  ) |>
+  rename(
+    AET_diff_decade_1 = `1`,
+    AET_diff_decade_2 = `2`
+  ) |> 
+  summarise(
+    wilcox_pvalue = wilcox.test(x = AET_diff_decade_1, y = AET_diff_decade_2, paired = TRUE)$p.value,
+    .by = source
+  ) |> 
+  mutate(
+    signif = wilcox_pvalue < 0.05
+  )
+
+
+
 ## Find AET differences between decades using different approaches =============
 storage_error <- 0.03 # from Han et al, 2020 https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2020WR027392
 
