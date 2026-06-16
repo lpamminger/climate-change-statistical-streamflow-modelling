@@ -807,6 +807,12 @@ write_csv(
 )
 
 ## Map of percentage differences between decades ===============================
+# TODO:
+# - Figure S4 does not exist need to include this
+# - While doing that add absolute
+# - key variable for plotting is CO2_impact_on_streamflow_percent
+# - need to recalculate 
+# - change model
 percentage_difference_CO2_model_non_CO2_model_1990s <- plot_ready_decade_differences |>
   filter(decade == 1)
 
