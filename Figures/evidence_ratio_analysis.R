@@ -505,23 +505,62 @@ a3_direction_binned_lat_lon_evidence_ratio |>
 
 
 # Compare evidence ratio between wild and non-wild catchments ------------------
+
+## Make nice breaks for all evidence ratio plots
+## use y_axis_scale_transform variable 
+evi_ratio_range <- evidence_ratio_calc |> pull(evidence_ratio) |> range()
+y_axis_evi_min <- round_any(x[1], accuracy = 10, f = floor)
+y_axis_evi_max <- round_any(x[2], accuracy = 1E16, f = ceiling)
+nice_breaks_log10 <- seq(from = log10(abs(y_axis_evi_min)), to = log10(y_axis_evi_max), by = 3)
+nice_breaks_log10[1] <- -1
+nice_breaks <- 10^nice_breaks_log10
+y_axis_scale_transform <- scale_y_continuous(
+  transform = scales::pseudo_log_trans(base = 10),
+  breaks = nice_breaks
+)
+
+
 stat_comparison_wild_non_wild <- a3_direction_binned_lat_lon_evidence_ratio |> 
   mutate(
     wild = river_di < 0.05 # 0.05 from CAMELS-AUSv2
   )
 
-stat_comparison_wild_non_wild |> 
+wild_vs_non_wild_boxplot <- stat_comparison_wild_non_wild |> 
   ggplot(aes(x = wild, y = evidence_ratio)) +
-  geom_boxplot(staplewidth = 0.5) +
-  scale_y_continuous(
-    transform = scales::pseudo_log_trans(base = 10),
-    breaks = c(-10, 0, 10^seq(from = 0, to = 16, by = 1))
+  geom_boxplot(
+    staplewidth = 0.5,
+    outlier.alpha = 0.7,
+    outlier.colour = "black",
+    outlier.fill = "grey",
+    outlier.shape = 21,
+    whisker.linewidth = 0.2,
+    box.linewidth = 0.2,
+    median.linewidth = 0.4,
+    staple.linewidth = 0.2,
+    fill = "grey90"
     ) +
+  geom_text(
+    data = single_label(x_pos = FALSE, y_pos = 5E15, label_name = "e"),
+    mapping = aes(x = x_pos, y = y_pos, label = label_name),
+    inherit.aes = FALSE,
+    fontface = "bold",
+    size = 12,
+    size.unit = "pt",
+    hjust = 7
+  ) +
+  y_axis_scale_transform +
   labs(
-    x = "Is \"Wild\" Catchment (river_di < 0.05)",
+    x = "Is \"Near Natural\" Catchment",# (river_di < 0.05)",
     y = "Evidence Ratio"
   ) +
-  theme_bw()
+  theme_bw() +
+  theme(
+    axis.title = element_text(size = 9),
+    axis.text = element_text(size = 8)
+  )
+
+
+
 
 
 wilcox.test(
@@ -548,23 +587,15 @@ gauge_area_and_record_length <- gauge_information |>
   select(gauge, catchment_area_sq_km, record_length, prop_forested)
 
 
-## Add gauge information to a3_direction_binned_lat_lon_evidence_ratio
-additional_info_a3_direction_binned_evidence_ratio <- a3_direction_binned_lat_lon_evidence_ratio |>
-  left_join(
-    gauge_area_and_record_length,
-    by = join_by(gauge)
-  )
-
-
-evidence_ratio_vs_catchment_area <- additional_info_a3_direction_binned_evidence_ratio |>
-  filter(evidence_ratio > 0) |>
+evidence_ratio_vs_catchment_area <- a3_direction_binned_lat_lon_evidence_ratio |>
   ggplot(aes(x = catchment_area_sq_km, y = evidence_ratio)) +
   geom_point(
     fill = "grey",
     colour = "black",
     stroke = 0.1,
     shape = 21,
-    size = 2
+    size = 2,
+    alpha = 0.8
   ) +
   geom_text(
     data = single_label(x_pos = 5, y_pos = 5E15, label_name = "a"),
@@ -574,7 +605,7 @@ evidence_ratio_vs_catchment_area <- additional_info_a3_direction_binned_evidence
     size = 12,
     size.unit = "pt"
   ) +
-  scale_y_log10() +
+  y_axis_scale_transform +
   scale_x_log10() +
   labs(
     x = bquote("Catchment Area ("*km^2*")"), # bquote("X Axis Label ("*m^2*")")
@@ -599,15 +630,15 @@ ggsave(
 
 
 # Relationship between evidence ratio and record length ------------------------
-evidence_ratio_vs_record_length <- additional_info_a3_direction_binned_evidence_ratio |>
-  filter(evidence_ratio > 0) |>
+evidence_ratio_vs_record_length <- a3_direction_binned_lat_lon_evidence_ratio |>
   ggplot(aes(x = record_length, evidence_ratio)) +
   geom_jitter( # stop dots overlapping
     fill = "grey",
     colour = "black",
     stroke = 0.1,
     shape = 21,
-    size = 2
+    size = 2,
+    alpha = 0.8
   ) +
   geom_text(
     data = single_label(x_pos = 30, y_pos = 5E15, label_name = "b"),
@@ -617,7 +648,7 @@ evidence_ratio_vs_record_length <- additional_info_a3_direction_binned_evidence_
     size = 12,
     size.unit = "pt"
   ) +
-  scale_y_log10() +
+  y_axis_scale_transform +
   labs(x = "Record Length (Years)", y = "Evidence Ratio") +
   theme_bw() +
   theme(
@@ -641,15 +672,15 @@ ggsave(
 
 
 # Relationship between evidence ratio and forested catchment -------------------
-evidence_ratio_vs_prop_forested <- additional_info_a3_direction_binned_evidence_ratio |>
-  filter(evidence_ratio > 0) |>
+evidence_ratio_vs_prop_forested <- a3_direction_binned_lat_lon_evidence_ratio |>
   ggplot(aes(x = prop_forested, evidence_ratio)) +
   geom_point(
     fill = "grey",
     colour = "black",
     stroke = 0.1,
     shape = 21,
-    size = 2
+    size = 2,
+    alpha = 0.8
   ) +
   geom_text(
     data = single_label(x_pos = 0.03, y_pos = 5E15, label_name = "c"),
@@ -659,7 +690,7 @@ evidence_ratio_vs_prop_forested <- additional_info_a3_direction_binned_evidence_
     size = 12,
     size.unit = "pt"
   ) +
-  scale_y_log10() +
+  y_axis_scale_transform +
   scale_x_continuous(labels = scales::percent) +
   labs(x = "Proportion of Catchment Forested", y = "Evidence Ratio") +
   theme_bw() +
@@ -725,7 +756,6 @@ all_evidence_ratio_information <- additional_info_a3_direction_binned_evidence_r
     rainfall_sens_slope_data,
     by = join_by(gauge)
   ) |>
-  filter(evidence_ratio > 0) |>
   arrange(standard_sens_slope)
 
 
@@ -773,7 +803,8 @@ sens_slope_evidence_ratio_plot <- all_evidence_ratio_information |>
     colour = "black",
     stroke = 0.1,
     shape = 21,
-    size = 2
+    size = 2,
+    alpha = 0.8
   ) +
   geom_text(
     data = single_label(x_pos = -0.004375, y_pos = 5E15, label_name = "d"),
@@ -783,7 +814,7 @@ sens_slope_evidence_ratio_plot <- all_evidence_ratio_information |>
     size = 12,
     size.unit = "pt"
   ) +
-  scale_y_log10() +
+  y_axis_scale_transform +
   binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
     aesthetics = "fill",
     palette = mean_annual_rainfall_palette,
@@ -800,11 +831,11 @@ sens_slope_evidence_ratio_plot <- all_evidence_ratio_information |>
   theme_bw() +
   theme(
     legend.position = "inside",
-    legend.position.inside = c(0.6, 0.85),
-    #legend.background = element_rect(colour = "black", fill = NULL),
+    legend.position.inside = c(0.685, 0.87),
+    legend.background = element_rect(colour = "black", fill = NULL, linewidth = 0.1),
     legend.title = element_text(hjust = 0.5, size = 7),
     legend.text = element_text(size = 5),
-    #legend.margin = margin(t = 10, r = 20, b = 10, l = 20, unit = "pt"),
+    legend.margin = margin(t = 1, r = 8, b = 1, l = 8, unit = "pt"),
     axis.title.y = element_blank(), # remove double up of y axis when combining
     axis.text.y = element_blank(),
     axis.ticks.y = element_blank(),
@@ -834,19 +865,93 @@ ggsave(
 )
 
 
-# Combine into a 2 x 2 figure --------------------------------------------------
-evidence_ratio_extended_data_2x2 <- evidence_ratio_vs_catchment_area +
-  evidence_ratio_vs_record_length +
-  evidence_ratio_vs_prop_forested +
-  sens_slope_evidence_ratio_plot 
+
+# Add rainfall seasonality vs. evi ratio graph ---------------------------------
+# original code in rainfall_seasonality_analysis.R
+# this is just to add it to the plot
+seasonal_rainfall_classification_gauge_info <- read_csv(
+  "Modelling/seasonal_rainfall_data.csv",
+  show_col_types = FALSE
+)
+
+evidence_ratio_filter <- -100
+
+plotting_seasonal_rainfall_classification_gauge_info <- seasonal_rainfall_classification_gauge_info |>
+  filter(evidence_ratio > evidence_ratio_filter)
+
+
+count_occurences <- plotting_seasonal_rainfall_classification_gauge_info |>
+  count(classification) |>
+  mutate(
+    y_pos = min(plotting_seasonal_rainfall_classification_gauge_info$evidence_ratio)
+  ) |>
+  mutate(
+    n_label = paste0("n = ", n)
+  )
+
+
+
+
+seasonal_evidence_ratio_boxplot <- plotting_seasonal_rainfall_classification_gauge_info |>
+  ggplot(aes(x = classification, y = evidence_ratio)) +
+  geom_boxplot(
+    # exact same as wild boxplot
+    staplewidth = 0.5,
+    outlier.alpha = 0.7,
+    outlier.colour = "black",
+    outlier.fill = "grey",
+    outlier.shape = 21,
+    whisker.linewidth = 0.2,
+    box.linewidth = 0.2,
+    median.linewidth = 0.4,
+    staple.linewidth = 0.2,
+    fill = "grey90"
+  ) +
+  #geom_text(
+  #  aes(x = classification, y = y_pos, label = n_label),
+  #  data = count_occurences,
+  #  vjust = 1.5
+  #) +
+  geom_text(
+    data = single_label(x_pos = "Arid", y_pos = 5E15, label_name = "f"),
+    mapping = aes(x = x_pos, y = y_pos, label = label_name),
+    inherit.aes = FALSE,
+    fontface = "bold",
+    size = 12,
+    size.unit = "pt",
+    hjust = 3
+  ) +
+  # this must be the same as the wild catchment
+  y_axis_scale_transform +
+  scale_x_discrete(drop = FALSE, guide = guide_axis(n.dodge = 2)) +
+  labs(
+    x = "Seasonal Rainfall Zones",
+    y = NULL
+  ) +
+  theme_bw() +
+  theme(
+    axis.title = element_text(size = 9),
+    axis.text.x = element_text(size = 8),
+    axis.ticks.y = element_blank(),
+    axis.text.y = element_blank()
+  ) 
+
+# Combine into a 3 x 2 figure --------------------------------------------------
+evidence_ratio_extended_data_3x2 <- (evidence_ratio_vs_catchment_area |
+  evidence_ratio_vs_record_length) /
+  (evidence_ratio_vs_prop_forested |
+  sens_slope_evidence_ratio_plot) /
+  (wild_vs_non_wild_boxplot |
+  seasonal_evidence_ratio_boxplot)
+
 
 ggsave(
-  filename = "evidence_ratio_extended_data_2x2.pdf",
-  plot = evidence_ratio_extended_data_2x2,
+  filename = "evidence_ratio_extended_data_3x2.pdf",
+  plot = evidence_ratio_extended_data_3x2,
   path = "Figures/Extended_Data",
   device = "pdf",
   width = 180,
-  height = 150,
+  height = 190,
   units = "mm"
 )
 
