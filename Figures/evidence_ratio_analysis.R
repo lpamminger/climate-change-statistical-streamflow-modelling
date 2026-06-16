@@ -53,6 +53,9 @@ gauge_information <- readr::read_csv(
     "state",
     "status",
     "parent_catchment",
+    "catchment_area_sq_km",
+    "record_length",
+    "prop_forested",
     "river_di"
   ),
   show_col_types = FALSE
@@ -433,6 +436,73 @@ ggsave(
 
 
 
+# How similar are nested catchments --------------------------------------------
+## Do nested catchments share the same binned ratio (e.g., Weak) ===============
+
+a3_direction_binned_lat_lon_evidence_ratio |> 
+  filter(status != "no_nested") |> 
+  ggplot(aes(x = parent_catchment, fill = binned_evidence_ratio)) +
+  geom_bar(position = "stack") +
+  theme_bw() +
+  labs(
+    x = "Parent Catchment",
+    y = "Catchments in Parent Catchment",
+    fill = "Evidence Ratio"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 90),
+    panel.grid.minor = element_blank()
+  ) +
+  scale_y_continuous(breaks = seq(from = 0, to = 14))
+
+# based on this graph nested catchments - the vast majority share the same
+# binned ratio
+# 26/85 nested catchments have different evidence ratio
+# 70 % of all nested catchments share the same qualitative evidence ratio
+# Of the 26 which don't:
+# - 9 only have at least moderate or greater
+# - 17 have a mix - tend to be more of one type >> weak
+# - 50/50 weak and not weak = 5
+
+
+# Do nested catchments share the same type of change if not weak ===============
+# (e.g., negative slope) or at least same direction
+
+# filter out catchments with only weak evi
+multiple_parent_catchment_evi_ratio <- a3_direction_binned_lat_lon_evidence_ratio |> 
+  filter(status != "no_nested") |> 
+  mutate(
+    binned_evidence_ratio = as.character(binned_evidence_ratio)
+  ) |> 
+  summarise(
+    unique_evi_ratio = length(unique(binned_evidence_ratio)),
+    .by = parent_catchment
+  ) |> 
+  filter(unique_evi_ratio != 1) |> 
+  pull(parent_catchment)
+  
+
+a3_direction_binned_lat_lon_evidence_ratio |> 
+  filter(parent_catchment %in% multiple_parent_catchment_evi_ratio) |> 
+  ggplot(aes(x = parent_catchment, fill = impact_of_CO2_term)) +
+  geom_bar(position = "stack") +
+  theme_bw() +
+  labs(
+    x = "Parent Catchment",
+    y = "Catchments in Parent Catchment",
+    fill = "Impact of CO2 Term"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 90),
+    panel.grid.minor = element_blank()
+  ) +
+  scale_y_continuous(breaks = seq(from = 0, to = 14))
+
+# From graph (24 parent catchments)
+# - of parent catchments with multiple evi ratio values
+# - 3 have altering signs (positive and negative change) - pretty much all
+#   are in the same direction
+
 
 # Compare evidence ratio between wild and non-wild catchments ------------------
 stat_comparison_wild_non_wild <- a3_direction_binned_lat_lon_evidence_ratio |> 
@@ -779,6 +849,9 @@ ggsave(
   height = 150,
   units = "mm"
 )
+
+
+
 
 
 # My own sen slope function - same as function from package
