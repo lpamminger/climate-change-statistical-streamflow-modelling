@@ -505,12 +505,18 @@ a3_direction_binned_lat_lon_evidence_ratio |>
 
 
 # Compare evidence ratio between wild and non-wild catchments ------------------
+single_label <- function(x_pos, y_pos, label_name) { # for adding a, b, c labels
+  tribble(
+    ~x_pos, ~y_pos, ~label_name,
+    x_pos,  y_pos,  label_name
+  )
+}
 
 ## Make nice breaks for all evidence ratio plots
 ## use y_axis_scale_transform variable 
 evi_ratio_range <- evidence_ratio_calc |> pull(evidence_ratio) |> range()
-y_axis_evi_min <- round_any(x[1], accuracy = 10, f = floor)
-y_axis_evi_max <- round_any(x[2], accuracy = 1E16, f = ceiling)
+y_axis_evi_min <- round_any(evi_ratio_range[1], accuracy = 10, f = floor)
+y_axis_evi_max <- round_any(evi_ratio_range[2], accuracy = 1E16, f = ceiling)
 nice_breaks_log10 <- seq(from = log10(abs(y_axis_evi_min)), to = log10(y_axis_evi_max), by = 3)
 nice_breaks_log10[1] <- -1
 nice_breaks <- 10^nice_breaks_log10
@@ -550,7 +556,7 @@ wild_vs_non_wild_boxplot <- stat_comparison_wild_non_wild |>
   ) +
   y_axis_scale_transform +
   labs(
-    x = "Is \"Near Natural\" Catchment",# (river_di < 0.05)",
+    x = "Is \"Almost Natural\"",# (river_di < 0.05)",
     y = "Evidence Ratio"
   ) +
   theme_bw() +
@@ -574,13 +580,6 @@ wilcox.test(
 
 
 # Relationship between evidence ratio and catchment area -----------------------
-single_label <- function(x_pos, y_pos, label_name) { # for adding a, b, c labels
-  tribble(
-    ~x_pos, ~y_pos, ~label_name,
-    x_pos,  y_pos,  label_name
-  )
-}
-
 
 ## Get catchment area and record length from gauge data
 gauge_area_and_record_length <- gauge_information |>
@@ -751,7 +750,9 @@ rainfall_sens_slope_data <- data |>
 #  )
 
 
-all_evidence_ratio_information <- additional_info_a3_direction_binned_evidence_ratio |>
+
+
+all_evidence_ratio_information <- a3_direction_binned_lat_lon_evidence_ratio |>
   left_join(
     rainfall_sens_slope_data,
     by = join_by(gauge)
