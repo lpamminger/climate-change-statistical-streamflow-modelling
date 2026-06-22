@@ -55,9 +55,6 @@ australian_streamflow_network_sf <- st_read(
   as_tibble = TRUE
 )
 
-WA_wheat_belt <- st_read(
-  dsn = "Data/Maps/Wheatbelt_of_WA"
-)
 
 aus_map <- generate_aus_map_sf()
 
@@ -103,118 +100,6 @@ state_CAMELSAUS_boundary <- map(
 ) |> 
   `names<-`(states)
 
-
-# How many catchments are located in the WA wheat belt? ------------------------
-WA_wheat_belt <- WA_wheat_belt |> 
-  st_transform(crs = working_crs) 
-
-## Intersection
-sf_use_s2(FALSE)
-interect_wheat_belt <- st_intersection(
-  state_CAMELSAUS_boundary[["WA"]],
-  WA_wheat_belt
-) 
-
-gauges_that_interect_wheat_belt <- interect_wheat_belt |> 
-  pull(gauge)
-
-# 18/49 of the WA catchments intersect the wheat belt
-# only one has a strong evidence ratio --> 701002
-evidence_ratio |> 
-  filter(gauge %in% gauges_that_interect_wheat_belt) |> 
-  arrange(desc(evidence_ratio))
-
-effected_catchments <- state_CAMELSAUS_boundary[["WA"]] |> 
-  filter(gauge %in% gauges_that_interect_wheat_belt) |> 
-  add_column(
-    type = "In Wheatbelt"
-  )
-
-uneffected_catchments <- state_CAMELSAUS_boundary[["WA"]] |> 
-  filter(!gauge %in% gauges_that_interect_wheat_belt) |> 
-  add_column(
-    type = "Not in Wheatbelt"
-  )
-
-
-# make WA_wheat_belt have same layout as effected catchments
-WA_altered_wheat_belt <- WA_wheat_belt |> 
-  select(geometry) |> 
-  add_column(
-    gauge = "gauge",
-    state = "WA",
-    type = "Wheatbelt"
-  ) |> 
-  relocate(
-    gauge, state, geometry, type
-  )
-
-# add geom_sf single then alter fill
-grouped_catchments <- effected_catchments |> 
-  rbind(uneffected_catchments) |> 
-  rbind(WA_altered_wheat_belt)
-
-custom_palette <- function(x) {
-  rev(c("yellow", "blue", "red", "#67001f", "#b2182b", "#d6604d", "#f4a582", "#fddbc7", "#f7f7f7"))
-}
-
-wheat_belt_map <- aus_map |> 
-  filter(state == "WA") |> 
-  ggplot() +
-  geom_sf() +
-  geom_sf(
-    data = grouped_catchments,
-    aes(fill = type),
-    colour = "black",
-    alpha = 0.3,
-    inherit.aes = FALSE
-  ) +
-  geom_sf(
-    data = effected_catchments,
-    fill = "red",
-    alpha = 0.3,
-    colour = "black"
-  ) +
-  geom_point(
-    aes(x = lon, y = lat, fill = binned_evidence_ratio, shape = impact_of_CO2_term),
-    data = evidence_ratio,
-    colour = "black",
-    size = 2,
-    inherit.aes = FALSE,
-    stroke = 0.1
-  ) +
-  labs(
-    x = "Longitude",
-    y = "Latitude",
-    # large space is to centre the title
-    fill = "Evidence Ratio                               Wheatbelt Catchment Status",
-    shape = bquote("Impact of" ~ CO[2] ~ "Term")
-  ) +
-  # zoom it down
-  coord_sf(xlim = c(114, 120), ylim = c(-35, -27.5)) +
-  theme_bw() +
-  scale_fill_manual(
-    values = custom_palette(),
-    drop = FALSE
-  ) +
-  scale_shape_manual(
-    values = c(21, 22, 23, 25, 24),
-    drop = FALSE
-  ) +
-  guides(
-    fill = guide_legend(override.aes = list(size = 5, shape = 21), nrow = 3), # Wrap legend with nrow
-    shape = guide_legend(override.aes = list(size = 5, fill = "grey50"), nrow = 3)
-  ) 
-
-
-ggsave(
-  filename = "./Figures/Other/wheat_belt_map.pdf",
-  plot = wheat_belt_map,
-  device = "pdf",
-  width = 297,
-  height = 210,
-  units = "mm"
-)
 
 
 
