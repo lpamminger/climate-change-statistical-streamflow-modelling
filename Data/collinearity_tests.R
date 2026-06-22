@@ -555,9 +555,18 @@ VIF_plot <- VIF_results |>
   ) |> 
   ggplot(aes(x = Variables, y = VIF)) +
   geom_boxplot(
-    staplewidth = 0.5
+    staplewidth = 0.5,
+    outlier.alpha = 0.7,
+    outlier.colour = "black",
+    outlier.fill = "grey",
+    outlier.shape = 21,
+    whisker.linewidth = 0.2,
+    box.linewidth = 0.2,
+    median.linewidth = 0.4,
+    staple.linewidth = 0.2,
+    fill = "grey90"
   ) +
-  geom_hline(yintercept = 4, colour = "red", linetype = "dashed") +
+  geom_hline(yintercept = 4, colour = "red", linetype = "dashed", linewidth = 0.4) +
   geom_text(
     aes(x = x_pos, y = y_pos, label = label_name),
     data = abc_labels,
@@ -569,13 +578,16 @@ VIF_plot <- VIF_results |>
     x = "Independent Variables"
   ) +
   scale_x_discrete(
-    labels = c("APET", bquote(CO[2]), "Drought", "Precipitation", "Rainfall Seasonality", "Temperature")
+    labels = c("APET", bquote(CO[2]), "Drought", "Precipitation", "Rainfall Seasonality", "Temperature"),
+    drop = FALSE, 
+    guide = guide_axis(n.dodge = 2) 
   ) +
   theme_bw() +
   theme(
     strip.background = element_blank(),
     strip.text = element_blank(),
-    axis.text = element_text(size = 8)
+    axis.text = element_text(size = 8),
+    axis.title = element_text(size = 9)
   ) +
   facet_wrap(~test, scales = "free_y")
 
@@ -586,7 +598,7 @@ ggsave(
   filename = "./Figures/Other/VIF_independent_variables_boxplot.pdf",
   plot = VIF_plot,
   device = "pdf",
-  width = 280,
-  height = 200,
+  width = 180,
+  height = 150,
   units = "mm"
 )
