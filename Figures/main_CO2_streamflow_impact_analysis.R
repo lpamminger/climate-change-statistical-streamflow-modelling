@@ -122,6 +122,12 @@ plot_ready_decade_differences <- percentage_difference_a3_on_off_data |>
   )
 
 
+# This is required in catchment boundary plots
+write_csv(
+  x = plot_ready_decade_differences,
+  file = "Modelling/decade_streamflow_CO2_differences.csv"
+)
+
 
 
 # Compare DREAM values to CMAES values -----------------------------------------
@@ -478,8 +484,24 @@ sink()
 
 
 
+# Make plot for main figure ----------------------------------------------------
+# Must include:
+# 1. patchwork_CO2_model_and_non_CO2_model_percentage_differences (map)
+# 2. a handful of streamflow timeseries 
+# 3. Uncertainty from DREAM
+
+## Select a handful of catchments to present in the main figure ================
+short_list_catchments <- c("401210", "606195", "701002", "407246") # select 4
 
 
+## Alter make_CO2_streamflow_percentage_change_map to include uncertainty and labels =========
+map_label_table <- gauge_information |>
+  filter(gauge %in% short_list_catchments) |>
+  mutate(label_name = letters[1:4])
+
+
+# THIS FUNCTION USES THE SAME LIMITS AND BREAKS AS THE PREVIOUS
+# GLOBAL VARIABLES
 # Making percentage change map plot --------------------------------------------
 aus_map <- generate_aus_map_sf()
 
@@ -488,7 +510,7 @@ make_limits <- function(timeseries) {
   # round up to next whole number
   limits <- timeseries |> range()
   sign_limits <- sign(limits)
-
+  
   sign_limits * ceiling(abs(limits))
 }
 
@@ -527,327 +549,6 @@ big_palette <- function(x) {
   )
 }
 
-
-
-## Plotting function ===========================================================
-
-### No uncertainty map ###
-make_CO2_streamflow_percentage_change_map <- function(data, title) {
-  ## Generate Insets ===========================================================
-  QLD_data <- data |>
-    filter(state == "QLD")
-
-  NSW_data <- data |>
-    filter(state == "NSW")
-
-  VIC_data <- data |>
-    filter(state == "VIC")
-
-  WA_data <- data |>
-    filter(state == "WA")
-
-  TAS_data <- data |>
-    filter(state == "TAS")
-
-
-  ### Generate inset plots #######################################################
-  inset_dot_size <- 1.8
-
-  inset_plot_QLD <- aus_map |>
-    filter(state == "QLD") |>
-    ggplot() +
-    geom_sf() +
-    geom_point(
-      data = QLD_data,
-      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
-      show.legend = FALSE,
-      size = inset_dot_size,
-      alpha = dot_transparency,
-      colour = "black",
-      stroke = 0.1,
-      shape = 21
-    ) +
-    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
-      aesthetics = "fill",
-      palette = big_palette,
-      breaks = hard_coded_breaks_CO2_impact_of_streamflow,
-      limits = CO2_impact_on_streamflow_percent_limits,
-      show.limits = TRUE,
-      guide = "colorsteps"
-    ) +
-    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
-    guides(size = guide_bins(show.limits = TRUE)) +
-    theme_void()
-
-
-  inset_plot_NSW <- aus_map |>
-    filter(state == "NSW") |>
-    ggplot() +
-    geom_sf() +
-    geom_point(
-      data = NSW_data,
-      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
-      show.legend = FALSE,
-      size = inset_dot_size,
-      alpha = dot_transparency,
-      colour = "black",
-      stroke = 0.1,
-      shape = 21
-    ) +
-    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
-      aesthetics = "fill",
-      palette = big_palette,
-      breaks = hard_coded_breaks_CO2_impact_of_streamflow,
-      limits = CO2_impact_on_streamflow_percent_limits,
-      show.limits = TRUE,
-      guide = "colorsteps"
-    ) +
-    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
-    guides(size = guide_bins(show.limits = TRUE)) +
-    theme_void()
-
-
-  inset_plot_VIC <- aus_map |>
-    filter(state == "VIC") |>
-    ggplot() +
-    geom_sf() +
-    geom_point(
-      data = VIC_data,
-      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
-      show.legend = FALSE,
-      size = inset_dot_size,
-      alpha = dot_transparency,
-      colour = "black",
-      stroke = 0.1,
-      shape = 21
-    ) +
-    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
-      aesthetics = "fill",
-      palette = big_palette,
-      breaks = hard_coded_breaks_CO2_impact_of_streamflow,
-      limits = CO2_impact_on_streamflow_percent_limits,
-      show.limits = TRUE,
-      guide = "colorsteps"
-    ) +
-    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
-    guides(size = guide_bins(show.limits = TRUE)) +
-    theme_void()
-
-
-  inset_plot_WA <- aus_map |>
-    filter(state == "WA") |>
-    ggplot() +
-    geom_sf() +
-    geom_point(
-      data = WA_data,
-      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
-      show.legend = FALSE,
-      size = inset_dot_size,
-      alpha = dot_transparency,
-      colour = "black",
-      stroke = 0.1,
-      shape = 21
-    ) +
-    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
-      aesthetics = "fill",
-      palette = big_palette,
-      breaks = hard_coded_breaks_CO2_impact_of_streamflow,
-      limits = CO2_impact_on_streamflow_percent_limits,
-      show.limits = TRUE,
-      guide = "colorsteps"
-    ) +
-    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
-    guides(size = guide_bins(show.limits = TRUE)) +
-    theme_void()
-
-
-  inset_plot_TAS <- aus_map |>
-    filter(state == "TAS") |>
-    ggplot() +
-    geom_sf() +
-    geom_point(
-      data = TAS_data,
-      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
-      show.legend = FALSE,
-      size = inset_dot_size,
-      alpha = dot_transparency,
-      colour = "black",
-      stroke = 0.1,
-      shape = 21
-    ) +
-    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
-      aesthetics = "fill",
-      palette = big_palette,
-      breaks = hard_coded_breaks_CO2_impact_of_streamflow,
-      limits = CO2_impact_on_streamflow_percent_limits,
-      show.limits = TRUE,
-      guide = "colorsteps"
-    ) +
-    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
-    guides(size = guide_bins(show.limits = TRUE)) +
-    theme_void()
-
-
-  ## Put it together =============================================================
-  single_map_aus <- aus_map |>
-    ggplot() +
-    geom_sf() +
-    geom_point(
-      data = data,
-      mapping = aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
-      alpha = dot_transparency,
-      size = inset_dot_size,
-      colour = "black",
-      shape = 21,
-      inherit.aes = FALSE,
-      stroke = 0.1
-    ) +
-    theme_bw() +
-    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
-      aesthetics = "fill",
-      palette = big_palette,
-      breaks = hard_coded_breaks_CO2_impact_of_streamflow,
-      limits = CO2_impact_on_streamflow_percent_limits,
-      show.limits = TRUE,
-      guide = "colorsteps"
-    ) +
-    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
-    # expand map
-    coord_sf(xlim = c(95, 176), ylim = c(-60, 0)) +
-    # magnify WA
-    geom_magnify(
-      from = c(114, 118, -35.5, -30),
-      to = c(93, 112, -36, -10),
-      shadow = FALSE,
-      expand = 0,
-      plot = inset_plot_WA,
-      proj = "single"
-    ) +
-    # magnify VIC
-    geom_magnify(
-      # aes(from = state == "VIC"), # use aes rather than manually selecting area
-      from = c(141, 149.5, -39, -34),
-      to = c(95, 136, -38, -60),
-      shadow = FALSE,
-      plot = inset_plot_VIC,
-      proj = "single"
-    ) +
-    # magnify QLD
-    geom_magnify(
-      from = c(145, 155, -29.2, -15),
-      to = c(157, 178, -29.5, 1.5),
-      shadow = FALSE,
-      expand = 0,
-      plot = inset_plot_QLD,
-      proj = "single"
-    ) +
-    # magnify NSW
-    geom_magnify(
-      from = c(146.5, 154, -38, -28.1),
-      to = c(157, 178, -61, -30.5),
-      shadow = FALSE,
-      expand = 0,
-      plot = inset_plot_NSW,
-      proj = "single"
-    ) +
-    # magnify TAS
-    geom_magnify(
-      from = c(144, 149, -40, -44),
-      to = c(140, 155, -45, -61),
-      shadow = FALSE,
-      expand = 0,
-      plot = inset_plot_TAS,
-      proj = "single"
-    ) +
-    labs(
-      x = NULL, # "Latitude",
-      y = NULL, # "Longitude",
-      fill = bquote("Average Impact of" ~ CO[2] ~ "on Streamflow (%)"),
-      size = "Percentage Impact Uncertainty (IQR)",
-      title = {{ title }}
-    ) +
-    theme(
-      legend.key = element_rect(fill = "white"),
-      legend.title = element_text(hjust = 0.5),
-      # legend.background = element_rect(colour = "black"), #this cuts off the negative sign
-      axis.text = element_blank(),
-      legend.position = "inside",
-      legend.position.inside = c(0.351, 0.9),
-      legend.box = "horizontal", # side-by-side legends
-      panel.grid = element_blank(),
-      axis.ticks = element_blank(),
-      plot.title = element_text(margin = margin(l = 25, r = 0, t = 30, b = -30), size = 12, face = "bold") # push title into plot
-    ) +
-    guides(
-      fill = guide_coloursteps(
-        barwidth = unit(10, "cm"),
-        show.limits = TRUE,
-        even.steps = TRUE,
-        title.position = "top",
-        direction = "horizontal"
-      ),
-      size = guide_bins(
-        override.aes = aes(stroke = 0.5),
-        show.limits = TRUE,
-        direction = "horizontal",
-        title.position = "top", # warnings says its ignore these parameter - The warnings are wrong
-        barwidth = unit(1, "cm")
-      )
-    )
-
-  return(single_map_aus)
-}
-
-
-
-# This is required in catchment boundary plots
-write_csv(
-  x = plot_ready_decade_differences,
-  file = "Modelling/decade_streamflow_CO2_differences.csv"
-)
-
-## Map of percentage differences between decades ===============================
-# TODO:
-# - Figure S4 does not exist need to include this
-# - While doing that add absolute
-# - key variable for plotting is CO2_impact_on_streamflow_percent
-# - need to recalculate 
-# - change model
-percentage_difference_CO2_model_non_CO2_model_1990s <- plot_ready_decade_differences |>
-  filter(decade == 1)
-
-percentage_difference_CO2_model_non_CO2_model_2010s <- plot_ready_decade_differences |>
-  filter(decade == 2)
-
-patchwork_CO2_model_and_non_CO2_model_percentage_differences <- (make_CO2_streamflow_percentage_change_map(percentage_difference_CO2_model_non_CO2_model_1990s, "a") | make_CO2_streamflow_percentage_change_map(percentage_difference_CO2_model_non_CO2_model_2010s, "b")) +
-  plot_layout(guides = "collect") & theme(legend.position = "bottom")
-
-
-
-
-
-
-
-
-
-# Make plot for main figure ----------------------------------------------------
-# Must include:
-# 1. patchwork_CO2_model_and_non_CO2_model_percentage_differences (map)
-# 2. a handful of streamflow timeseries 
-# 3. Uncertainty from DREAM
-
-## Select a handful of catchments to present in the main figure ================
-short_list_catchments <- c("401210", "606195", "701002", "407246") # select 4
-
-
-## Alter make_CO2_streamflow_percentage_change_map to include uncertainty and labels =========
-map_label_table <- gauge_information |>
-  filter(gauge %in% short_list_catchments) |>
-  mutate(label_name = letters[1:4])
-
-
-# THIS FUNCTION USES THE SAME LIMITS AND BREAKS AS THE PREVIOUS
-# GLOBAL VARIABLES
 make_CO2_streamflow_percentage_change_map_uncertainty <- function(data, title, A_or_B) {
   font_size_pt <- 9L # default size is GeomLabel$default_aes$size = 3.88
   
@@ -1131,7 +832,7 @@ make_CO2_streamflow_percentage_change_map_uncertainty <- function(data, title, A
     labs(
       x = NULL, # "Latitude",
       y = NULL, # "Longitude",
-      fill = bquote("Average Impact of" ~ CO[2] ~ "on Streamflow (%)"),
+      fill = bquote("Average Annual Impact of" ~ CO[2] ~ "on Streamflow (%)"),
       size = "Percentage Impact Uncertainty (IQR)"
     ) +
     theme(
@@ -1169,14 +870,21 @@ make_CO2_streamflow_percentage_change_map_uncertainty <- function(data, title, A
 
 
 ## Make map components =========================================================
+percentage_difference_CO2_on_off_model_1990s <- plot_ready_decade_differences |>
+  filter(decade == 1)
+
+percentage_difference_CO2_on_off_model_2010s <- plot_ready_decade_differences |>
+  filter(decade == 2)
+
+
 percent_change_1990 <- make_CO2_streamflow_percentage_change_map_uncertainty(
-  percentage_difference_CO2_model_non_CO2_model_1990s,
+  percentage_difference_CO2_on_off_model_1990s,
   "1990-1999",
   "A"
 )
 
 percent_change_2012 <- make_CO2_streamflow_percentage_change_map_uncertainty(
-  percentage_difference_CO2_model_non_CO2_model_2010s,
+  percentage_difference_CO2_on_off_model_2010s,
   "2012-2021",
   "B"
 )
@@ -1353,6 +1061,488 @@ ggsave(
 
 
 
+# Alternative streamflow percentage change maps --------------------------------
+## Map of percentage differences CO2 model vs. non-CO2 model ===================
+# Repeat percentage_difference_a3_on_off_data except with best CO2 and non-CO2 
+# copy-paste code from above
+percentage_difference_best_CO2_vs_best_non_CO2 <- high_evidence_master_streamflow_table |>
+  filter(year %in% c(decade_1, decade_2)) |>
+  # add decade group for summarising
+  mutate(
+    decade = case_when( # year - (year %% 10)
+      year %in% decade_1 ~ 1,
+      year %in% decade_2 ~ 2,
+      .default = NA
+    )
+  ) |>
+  filter(!is.na(decade)) |>
+  # sum streamflow for each decade
+  summarise(
+    sum_decade_realspace_no_CO2_streamflow = sum(realspace_streamflow_no_CO2_model),
+    sum_decade_realspace_CO2_on_streamflow = sum(realspace_streamflow_CO2_model_on),
+    sum_decade_realspace_observed_streamflow = sum(realspace_observed_streamflow),
+    years_of_data = n(),
+    .by = c(gauge, decade)
+  ) |>
+  # find the absolution and percentage difference
+  mutate(
+    realspace_no_CO2_streamflow_per_year = sum_decade_realspace_no_CO2_streamflow / years_of_data,
+    realspace_a3_on_streamflow_per_year = sum_decade_realspace_CO2_on_streamflow / years_of_data,
+    CO2_impact_on_streamflow_mm_per_year = (realspace_a3_on_streamflow_per_year - realspace_no_CO2_streamflow_per_year),
+    CO2_impact_on_streamflow_percent = (CO2_impact_on_streamflow_mm_per_year / realspace_no_CO2_streamflow_per_year) * 100
+  ) |>
+  arrange(desc(CO2_impact_on_streamflow_percent)) # Large percentage changes are not tied to years_of_data
+
+
+# make it plot ready
+plot_ready_decade_differences_best_CO2_non_CO2 <- percentage_difference_best_CO2_vs_best_non_CO2 |>
+  left_join(
+    evidence_ratio,
+    by = join_by(gauge)
+  ) 
+
+# change limits globally (not a great way of doing it)
+CO2_impact_on_streamflow_percent_limits <- plot_ready_decade_differences_best_CO2_non_CO2 |>
+  pull(CO2_impact_on_streamflow_percent) |>
+  make_limits() |>
+  as.double()
+
+scale_size_limits <- plot_ready_decade_differences |>
+  pull(IQR_CO2_impact_on_streamflow_percentage) |>
+  range(na.rm = TRUE) |> # can round up if I want to
+  round(digits = 0)
+
+# plotting function without uncertainty
+
+make_CO2_streamflow_percentage_change_map <- function(data, title, legend_title) {
+  ## Generate Insets ===========================================================
+  QLD_data <- data |>
+    filter(state == "QLD")
+  
+  NSW_data <- data |>
+    filter(state == "NSW")
+  
+  VIC_data <- data |>
+    filter(state == "VIC")
+  
+  WA_data <- data |>
+    filter(state == "WA")
+  
+  TAS_data <- data |>
+    filter(state == "TAS")
+  
+  
+  ### Generate inset plots #######################################################
+  inset_dot_size <- 1.5
+  
+  inset_plot_QLD <- aus_map |>
+    filter(state == "QLD") |>
+    ggplot() +
+    geom_sf() +
+    geom_point(
+      data = QLD_data,
+      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
+      show.legend = FALSE,
+      size = inset_dot_size,
+      alpha = dot_transparency,
+      colour = "black",
+      stroke = 0.1,
+      shape = 21
+    ) +
+    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+      aesthetics = "fill",
+      palette = big_palette,
+      breaks = hard_coded_breaks_CO2_impact_of_streamflow,
+      limits = CO2_impact_on_streamflow_percent_limits,
+      show.limits = TRUE,
+      guide = "colorsteps"
+    ) +
+    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    guides(size = guide_bins(show.limits = TRUE)) +
+    theme_void()
+  
+  
+  inset_plot_NSW <- aus_map |>
+    filter(state == "NSW") |>
+    ggplot() +
+    geom_sf() +
+    geom_point(
+      data = NSW_data,
+      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
+      show.legend = FALSE,
+      size = inset_dot_size,
+      alpha = dot_transparency,
+      colour = "black",
+      stroke = 0.1,
+      shape = 21
+    ) +
+    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+      aesthetics = "fill",
+      palette = big_palette,
+      breaks = hard_coded_breaks_CO2_impact_of_streamflow,
+      limits = CO2_impact_on_streamflow_percent_limits,
+      show.limits = TRUE,
+      guide = "colorsteps"
+    ) +
+    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    guides(size = guide_bins(show.limits = TRUE)) +
+    theme_void()
+  
+  
+  inset_plot_VIC <- aus_map |>
+    filter(state == "VIC") |>
+    ggplot() +
+    geom_sf() +
+    geom_point(
+      data = VIC_data,
+      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
+      show.legend = FALSE,
+      size = inset_dot_size,
+      alpha = dot_transparency,
+      colour = "black",
+      stroke = 0.1,
+      shape = 21
+    ) +
+    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+      aesthetics = "fill",
+      palette = big_palette,
+      breaks = hard_coded_breaks_CO2_impact_of_streamflow,
+      limits = CO2_impact_on_streamflow_percent_limits,
+      show.limits = TRUE,
+      guide = "colorsteps"
+    ) +
+    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    guides(size = guide_bins(show.limits = TRUE)) +
+    theme_void()
+  
+  
+  inset_plot_WA <- aus_map |>
+    filter(state == "WA") |>
+    ggplot() +
+    geom_sf() +
+    geom_point(
+      data = WA_data,
+      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
+      show.legend = FALSE,
+      size = inset_dot_size,
+      alpha = dot_transparency,
+      colour = "black",
+      stroke = 0.1,
+      shape = 21
+    ) +
+    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+      aesthetics = "fill",
+      palette = big_palette,
+      breaks = hard_coded_breaks_CO2_impact_of_streamflow,
+      limits = CO2_impact_on_streamflow_percent_limits,
+      show.limits = TRUE,
+      guide = "colorsteps"
+    ) +
+    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    guides(size = guide_bins(show.limits = TRUE)) +
+    theme_void()
+  
+  
+  inset_plot_TAS <- aus_map |>
+    filter(state == "TAS") |>
+    ggplot() +
+    geom_sf() +
+    geom_point(
+      data = TAS_data,
+      aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
+      show.legend = FALSE,
+      size = inset_dot_size,
+      alpha = dot_transparency,
+      colour = "black",
+      stroke = 0.1,
+      shape = 21
+    ) +
+    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+      aesthetics = "fill",
+      palette = big_palette,
+      breaks = hard_coded_breaks_CO2_impact_of_streamflow,
+      limits = CO2_impact_on_streamflow_percent_limits,
+      show.limits = TRUE,
+      guide = "colorsteps"
+    ) +
+    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    guides(size = guide_bins(show.limits = TRUE)) +
+    theme_void()
+  
+  
+  ## Put it together =============================================================
+  single_map_aus <- aus_map |>
+    ggplot() +
+    geom_sf() +
+    geom_point(
+      data = data,
+      mapping = aes(x = lon, y = lat, fill = CO2_impact_on_streamflow_percent),
+      alpha = dot_transparency,
+      size = inset_dot_size,
+      colour = "black",
+      shape = 21,
+      inherit.aes = FALSE,
+      stroke = 0.1
+    ) +
+    theme_bw() +
+    binned_scale( # https://stackoverflow.com/questions/65947347/r-how-to-manually-set-binned-colour-scale-in-ggplot
+      aesthetics = "fill",
+      palette = big_palette,
+      breaks = hard_coded_breaks_CO2_impact_of_streamflow,
+      limits = CO2_impact_on_streamflow_percent_limits,
+      show.limits = TRUE,
+      guide = "colorsteps"
+    ) +
+    scale_size_binned(limits = scale_size_limits, breaks = percentage_IQR_breaks) + # range = c(0, 2) dictates the size of the dots (important)
+    # expand map
+    coord_sf(xlim = c(95, 176), ylim = c(-60, 0)) +
+    # magnify WA
+    geom_magnify(
+      from = c(114, 118, -35.5, -30),
+      to = c(93, 112, -36, -10),
+      shadow = FALSE,
+      expand = 0,
+      plot = inset_plot_WA,
+      proj = "single"
+    ) +
+    # magnify VIC
+    geom_magnify(
+      # aes(from = state == "VIC"), # use aes rather than manually selecting area
+      from = c(141, 149.5, -39, -34),
+      to = c(95, 136, -38, -60),
+      shadow = FALSE,
+      plot = inset_plot_VIC,
+      proj = "single"
+    ) +
+    # magnify QLD
+    geom_magnify(
+      from = c(145, 155, -29.2, -15),
+      to = c(157, 178, -29.5, 1.5),
+      shadow = FALSE,
+      expand = 0,
+      plot = inset_plot_QLD,
+      proj = "single"
+    ) +
+    # magnify NSW
+    geom_magnify(
+      from = c(146.5, 154, -38, -28.1),
+      to = c(157, 178, -61, -30.5),
+      shadow = FALSE,
+      expand = 0,
+      plot = inset_plot_NSW,
+      proj = "single"
+    ) +
+    # magnify TAS
+    geom_magnify(
+      from = c(144, 149, -40, -44),
+      to = c(140, 155, -45, -61),
+      shadow = FALSE,
+      expand = 0,
+      plot = inset_plot_TAS,
+      proj = "single"
+    ) +
+    labs(
+      x = NULL, # "Latitude",
+      y = NULL, # "Longitude",
+      fill = legend_title,
+      size = "Percentage Impact Uncertainty (IQR)",
+      title = {{ title }}
+    ) +
+    theme(
+      legend.key = element_rect(fill = "white"),
+      legend.title = element_text(hjust = 0.5, size = 9),
+      # legend.background = element_rect(colour = "black"), #this cuts off the negative sign
+      axis.text = element_blank(),
+      legend.text = element_text(size = 8),
+      legend.position = "inside",
+      legend.position.inside = c(0.351, 0.9),
+      legend.box = "horizontal", # side-by-side legends
+      panel.grid = element_blank(),
+      axis.ticks = element_blank(),
+      plot.title = element_text(margin = margin(l = 25, r = 0, t = 30, b = -20), size = 10, face = "bold") # push title into plot
+    ) +
+    guides(
+      fill = guide_coloursteps(
+        barwidth = unit(10, "cm"),
+        barheight = unit(0.25, "cm"),
+        show.limits = TRUE,
+        even.steps = TRUE,
+        title.position = "top",
+        direction = "horizontal"
+      ),
+      size = guide_bins(
+        override.aes = aes(stroke = 0.5),
+        show.limits = TRUE,
+        direction = "horizontal",
+        title.position = "top", # warnings says its ignore these parameter - The warnings are wrong
+        barwidth = unit(1, "cm")
+      )
+    )
+  
+  return(single_map_aus)
+}
+
+
+percentage_difference_CO2_model_non_CO2_model_1990s <- plot_ready_decade_differences_best_CO2_non_CO2 |>
+  filter(decade == 1)
+
+percentage_difference_CO2_model_non_CO2_model_2010s <- plot_ready_decade_differences_best_CO2_non_CO2 |>
+  filter(decade == 2)
+
+legend_title_1 <- bquote("Average Annual Impact of" ~ CO[2] ~ "on Streamflow (%)")
+
+patchwork_CO2_model_and_non_CO2_model_percentage_differences <- (make_CO2_streamflow_percentage_change_map(percentage_difference_CO2_model_non_CO2_model_1990s, "a", legend_title_1) | make_CO2_streamflow_percentage_change_map(percentage_difference_CO2_model_non_CO2_model_2010s, "b", legend_title_1)) +
+  plot_layout(guides = "collect") & theme(legend.position = "bottom")
+
+
+## Map of absolute percentage changes ==========================================
+# does plot_ready_decade_differences have absolute values built in?
+# yes it does --> CO2_impact_on_streamflow_mm_per_year
+# re-use make_CO2_streamflow_percentage_change_map and plot_ready_decade_differences
+# To avoid changing the function rename:
+#    CO2_impact_on_streamflow_mm_per_year to CO2_impact_on_streamflow_percent
+altered_plot_ready_decade_differences <- plot_ready_decade_differences |> 
+  select(!CO2_impact_on_streamflow_percent) |> 
+  rename(CO2_impact_on_streamflow_percent = CO2_impact_on_streamflow_mm_per_year) |> 
+  # remove uncertainty column
+  select(!IQR_CO2_impact_on_streamflow_percentage)
+
+
+### Get averages ###############################################################
+altered_plot_ready_decade_differences |> 
+  summarise(
+    mean_abs_changes = mean(CO2_impact_on_streamflow_percent),
+    median_abs_changes = median(CO2_impact_on_streamflow_percent),
+    sd_abs_changes = sd(CO2_impact_on_streamflow_percent),
+    .by = decade
+  )
+
+#### compare with rainfall averages 
+rainfall_decade_averages <- data |> 
+  filter(year %in% c(decade_1, decade_2)) |>
+    # add decade group for summarising
+    mutate(
+      decade = case_when( # year - (year %% 10)
+        year %in% decade_1 ~ 1,
+        year %in% decade_2 ~ 2,
+        .default = NA
+      )
+    ) |> 
+  summarise(
+    mean_rainfall = mean(p_mm),
+    .by = c(gauge, decade)
+  )
+  
+#### compare with ET averages
+relevant_years <- data |>
+  pull(year) |>
+  unique()
+relevant_gauges <- data |>
+  pull(gauge) |>
+  unique()
+
+
+areal_potential_evap_SILO_daily <- read_csv(
+  "Data/Raw/et_morton_wet_SILO.csv",
+  show_col_types = FALSE
+)
+
+evap_areal_potential_annual <- areal_potential_evap_SILO_daily |>
+  pivot_longer(
+    cols = !c(year, month, day),
+    names_to = "gauge",
+    values_to = "APET_mm"
+  ) |>
+  # only include years we are interested in
+  filter(year %in% relevant_years) |>
+  # only include gauges we are interested in
+  filter(gauge %in% relevant_gauges) |>
+  # sum daily PET to get annual - check for missing data
+  summarise(
+    annual_APET_mm = sum(APET_mm),
+    n = n(),
+    .by = c(year, gauge)
+  ) |>
+  filter(year %in% c(decade_1, decade_2)) |>
+  # add decade group for summarising
+  mutate(
+    decade = case_when( # year - (year %% 10)
+      year %in% decade_1 ~ 1,
+      year %in% decade_2 ~ 2,
+      .default = NA
+    )
+  ) |> 
+  # filter out incomplete years
+  filter(n %in% c(365, 366)) |> 
+  summarise(
+    mean_APET = mean(annual_APET_mm),
+    .by = c(gauge, decade)
+  )
+
+# Changes in streamflow are not greater than rainfall
+compare_absolute_change_with_rainfall_and_APET <- altered_plot_ready_decade_differences |> 
+  left_join(
+    rainfall_decade_averages,
+    by = join_by(gauge, decade)
+  ) |> 
+  left_join(
+    evap_areal_potential_annual,
+    by = join_by(gauge, decade)
+    ) |> 
+  select(gauge, decade, CO2_impact_on_streamflow_percent, mean_rainfall, mean_APET) |> 
+  mutate(precip_problem = CO2_impact_on_streamflow_percent > mean_rainfall) |> 
+  mutate(APET_problem = CO2_impact_on_streamflow_percent > mean_APET) |> 
+  arrange(mean_rainfall)
+
+
+### Recalculate global plotting variables using abs values #####################
+CO2_impact_on_streamflow_percent_limits <- altered_plot_ready_decade_differences |>
+  pull(CO2_impact_on_streamflow_percent) |>
+  make_limits() |>
+  as.double()
+
+# this is to assist in manually making breaks
+altered_plot_ready_decade_differences |>
+  pull(CO2_impact_on_streamflow_percent) |> 
+  summary()
+
+hard_coded_breaks_CO2_impact_of_streamflow <- c(-200, -150, -100, -50, -10, 0, 10, 50, 100, 150, 200)#c(-75, -50, -25, -10, -1, 0, 1, 10, 25, 50, 75)
+ 
+
+percentage_difference_1990s_abs_values <- altered_plot_ready_decade_differences |>
+  filter(decade == 1)
+
+percentage_difference_2010s_abs_values <- altered_plot_ready_decade_differences |>
+  filter(decade == 2)
+
+legend_title_2 <- bquote("Average Annual Impact of" ~ CO[2] ~ "on Streamflow (mm)")
+
+patchwork_abs_CO2_on_off <- 
+  (make_CO2_streamflow_percentage_change_map(percentage_difference_1990s_abs_values, "c", legend_title_2) | make_CO2_streamflow_percentage_change_map(percentage_difference_2010s_abs_values, "d", legend_title_2)) +
+  plot_layout(guides = "collect") & theme(legend.position = "bottom")
+
+
+
+
+
+# combine for extended_figures
+combined_CO2_streamflow_map <- patchwork_CO2_model_and_non_CO2_model_percentage_differences / patchwork_abs_CO2_on_off 
+
+ggsave(
+  filename = "./Figures/Extended_Data/combined_CO2_streamflow_map.pdf",
+  plot = combined_CO2_streamflow_map,
+  device = "pdf",
+  width = 200,
+  height = 210,
+  units = "mm"
+)
+
+
+
+
+
+
+
 # OTHER ANALYSIS ---------------------------------------------------------------
 ## Comparing percentage changes with aridity ===================================
 # file created in ET_analysis.R
@@ -1450,27 +1640,6 @@ aridity_inter_year_auto_comparison |>
   mutate(
     percentage = `TRUE` / (`TRUE` + `FALSE`)
   )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

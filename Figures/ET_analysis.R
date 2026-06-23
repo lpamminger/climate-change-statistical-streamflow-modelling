@@ -67,6 +67,7 @@ relevant_gauges <- data |>
   pull(gauge) |>
   unique()
 
+
 evap_areal_potential_annual <- areal_potential_evap_SILO_daily |>
   pivot_longer(
     cols = !c(year, month, day),
