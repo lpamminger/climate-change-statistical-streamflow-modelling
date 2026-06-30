@@ -343,6 +343,78 @@ write_csv(
 )
 
 
+# Calculate NSE for all models -------------------------------------------------
+best_model_per_gauge <- best_CO2_non_CO2_per_gauge |> 
+  slice_min(AIC, by = gauge) |> 
+  select(gauge, streamflow_model) |> 
+  distinct() |> 
+  add_column(best_model = TRUE)
+
+all_NSE_results <- streamflow_results |> 
+  summarise(
+    NSE_value = nash_sutcliffe_efficiency(
+      observed = realspace_observed_streamflow,
+      modelled = realspace_modelled_streamflow
+    ),
+    .by = c(gauge, streamflow_model)
+  ) |> 
+  arrange(gauge, desc(NSE_value)) |> 
+  left_join(
+    best_model_per_gauge,
+    by = join_by(gauge, streamflow_model)
+  ) |> 
+  mutate(
+    best_model = if_else(is.na(best_model), FALSE, best_model)
+  ) |> 
+  arrange(best_model)
+
+x <- all_NSE_results |> 
+  ggplot(aes(x = gauge, y = NSE_value, fill = best_model)) + 
+  geom_point(
+    shape = 21,
+    colour = "black"
+    ) + 
+  theme_bw() +
+  theme(
+    axis.text = element_text(angle = 90)
+  )
+
+all_NSE_results |> 
+  ggplot(aes(x = NSE_value)) +
+  geom_histogram(colour = "black", fill = "grey") +
+  labs(
+    x = "NSE",
+    y = "Frequency"
+  ) +
+  theme_bw() 
+
+
+# best of the best
+all_NSE_results |> 
+  semi_join(
+    best_model_per_gauge,
+    by = join_by(gauge, streamflow_model)
+  ) |> 
+  pull(NSE_value) |> 
+  summary()
+
+
+# plot NSE vs. number of parameters in a model
+# convert char into function match.fun --> then length(streamflow_model$parameters)
+# match.fun(NSE_parameter_number[1])
+# this is a map angle
+NSE_parameter_number <- all_NSE_results |> 
+  pull(streamflow_model) 
+
+
+ggsave(
+  filename = "Figures/Other/NSE_comparision.pdf",
+  device = "pdf",
+  plot = x,
+  width = 1189,
+  height = 500,
+  units = "mm"
+)
 
 
 # Compare NSE values between CO2 and non-CO2 models ----------------------------
@@ -355,7 +427,6 @@ best_model_per_gauge <- best_CO2_non_CO2_per_gauge |>
     AIC_CO2_is_best = str_detect(streamflow_model, "CO2")
   ) |> 
   select(gauge, AIC_CO2_is_best)
-
 
 NSE_value_comparison <- master_streamflow_table |>
   summarise(
