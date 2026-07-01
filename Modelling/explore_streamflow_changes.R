@@ -9,7 +9,7 @@
 
 
 # Import libraries--------------------------------------------------------------
-pacman::p_load(tidyverse, truncnorm, sloop)
+pacman::p_load(tidyverse, truncnorm, sloop, patchwork)
 
 
 # Import functions -------------------------------------------------------------
@@ -341,15 +341,55 @@ all_NSE_results <- streamflow_results |>
   ) |>
   arrange(best_model)
 
+# selected best AIC gauges - examine their NSE values
+all_NSE_results |> 
+  semi_join(
+    best_model_per_gauge,
+    by = join_by(gauge, streamflow_model)
+  ) |> 
+  filter(NSE_value > 0.8) |> 
+  nrow()
 
-all_NSE_results |>
+
+# Make the plot look nice
+NSE_x_axis <- scale_x_continuous(breaks = seq(from = 0, to = 1, by = 0.2), limits = c(0, 1))
+single_label <- function(x_pos, y_pos, label_name) { # for adding a, b, c labels
+  tribble(
+    ~x_pos, ~y_pos, ~label_name,
+    x_pos,  y_pos,  label_name
+  )
+}
+
+
+NSE_histogram <- all_NSE_results |>
   ggplot(aes(x = NSE_value)) +
-  geom_histogram(colour = "black", fill = "grey") +
-  labs(
-    x = "NSE",
-    y = "Frequency"
+  geom_histogram(
+    aes(y = after_stat(count) / sum(after_stat(count))),
+    colour = "black", 
+    fill = "grey", 
+    linewidth = 0.2, 
+    binwidth = 0.1,
+    boundary = 0
+    ) +
+  geom_text(
+    data = single_label(x_pos = 0, y_pos = 0.33, label_name = "a"),
+    mapping = aes(x = x_pos, y = y_pos, label = label_name),
+    inherit.aes = FALSE,
+    fontface = "bold",
+    size = 12,
+    size.unit = "pt"
   ) +
-  theme_bw()
+  labs(
+    y = "Proportion of Values"
+  ) +
+  NSE_x_axis +
+  scale_y_continuous(labels = scales::percent) +
+  theme_bw() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  )
 
 
 # plot NSE vs. number of parameters in a model
@@ -370,16 +410,6 @@ NSE_parameter_number <- all_NSE_results |>
   ungroup()
 
 
-NSE_parameter_number |>
-  ggplot(aes(x = NSE_value)) +
-  geom_histogram(colour = "black", fill = "grey") +
-  labs(
-    x = "NSE",
-    y = "Frequency"
-  ) +
-  theme_bw() +
-  facet_wrap(~ as.factor(parameter_number))
-
 
 NSE_ecdf <- NSE_parameter_number |>
   ggplot(
@@ -389,16 +419,25 @@ NSE_ecdf <- NSE_parameter_number |>
     )
   ) +
   stat_ecdf(geom = "step", pad = TRUE) +
+  geom_text(
+    data = single_label(x_pos = 0, y_pos = 0.95, label_name = "b"),
+    mapping = aes(x = x_pos, y = y_pos, label = label_name),
+    inherit.aes = FALSE,
+    fontface = "bold",
+    size = 12,
+    size.unit = "pt"
+  ) +
   labs(
-    x = "Nash Sutcliffe Efficiency",
+    x = "Nash-Sutcliffe Efficiency",
     y = "Cumulative Probability",
     colour = "Number of Parameters"
   ) +
   scale_colour_brewer(palette = "Dark2") +
+  NSE_x_axis +
   theme_bw() +
   theme(
     legend.position = "inside",
-    legend.position.inside = c(0.2, 0.85),
+    legend.position.inside = c(0.17, 0.6),
     legend.background = element_rect(colour = "black", linewidth = 0.2),
     legend.title = element_text(hjust = 0.5),
     legend.key.spacing.x = unit(0.5, units = "cm"),
@@ -410,15 +449,72 @@ NSE_ecdf <- NSE_parameter_number |>
     )
   )
 
+
+combined_NSE_graphs <- NSE_histogram / NSE_ecdf +
+  theme(text = element_text(size = 10))
+
 ggsave(
   filename = "Figures/Supplementary/NSE_ecdf.pdf",
   device = "pdf",
-  plot = NSE_ecdf,
-  height = 130,
-  width = 140,
+  plot = combined_NSE_graphs,
+  height = 150,
+  width = 180,
   units = "mm"
 )
 
+# Find maximum difference between NSE for a given gauge
+min_max_NSEs_per_gauge <- NSE_parameter_number |> 
+  summarise(
+    min_NSE = min(NSE_value),
+    max_NSE = max(NSE_value),
+    .by = gauge
+  ) |> 
+  mutate(
+    diff_NSE = max_NSE - min_NSE
+  ) |> 
+  arrange(desc(diff_NSE))
+  
+NSE_parameter_number |> 
+  filter(gauge == "616041") |> 
+  arrange(NSE_value)
+
+# on average adding a parameter to the model improves NSE_value by X
+# method:
+# - find mean NSE for a given number of parameters
+# - find mean difference between 
+# this does not make sense to me. If I plug in 7 parameters then I get a value > 1
+# this is likely due to drought model components only being applicable for some models
+# I imagine if I separate them out it will be nicer 
+# this still doesn't work they well
+drought_gauges <- data |> 
+  filter(drought) |> 
+  pull(gauge) |> 
+  unique()
+
+NSE_parameter_number |>
+  filter(!gauge %in% drought_gauges) |> 
+  summarise(
+    mean_NSE_per_parameter = mean(NSE_value / parameter_number),
+    sd_NSE_per_parameter = sd(NSE_value / parameter_number)
+  )
+
+
+adding_parameter_effect_on_NSE <- NSE_parameter_number |>
+  summarise(
+    median_NSE = median(NSE_value),
+    sd_NSE = sd(NSE_value),
+    .by = parameter_number
+  ) |>
+  arrange(desc(parameter_number)) |> 
+  mutate(
+    temp_col = lead(median_NSE)
+  ) |> 
+  mutate(
+    diff = median_NSE - temp_col
+  ) 
+adding_parameter_effect_on_NSE |> pull(diff) |> median(na.rm = T)
+  
+  
 
 # Compare NSE values between CO2 and non-CO2 models ----------------------------
 # Does the best model using AIC match NSE?
