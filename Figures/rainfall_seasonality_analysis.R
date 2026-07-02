@@ -639,17 +639,42 @@ compare_model_and_observed_seasonality |>
   )
 
 
-compare_model_and_observed_seasonality |> 
-  ggplot(aes(x = contains_seasonality_term)) +
-  geom_bar() +
+compare_model_and_observed_seasonality |>
+  count(contains_seasonality_term, classification) |> 
+  pivot_wider(
+    names_from = contains_seasonality_term,
+    values_from = n
+  ) |> 
+  mutate(
+    contains_percentages = `TRUE` / (`TRUE` + `FALSE`)
+  )
+
+proportion_of_seasonality_per_model <- compare_model_and_observed_seasonality |>
+  count(contains_seasonality_term, classification) |> 
+  # add levels to classification
+  mutate(
+    classification = factor(classification, levels = c("Arid", "Summer Dominant", "Summer", "Uniform", "Winter", "Winter Dominant"))
+  ) |>   
+  ggplot(aes(x = classification, y = n, fill = contains_seasonality_term)) +
+  geom_bar(position = "fill", stat = "identity", colour = "black") +
+  scale_y_continuous(labels = scales::percent) +
   labs(
-    x = "Best Model Contains Rainfall-Seasonality Term",
-    y = "Count"
+    x = "Seasonal Rainfall Zones",
+    y = "Proportion",
+    fill = "Contains Seasonality Term"
   ) +
+  scale_fill_manual(values = c("grey95", "grey50")) +
   theme_bw() +
-  facet_wrap(~classification, scales = "free_y")
+  theme(legend.position = "bottom")
 
-
+ggsave(
+  filename = "./Figures/Supplementary/proportion_of_seasonality_per_model.pdf",
+  plot = proportion_of_seasonality_per_model,
+  device = "pdf",
+  width = 180,
+  height = 140, # 210,
+  units = "mm"
+)
 
 
 
