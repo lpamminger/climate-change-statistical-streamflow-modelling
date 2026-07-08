@@ -502,7 +502,7 @@ create_caption <- function(gauge_chunk, identifier) {
   cat("\n")
   cat("\t\\centering")
   cat("\n")
-  cat(paste0("\t\\includegraphics[width=\\textwidth]{Figures/supp_illustration_", identifier, ".pdf}"))
+  cat(paste0("\t\\includegraphics[width=\\textwidth]{Figures/illustration_plot_", identifier, ".pdf}"))
   cat("\t\n")
   # The line below must change
   cat(paste0("\t\\caption{\\textbf{Observed shifts in the rainfall-runoff relationship for gauges ", gauge_text, "} Same as fig X.}"))
@@ -511,6 +511,8 @@ create_caption <- function(gauge_chunk, identifier) {
   cat(paste0("\t\\label{fig:supp_illustration_", identifier, "}"))
   cat("\n")
   cat("\\end{figure}")
+  cat("\n")
+  cat("\\clearpage")
   cat("\n")
   cat("\n")
 }
@@ -534,7 +536,7 @@ supp_illustration_plots <- map(
 )
 
 
-supp_illustration_plot_names <- paste0("illustration_plot_", 1:length(supp_illustration_plots))
+supp_illustration_plot_names <- paste0("illustration_plot_", 1:length(supp_illustration_plots), ".pdf")
 
 walk2(
   .x = supp_illustration_plot_names,
@@ -579,7 +581,7 @@ plot_aggregated_runoff_ratio <- aggregated_runoff_ratio |>
   ) +
   theme_bw()
 
-ggsave()
+#ggsave()
 
 ## Aggreate by gauge ===========================================================
 by_gauge_runoff_ratio <- data |> 
@@ -596,7 +598,31 @@ by_gauge_runoff_ratio <- data |>
   ) |> 
   mutate(
     runoff_ratio = decade_mean_q / decade_mean_p
-  )
+  ) |> 
+  # there is only one data point for the 1950s remove
+  filter(decade != 1950) 
+
+### Mean by gauge ##############################################################
+mean_decade_by_gauge <- by_gauge_runoff_ratio |> 
+  summarise(mean_ratio = mean(runoff_ratio, na.rm = T), .by = decade) |> 
+  ggplot(aes(x = decade, y = mean_ratio)) + 
+  geom_line() +
+  geom_point() +
+  labs(
+    x = "Decade",
+    y = "Runoff Ratio"
+  ) +
+  theme_bw()
+
+ggsave(
+  filename = "Figures/Other/change_in_runoff_ratio.pdf",
+  plot = mean_decade_by_gauge,
+  device = "pdf",
+  width = 140,
+  height = 100,
+  units = "mm"
+)
+ 
 
 all_gauge_runoff_ratio <- by_gauge_runoff_ratio |> 
   drop_na() |> 
@@ -681,7 +707,7 @@ fig_4_specific_aggregated_runoff_ratio <- data |>
     decade_mean_q = mean(q_mm, na.rm = TRUE),
     #use all available rainfall data
     decade_mean_p = mean(p_mm, na.rm = TRUE),
-    .by = decade
+    .by = c(decade, gauge)
   ) |> 
   mutate(
     runoff_ratio = decade_mean_q / decade_mean_p
