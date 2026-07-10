@@ -349,6 +349,7 @@ add_NSE_to_facet_labels <- function(data, NSE_data, facet_column, x_axis_column,
 
 
 plot_and_save_timeseries_data <- function(plotting_data, label_data, NSE_label_data, identifier) {
+  
   plot <- plotting_data |>
     ggplot(aes(x = year, y = streamflow, colour = type, shape = type)) +
     geom_line(alpha = 0.8, linewidth = 0.5) +
@@ -370,7 +371,24 @@ plot_and_save_timeseries_data <- function(plotting_data, label_data, NSE_label_d
       size.unit = "pt",
       hjust = -4.1
     ) +
-    scale_colour_brewer(palette = "Set1") +
+    scale_colour_manual(
+      values = c("#e41a1c", "#377eb8", "#4daf4a", "#984ea3"), # four colours in set 1
+      labels = c(
+        "Observed",
+        bquote(CO[2] ~ "Model"),
+        "Counterfactual",
+        "Non-" * CO[2] ~ "Model"
+      )
+    ) +
+    scale_shape_manual(
+      values = c(15, 16, 17, 3),
+      labels = c(
+        "Observed",
+        bquote(CO[2] ~ "Model"),
+        "Counterfactual",
+        "Non-" * CO[2] ~ "Model"
+      )
+    ) +
     labs(
       x = "Time (Year)",
       y = "Streamflow (mm)",
@@ -389,7 +407,7 @@ plot_and_save_timeseries_data <- function(plotting_data, label_data, NSE_label_d
       panel.grid.minor = element_blank()
     ) +
     facet_wrap(~gauge, ncol = 2, nrow = 7, scales = "free_y")
-  
+
   ggsave(
     filename = paste0("streamflow_timeseries_extended_data_plot_", identifier, ".pdf"),
     path = "Figures/Extended_Data",
