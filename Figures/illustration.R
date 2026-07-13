@@ -672,7 +672,7 @@ gauge_information |>
   filter(gauge %in% high_evi_gauges) |> 
   count(state)
 
-by_state_runoff_ratio |> 
+mean_decade_runoff_ratio_by_state <- by_state_runoff_ratio |> 
   drop_na() |> 
   filter(decade != 1950) |> 
   filter(state %in% c("NSW", "TAS", "VIC", "WA")) |> # only 1 ACT, 1 QLD and 1 SA gauge
@@ -685,7 +685,14 @@ by_state_runoff_ratio |>
   ) +
   theme_bw()
 
-
+ggsave(
+  filename = "Figures/Other/change_in_runoff_ratio_by_state.pdf",
+  plot = mean_decade_runoff_ratio_by_state,
+  device = "pdf",
+  width = 140,
+  height = 100,
+  units = "mm"
+)
 
 
 
