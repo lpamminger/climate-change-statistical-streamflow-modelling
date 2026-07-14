@@ -330,6 +330,7 @@ illustration_plots <- function(gauge, plot_label, plot_arrow) {
 
 
 # plots - pick two gauges to illustration (intercept, slope)
+# illustration_plots(gauge = high_evi_gauges[2], plot_label = "x", plot_arrow = FALSE)
 part_a <- illustration_plots(gauge = "606195", plot_label = "A", plot_arrow = TRUE) 
 part_b <- illustration_plots(gauge = "238235", plot_label = "B", plot_arrow = TRUE) + 
   theme(axis.title.y = element_blank())
@@ -350,7 +351,6 @@ ggsave(
 # add % change for the paragraph -----------------------------------------------
 ## mean annual rainfall ========================================================
 mean_annual_rainfall <- data |> 
-  filter(gauge %in% c("606195", "238235")) |> 
   summarise(
     mean_annual_rainfall = mean(p_mm),
     max_annual_rainfall = max(p_mm),
@@ -364,8 +364,11 @@ mean_annual_rainfall <- data |>
 ### - makes log-sinh runoff vs. rainfall lines using the simplest CO2 model (just slope or intercept)
 ### - get the log-sinh runoff for the average rainfall
 ### - convert the log-sinh runoff back into realspace
+### - it does not deal with drought parameters
 
 percentage_change_based_on_rainfall <- function(gauge, mean_annual_rainfall_data) {
+  
+  
   b <- best_CO2_and_non_CO2_model_and_params_per_gauge |>
     filter(contains_CO2) |>
     filter(gauge == {{ gauge }}) |>
@@ -400,7 +403,6 @@ percentage_change_based_on_rainfall <- function(gauge, mean_annual_rainfall_data
     data = modified_data
   )
   
-  
   different_CO2_catchment_data <- map(
     .x = different_CO2_modified_data,
     .f = rearrange_catchment_data_blueprint,
@@ -409,18 +411,33 @@ percentage_change_based_on_rainfall <- function(gauge, mean_annual_rainfall_data
   )
   
   
+  # if it is a drought model turn off the drought intercept by setting it
+  # to the non-drought intercept
+  non_drought_intercept <- best_CO2_and_non_CO2_model_and_params_per_gauge |>
+    filter(contains_CO2) |>
+    filter(gauge == {{ gauge }}) |>
+    filter(parameter == "a0_n") |> 
+    pull(parameter_value)
+  
+  # empty vectors do not play nice
+  if(is_empty(non_drought_intercept)){non_drought_intercept <- NA}
+  
   parameter_set <- best_CO2_and_non_CO2_model_and_params_per_gauge |>
     filter(contains_CO2) |>
     filter(gauge == {{ gauge }}) |>
     # make sure we get a straight line by turning off a2, a4 etc.
     mutate(
       parameter_value = case_when(
+        parameter == "a0_d" ~ non_drought_intercept,
         parameter == "a2" ~ 0,
         parameter == "a4" ~ 0,
         .default = parameter_value
       )
     ) |>
     pull(parameter_value)
+  
+
+
   
   
   streamflow_model <- best_CO2_model_gauge |>
@@ -443,13 +460,94 @@ percentage_change_based_on_rainfall <- function(gauge, mean_annual_rainfall_data
       realspace_streamflow = inverse_log_sinh_transform(b = b, z = streamflow_results, offset = 0)
     )
   
+  # if there is no data beyond 2019 for a gauge do not plot it
+  year_range <- modified_data |> 
+    drop_na() |> 
+    pull(year) |> 
+    range()
+  
+  # must replace different_CO2_streamflow
+  if(max(year_range) < 2019) {
+    # drop last row
+    different_CO2_streamflow |> 
+      slice(-n())
+  } else {
+    different_CO2_streamflow
+  }
+  
 }
 
-model_fit_gauge_A <- percentage_change_based_on_rainfall(gauge = "606195", mean_annual_rainfall_data = mean_annual_rainfall)
-(model_fit_gauge_A$realspace_streamflow[1] - model_fit_gauge_A$realspace_streamflow[4]) / model_fit_gauge_A$realspace_streamflow[1]
+### Difference between top and bottom for mean annual rainfall #################
+### Good for intercept. Slope changes a bit.
+### What this function does:
+### - Calls percentage_change_based_on_rainfall
+### - percentage_change_based_on_rainfall returns a realspace streamflow 
+###   for 4 periods based on mean annual rainfall (the 4 lines in the graph)
+### - Find the percentage difference between realspace streamflow for min CO2
+###   and max CO2
+percent_diff_between_min_max_streamflow_illustration <- function(gauge, mean_annual_rainfall_data) {
+  
+  streamflow_tibble <- percentage_change_based_on_rainfall(
+    gauge = {{ gauge }},
+    mean_annual_rainfall_data = mean_annual_rainfall_data
+  )
+  
+  late_streamflow <- streamflow_tibble |> slice_max(CO2, n = 1) |> pull(realspace_streamflow)
+  early_streamflow <- streamflow_tibble |> slice_min(CO2, n = 1) |> pull(realspace_streamflow)
+  
+  ((late_streamflow - early_streamflow) / early_streamflow) * 100 
+}
 
-model_fit_gauge_B <- percentage_change_based_on_rainfall(gauge = "238235", mean_annual_rainfall_data = mean_annual_rainfall)
-(model_fit_gauge_B$realspace_streamflow[1] - model_fit_gauge_B$realspace_streamflow[4]) / model_fit_gauge_B$realspace_streamflow[1]
+### Two plots in the main figure ###############################################
+percent_diff_between_min_max_streamflow_illustration(
+  gauge = "606195",
+  mean_annual_rainfall_data = mean_annual_rainfall
+)
+
+percent_diff_between_min_max_streamflow_illustration(
+  gauge = "238235",
+  mean_annual_rainfall_data = mean_annual_rainfall
+)
+
+
+### For the 81 high evidence ratio catchments ##################################
+percentage_changes_illustration_vector <- map_dbl(
+  .x = high_evi_gauges,
+  .f = percent_diff_between_min_max_streamflow_illustration,
+  mean_annual_rainfall_data = mean_annual_rainfall
+)
+
+illustration_percentage_changes <- tibble(
+  "gauge" = high_evi_gauges,
+  "percent_change_illustration" = percentage_changes_illustration_vector
+)
+
+
+### Compare with CO2 model results #############################################
+CO2_percentage_change_models <- read_csv(
+  file = "Modelling/decade_streamflow_CO2_differences.csv",
+  show_col_types = FALSE
+) |> 
+  select(gauge, decade, CO2_impact_on_streamflow_percent)
+
+comparison_percentage_changes <- CO2_percentage_change_models |> 
+  filter(decade == 2) |> # latest period (2012-2021)
+  select(!decade) |> 
+  right_join(
+    illustration_percentage_changes,
+    by = join_by(gauge)
+    ) |> 
+  mutate(
+    abs_diff = abs(percent_change_illustration - CO2_impact_on_streamflow_percent)
+  )
+
+comparison_percentage_changes |> pull(abs_diff) |> summary()
+comparison_percentage_changes |> ggplot(aes(y = abs_diff)) + geom_boxplot() + scale_y_log10() + theme_bw()
+# median difference is 7 %.
+# I am not using the best models. Nor am I comparing like decades.
+# I think this is acceptable
+# I am not sure how to graphically show this - add the runoff relationship stuff
+
 
 
 
@@ -569,6 +667,27 @@ aggregated_runoff_ratio <- data |>
     runoff_ratio = decade_mean_q / decade_mean_p
   )
 
+### Find decades with little data ##############################################
+### q_mm is the limiting factor
+count_years_per_decade <- data |> 
+  filter(gauge %in% high_evi_gauges) |> 
+  mutate(
+    decade = year - (year %% 10)
+  ) |> 
+  select(year, gauge, q_mm, decade) |> 
+  drop_na() |> 
+  summarise(
+    n = n(),
+    .by = c(gauge, decade)
+  ) 
+
+keep_decade_and_gauges <- count_years_per_decade |> 
+  arrange(n) |> 
+  # to make my life easier a decade needs at least 5 year of data
+  filter(n >= 5)
+
+
+### Plot #######################################################################
 plot_aggregated_runoff_ratio <- aggregated_runoff_ratio |> 
   drop_na() |> 
   filter(decade != 1950) |> 
@@ -581,7 +700,6 @@ plot_aggregated_runoff_ratio <- aggregated_runoff_ratio |>
   ) +
   theme_bw()
 
-#ggsave()
 
 ## Aggreate by gauge ===========================================================
 by_gauge_runoff_ratio <- data |> 
@@ -599,9 +717,13 @@ by_gauge_runoff_ratio <- data |>
   mutate(
     runoff_ratio = decade_mean_q / decade_mean_p
   ) |> 
-  # there is only one data point for the 1950s remove
-  filter(decade != 1950) 
+  # remove gauges and decades without enough years
+  semi_join(
+    keep_decade_and_gauges,
+    by = join_by(gauge, decade)
+  )
 
+# there should be 684 - 114 = 534 left
 ### Mean by gauge ##############################################################
 mean_decade_by_gauge <- by_gauge_runoff_ratio |> 
   summarise(mean_ratio = mean(runoff_ratio, na.rm = T), .by = decade) |> 
@@ -647,10 +769,6 @@ ggsave(
 
 ## Aggregate by state ==========================================================
 by_state_runoff_ratio <- data |> 
-  left_join(
-    gauge_information,
-    by = join_by(gauge)
-    ) |> 
   filter(gauge %in% high_evi_gauges) |> 
   mutate(
     decade = year - (year %% 10)
@@ -660,11 +778,25 @@ by_state_runoff_ratio <- data |>
     decade_mean_q = mean(q_mm, na.rm = TRUE),
     #use all available rainfall data
     decade_mean_p = mean(p_mm, na.rm = TRUE),
-    .by = c(decade, state)
+    .by = c(decade, gauge)
   ) |> 
   mutate(
     runoff_ratio = decade_mean_q / decade_mean_p
+  ) |> 
+  # remove gauges and decades without enough years
+  semi_join(
+    keep_decade_and_gauges,
+    by = join_by(gauge, decade)
+  ) |> 
+  left_join(
+    gauge_information,
+    by = join_by(gauge)
+  ) |> 
+  summarise(
+    mean_runoff_ratio_by_state = mean(runoff_ratio),
+    .by = c(state, decade)
   )
+
   
 
 # number of gauges by state
@@ -673,10 +805,8 @@ gauge_information |>
   count(state)
 
 mean_decade_runoff_ratio_by_state <- by_state_runoff_ratio |> 
-  drop_na() |> 
-  filter(decade != 1950) |> 
   filter(state %in% c("NSW", "TAS", "VIC", "WA")) |> # only 1 ACT, 1 QLD and 1 SA gauge
-  ggplot(aes(x = decade, y = runoff_ratio, colour = state)) +
+  ggplot(aes(x = decade, y = mean_runoff_ratio_by_state, colour = state)) +
   geom_line() +
   geom_point() +
   labs(
@@ -719,3 +849,109 @@ fig_4_specific_aggregated_runoff_ratio <- data |>
   mutate(
     runoff_ratio = decade_mean_q / decade_mean_p
   )
+
+
+# Add runoff ratio to comparison_percentage_changes ----------------------------
+high_evi_ratio_ratio <- by_gauge_runoff_ratio |> 
+  filter(gauge %in% high_evi_gauges) |> 
+  drop_na() |> 
+  select(decade, gauge, runoff_ratio) |> 
+  group_by(gauge)
+
+max_values <- slice_max(high_evi_ratio_ratio, decade, n = 1) |> 
+  mutate(
+    decade_name = "late"
+  )
+
+min_values <- slice_min(high_evi_ratio_ratio, decade, n = 1) |> 
+  mutate(
+    decade_name = "early"
+  )
+
+runoff_ratio_percent_changes <- rbind(
+  max_values,
+  min_values
+) |> 
+  select(!decade) |> 
+  pivot_wider(
+    names_from = decade_name,
+    values_from = runoff_ratio
+  ) |> 
+  mutate(
+    percentage_change_runoff_ratio = ((late - early) / early) * 100
+  ) |> 
+  arrange(gauge)
+
+
+## Combine everything ==========================================================
+all_comparison_percentage_changes <- runoff_ratio_percent_changes |> 
+  select(gauge, percentage_change_runoff_ratio) |> 
+  right_join(
+    comparison_percentage_changes,
+    by = join_by(gauge)
+  ) |> 
+  select(!abs_diff)
+
+
+sign_all_comparison_percentage_changes <- all_comparison_percentage_changes |> 
+  pivot_longer(
+    cols = !gauge,
+    names_to = "type",
+    values_to = "percentage_change",
+  ) |> 
+  mutate(
+    sign_percentage_change = sign(percentage_change)
+  ) |> 
+  summarise(
+    sum_sign = sum(sign_percentage_change)
+  ) |> 
+  filter(abs(sum_sign) != 3)
+
+
+wonky_gauges <- c("410713", "610008", "224213", "603007", "204036", "411003")
+more_wonky_gauges <- sign_all_comparison_percentage_changes |> pull(gauge)
+checking_gauges <- c(wonky_gauges, more_wonky_gauges) |> unique()
+
+looking_at_issues <- all_comparison_percentage_changes |> 
+  filter(gauge %in% checking_gauges)
+
+
+all_comparison_percentage_changes |> 
+  pivot_longer(
+    cols = !gauge,
+    names_to = "type",
+    values_to = "percentage_change",
+  ) |> 
+  mutate(
+    percentage_change = percentage_change / 100
+  ) |> 
+  mutate(
+    type = case_when(
+      type == "CO2_impact_on_streamflow_percent" ~ "Turn CO2 Off",
+      type == "percentage_change_runoff_ratio" ~ "Runoff Ratio",
+      type == "percent_change_illustration" ~ "Rainfall-runoff lines",
+      .default = NA
+    )
+  ) |> 
+  ggplot(aes(x = type, y = percentage_change)) +
+  geom_boxplot(
+    staplewidth = 0.5,
+    outlier.alpha = 0.7,
+    outlier.colour = "black",
+    outlier.fill = "grey",
+    outlier.shape = 21,
+    whisker.linewidth = 0.2,
+    box.linewidth = 0.2,
+    median.linewidth = 0.4,
+    staple.linewidth = 0.2,
+    fill = "grey90"
+  ) +
+  labs(
+    x = "Calculation Method",
+    y = "Streamflow Percentage Change"
+  ) +
+  scale_y_continuous(labels = scales::percent) +
+  theme_bw()
+
+
+
