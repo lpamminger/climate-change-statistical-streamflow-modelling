@@ -430,11 +430,11 @@ create_caption <- function(label_data, identifier) {
   end_gauge_abc <- paste0(gauge_abc[(length(gauge_abc) - 1)], " and ", gauge_abc[length(gauge_abc)], ".")
   gauge_text <- paste(c(start_gauge_abc, end_gauge_abc), collapse = "")
   
-  cat("\\begin{figure}")
+  cat("\\begin{figure}[h]")
   cat("\n")
   cat("\t\\centering")
   cat("\n")
-  cat(paste0("\t\\includegraphics[width=\\textwidth]{Figures/streamflow_timeseries_supp_plot_", identifier, ".pdf}"))
+  cat(paste0("\t\\includegraphics[width=\\textwidth]{Figures/streamflow_timeseries_extended_data_plot_", identifier, ".pdf}"))
   cat("\t\n")
   # The line below must change
   cat(paste0("\t\\caption{\\textbf{The impact of CO$_2$ on the streamflow timeseries for gauges ", gauge_text, "} The streamflow timeseries compares observed streamflow (Observed), modelled streamflow using a model that includes CO$_2$ (CO$_2$ model), modelled streamflow using a model that includes CO$_2$ with CO$_2$ turned off (Counterfactual) and modelled streamflow using a model that does not include CO$_2$ (non-CO$_2$ Model).}"))
@@ -444,11 +444,17 @@ create_caption <- function(label_data, identifier) {
   cat("\n")
   cat("\\end{figure}")
   cat("\n")
+  cat("\\clearpage")
+  cat("\n")
   cat("\n")
 }
 
 
 save_plot_and_caption_timeseries_data <- function(data_chunk, NSE_data, identifier) {
+  
+  data_chunk <- data_chunk |> 
+    arrange(gauge)
+  
   label_data <- make_facet_labels(
     data = data_chunk,
     facet_column = "gauge",
@@ -496,8 +502,6 @@ iwalk(
   NSE_data = NSE_moderately_strong_or_greater_gauges
 )
 sink()
-
-
 
 
 
