@@ -55,54 +55,23 @@ start_stop_indexes <- read_csv(
   show_col_types = FALSE
 )
 
+evidence_ratio <- read_csv(
+  "./Modelling/Results/CMAES/evidence_ratio_results.csv",
+  show_col_types = FALSE
+)
+
+
 # Calculate evidence ratio for filtering ---------------------------------------
-high_evi_gauges <- best_CO2_and_non_CO2_model_and_params_per_gauge |>
-  select(gauge, contains_CO2, AIC) |>
-  distinct() |>
-  pivot_wider(
-    names_from = contains_CO2,
-    values_from = AIC
-  ) |>
-  mutate(
-    CO2_model = `TRUE`,
-    non_CO2_model = `FALSE`,
-    .keep = "unused"
-  ) |>
-  mutate(
-    AIC_difference = CO2_model - non_CO2_model # CO2 is smaller than non-CO2 then negative and CO2 is better
-  ) |>
-  mutate(
-    evidence_ratio = case_when(
-      AIC_difference < 0 ~ exp(0.5 * abs(AIC_difference)), # when CO2 model is better
-      AIC_difference > 0 ~ -exp(0.5 * abs(AIC_difference)) # when non-CO2 model is better
-    )
-  ) |>
-  arrange(evidence_ratio) |>
-  filter(evidence_ratio > 100) |>
+high_evi_gauges <- evidence_ratio |> 
+  filter(evidence_ratio > 100) |> 
   pull(gauge)
 
 
-# Find gauge to use as an example ----------------------------------------------
-## Get gauges with high record lengths
-high_record_gauges <- gauge_information |>
-  filter(record_length > 50) |>
-  pull(gauge)
-
-## Try using the simplest CO2 models first
-best_CO2_model_gauge <- best_CO2_and_non_CO2_model_and_params_per_gauge |>
-  filter(contains_CO2) |> 
-  filter(gauge %in% high_evi_gauges) |>
-  #filter(gauge %in% high_record_gauges) |>
-  select(gauge, streamflow_model) |>
-  distinct() |>
-  arrange(desc(streamflow_model))
 
 
-best_CO2_model_gauge |>
-  filter(streamflow_model == "streamflow_model_intercept_shifted_CO2")
-
-
-
+# Make rainfall-runoff data ----------------------------------------------------
+## The following function relies on catchment_data
+## Must be rearraged to be used
 rearrange_catchment_data_blueprint <- function(observed_data, gauge_ID, start_stop_indexes) {
   catchment_data_blueprint(
     gauge_ID = gauge_ID,
@@ -111,21 +80,29 @@ rearrange_catchment_data_blueprint <- function(observed_data, gauge_ID, start_st
   )
 }
 
-replace_CO2_in_data <- function(new_CO2, data) {
-  data |>
-    mutate(
-      CO2 = new_CO2
-    )
+
+replace_col_in_data <- function(replacement, col, data_tibble) {
+  data_tibble |> 
+    mutate({{ col }} := !!enquo(replacement))
 }
 
 
-illustration_plots <- function(gauge, plot_label, plot_arrow) {
-  b <- best_CO2_and_non_CO2_model_and_params_per_gauge |>
+
+## Input: replace_precipitation = either NULL or single value
+## Return: output depends on model_year and replace_precipitation if 
+##         replace precpitation is NULL then output is equal to length of 
+##         obs precip x model_year.
+##         If replace_precip is specific then output is length(model_years)
+##         Does return log-sinh streamflow
+make_rainfall_runoff_results <- function(gauge, model_years, replace_precipitation, data, model_results) {
+  
+  
+  # 1. Transform observed streaflow into log-sinh space
+  b <- model_results |>
     filter(contains_CO2) |>
     filter(gauge == {{ gauge }}) |>
     filter(parameter == "b") |>
     pull(parameter_value)
-
 
   modified_data <- data |>
     filter(gauge == {{ gauge }}) |>
@@ -133,26 +110,38 @@ illustration_plots <- function(gauge, plot_label, plot_arrow) {
       q_log_sinh = log_sinh_transform(b = b, y = q_mm, offset = 0)
     )
 
-  
-  # Year range
-  year_range <- modified_data |> 
-    drop_na() |> 
-    pull(year) |> 
-    range()
+  # 2. Replace data (CO2 and replace_precipitation)
+  if (!is.null(replace_precipitation)) {
+    stopifnot(
+      is.numeric(replace_precipitation),
+      length(replace_precipitation) == 1
+    )
 
-  # Plotting lines for the illustration
+    modified_data <- modified_data |>
+      mutate(
+        p_mm = replace_precipitation
+      )
+  }
+
+  # check models_years are not outside of data
+  # This includes na values
+  year_range <- data |> pull(year) |> range()
+  if(any(model_years < min(year_range))) {stop("model_year less than observed year")}
+  if(any(model_years > max(year_range))) {stop("model_year greater than observed year")}
+  
   CO2_for_selected_years <- modified_data |>
-    filter(year %in% c(1959, 1979, 1999, 2019)) |>
+    filter(year %in% model_years) |>
     pull(CO2)
 
 
   different_CO2_modified_data <- map(
     .x = CO2_for_selected_years,
-    .f = replace_CO2_in_data,
-    data = modified_data
+    .f = replace_col_in_data,
+    col = CO2,
+    data_tibble = modified_data
   )
 
-
+  # 3. Convert replace data into catchment_blueprint objects
   different_CO2_catchment_data <- map(
     .x = different_CO2_modified_data,
     .f = rearrange_catchment_data_blueprint,
@@ -160,18 +149,21 @@ illustration_plots <- function(gauge, plot_label, plot_arrow) {
     start_stop_indexes = start_stop_indexes
   )
 
-  # if it is a drought model turn off the drought intercept by setting it
-  # to the non-drought intercept
-  non_drought_intercept <- best_CO2_and_non_CO2_model_and_params_per_gauge |>
+
+  # 4. Set parameters to zero to get simplest CO2 model (i.e., auto, drought)
+  ## Identify drought
+  non_drought_intercept <- model_results |>
     filter(contains_CO2) |>
     filter(gauge == {{ gauge }}) |>
-    filter(parameter == "a0_n") |> 
+    filter(parameter == "a0_n") |>
     pull(parameter_value)
 
   # empty vectors do not play nice
-  if(is_empty(non_drought_intercept)){non_drought_intercept <- NA}
-  
-  parameter_set <- best_CO2_and_non_CO2_model_and_params_per_gauge |>
+  if (is_empty(non_drought_intercept)) {
+    non_drought_intercept <- NA
+  }
+
+  parameter_set <- model_results |>
     filter(contains_CO2) |>
     filter(gauge == {{ gauge }}) |>
     # make sure we get a straight line by turning off a2, a4 etc.
@@ -185,96 +177,115 @@ illustration_plots <- function(gauge, plot_label, plot_arrow) {
     ) |>
     pull(parameter_value)
 
-  
-  
-  
-  streamflow_model <- best_CO2_model_gauge |>
+
+  # 5. Get the streamflow model
+  streamflow_model <- model_results |>
+    filter(contains_CO2) |>
+    select(gauge, streamflow_model) |>
+    distinct() |>
     filter(gauge == {{ gauge }}) |>
     pull(streamflow_model) |>
     match.fun()
 
 
+  # 6. Put the catchment_data object, parameter_set into streamflow model
   different_CO2_streamflow <- map(
     .x = different_CO2_catchment_data,
     .f = streamflow_model,
     parameter = parameter_set
-  )
+  ) |>
+    `names<-`(model_years) |> # this may be changed to another name to avoid confusion
+    list_rbind(names_to = "source")
 
-
-  streamflow_1 <- different_CO2_streamflow[[1]] |>
-    select(year, precipitation, streamflow_results) |>
-    rename(streamflow_1960 = streamflow_results)
-
-  streamflow_2 <- different_CO2_streamflow[[2]] |>
-    select(year, precipitation, streamflow_results) |>
-    rename(streamflow_1990 = streamflow_results)
-
-  streamflow_3 <- different_CO2_streamflow[[3]] |>
-    select(year, precipitation, streamflow_results) |>
-    rename(streamflow_2010 = streamflow_results)
-  
-  streamflow_4 <- different_CO2_streamflow[[4]] |>
-    select(year, precipitation, streamflow_results) |>
-    rename(streamflow_2020 = streamflow_results)
-  
-  # if there is no data beyond 2019 for a gauge do not plot it
-  if(max(year_range) < 2019) {
-    streamflow_4 <- streamflow_4 |> 
-      mutate(
-        streamflow_2020 = NA
-      )
-  }
-
-  rainfall_runoff_relationship <- streamflow_1 |>
-    left_join(
-      streamflow_2,
-      by = join_by(year, precipitation)
-    ) |>
-    left_join(
-      streamflow_3,
-      by = join_by(year, precipitation)
-    ) |>
-    left_join(
-      streamflow_4,
-      by = join_by(year, precipitation)
-    ) |>
-    pivot_longer(
-      cols = starts_with("streamflow"),
-      names_to = "rainfall_runoff_year",
-      values_to = "streamflow"
-    ) |> # rename streamflow_1960
+  # 7. Convert log-sinh into realspace streamflow
+  back_to_realspace <- different_CO2_streamflow |>
     mutate(
-      rainfall_runoff_year = case_when(
-        rainfall_runoff_year == "streamflow_1960" ~ "Estimated Relationship 1959",
-        rainfall_runoff_year == "streamflow_1990" ~ "Estimated Relationship 1979",
-        rainfall_runoff_year == "streamflow_2010" ~ "Estimated Relationship 1999",
-        rainfall_runoff_year == "streamflow_2020" ~ "Estimated Relationship 2019",
-        .default = NA
+      realspace_streamflow_results = inverse_log_sinh_transform(
+        b = b,
+        z = streamflow_results,
+        offset = 0
       )
+    ) |> 
+    select(!c(is_drought_year, seasonal_ratio)) 
+
+  # 8. Final return 
+  return(back_to_realspace)
+}
+
+
+
+# Use make_rainfall_runoff_results for percentage difference calc --------------
+# wrapper around make_rainfall_runoff_results
+# it could be a function factory angle
+get_percentage_difference <- function(gauge, model_years, replace_precipitation, data, model_results) {
+  
+  # 1. replace_precipiation must be a single digit
+  stopifnot(!is.null(replace_precipitation))
+  
+  # 2. Repeat function (return n x 2 tibble where n is model years)
+  percentage_changes <- make_rainfall_runoff_results(
+    gauge = {{ gauge }},
+    model_years = model_years,
+    replace_precipitation = replace_precipitation,
+    data = data,
+    model_results = model_results
+  ) |> 
+    select(source, realspace_streamflow_results) |> 
+    distinct()
+  
+  # 3. Calculate between mix and max source (earliest year and latest year)
+  late_streamflow <- percentage_changes |> slice_max(source, n = 1) |> pull(realspace_streamflow_results)
+  early_streamflow <- percentage_changes |> slice_min(source, n = 1) |> pull(realspace_streamflow_results)
+  
+  (late_streamflow - early_streamflow) / early_streamflow
+
+}
+
+
+
+
+
+
+# Use make_rainfall_runoff_results for plotting --------------------------------
+# wrapper around make_rainfall_runoff_results
+rainfall_runoff_plots <- function(gauge, model_years, replace_precipitation, data, model_results, plot_label, plot_arrow, overwrite_legend_text) {
+  
+  stopifnot(is.null(replace_precipitation))
+  
+  # 1. Make plotting data
+  plotting_data <- make_rainfall_runoff_results(
+    gauge = {{ gauge }},
+    model_years = model_years,
+    replace_precipitation = replace_precipitation,
+    data = data,
+    model_results = model_results
+  ) |> 
+    mutate(
+      source = paste0("Estimated Relationship ", source)
     )
-
-
-
-  # Arrow aes is hard coded based on the main figure plot
-  # I could rescale it using max and min log-sinh flow and precip?
-  if (plot_label == "B") {
-    #y_axis_exclude <- element_blank()
-    arrow_aes <- aes(x = 980, y = 180, xend = 980, yend = 60)
-  } else {
-    #y_axis_exclude <- element_text()
-    arrow_aes <- aes(x = 1340, y = 350, xend = 1340, yend = 120)
+  
+  # If !is.null(overwrite_legend_text)
+  # overwrite_legend_text same length as model years
+  # use order to assign them
+  if (!is.null(overwrite_legend_text)) {
+    plotting_data <- plotting_data |>
+      mutate(
+        source = recode_values(
+          source,
+          from = unique(source),
+          to = overwrite_legend_text
+        )
+      )
   }
+    
   
   
-  
-  # put it together now
-  plot <- modified_data |>
+  # 2. Plot
+  plot <- plotting_data |>
     drop_na() |> 
-    ggplot(aes(x = p_mm, y = q_log_sinh, fill = year)) +
+    ggplot(aes(x = precipitation, y = observed_streamflow, fill = year)) +
     geom_line(
-      data = rainfall_runoff_relationship,
-      aes(x = precipitation, y = streamflow, colour = rainfall_runoff_year),
-      inherit.aes = FALSE
+      aes(x = precipitation, y = streamflow_results, colour = source)
     ) +
     geom_point(
       colour = "black",
@@ -284,40 +295,49 @@ illustration_plots <- function(gauge, plot_label, plot_arrow) {
     labs(
       x = "Annual Precipitation (mm)",
       y = "Log-sinh Annual Streamflow",
-      fill = bquote(atop(CO[2]~"ppm", "(Rainfall-Runoff Year)")), #"atop("Observed ", "("*CO[2]~"ppm)")
+      fill = bquote(atop(CO[2]~"ppm", "(Rainfall-Runoff Year)")), 
       colour = "Modelled Rainfall-Runoff Relationship",
       title = plot_label
     ) +
-    scale_colour_manual(values = c("#440154FF", "#33638DFF", "#55C667FF", "#B8DE29FF")) +
+    scale_colour_viridis_d() +
     # labels hard coded found using data |> filter(year %in% c(1960, 1980, 2000, 2020)) |> pull(CO2) |> unique()
     scale_fill_continuous(
       limits = c(1959, 2022), # hard code limits based on years (min and max of entire data)
       palette = "viridis", # options: viridis, plasma, RdYlBu
       breaks = c(1960, 1980, 2000, 2020), 
       labels = paste0(c(317, 339, 370, 414), "\n", c("(1960)", "(1980)", "(2000)", "(2020)"))
-      ) + 
+    ) + 
     theme_bw() +
     theme(
       legend.title.position = "top",
       legend.title = element_text(hjust = 0.5),
       plot.title = element_text(vjust = -8, hjust = 0.05, face = "bold"),
-      #axis.title.y = y_axis_exclude,
       text = element_text(size = 9)
     ) +
     guides(
-      fill = guide_colourbar(
-        barwidth = unit(6, "cm")
-      ),
       colour = guide_legend(
-        nrow = 2,
         ncol = 2,
         override.aes = aes(linewidth = 1)
-        )
+      ),
+      fill = guide_colourbar(
+        barwidth = unit(6, "cm")
+      )
     )
-
   
+  
+  # Hard coded for main figure
   # add arrow is true
   if(plot_arrow) {
+    # Arrow aes is hard coded based on the main figure plot
+    # I could rescale it using max and min log-sinh flow and precip?
+    if (plot_label == "B") {
+      #y_axis_exclude <- element_blank()
+      arrow_aes <- aes(x = 980, y = 180, xend = 980, yend = 60)
+    } else {
+      #y_axis_exclude <- element_text()
+      arrow_aes <- aes(x = 1340, y = 350, xend = 1340, yend = 120)
+    }
+    
     plot <- plot + 
       geom_segment(
         mapping = arrow_aes,
@@ -326,19 +346,48 @@ illustration_plots <- function(gauge, plot_label, plot_arrow) {
   }
   
   return(plot)
+  
+
 }
 
 
-# plots - pick two gauges to illustration (intercept, slope)
-# illustration_plots(gauge = high_evi_gauges[2], plot_label = "x", plot_arrow = FALSE)
-part_a <- illustration_plots(gauge = "606195", plot_label = "A", plot_arrow = TRUE) 
-part_b <- illustration_plots(gauge = "238235", plot_label = "B", plot_arrow = TRUE) + 
-  theme(axis.title.y = element_blank())
+
+
+
+# Main figure plot -------------------------------------------------------------
+part_a <- rainfall_runoff_plots(
+  gauge = "606195",
+  model_years = c(1959, 1979, 1999, 2019), # this needs to be the min/max in calibration of gauge - write something here
+  replace_precipitation = NULL,
+  data = data,
+  model_results = best_CO2_and_non_CO2_model_and_params_per_gauge,
+  plot_label = "A",
+  plot_arrow = TRUE,
+  overwrite_legend_text = NULL
+)
+
+part_b <- rainfall_runoff_plots(
+  gauge = "238235",
+  model_years = c(1959, 1979, 1999, 2019), # this needs to be the min/max in calibration of gauge - write something here
+  replace_precipitation = NULL,
+  data = data,
+  model_results = best_CO2_and_non_CO2_model_and_params_per_gauge,
+  plot_label = "B",
+  plot_arrow = TRUE,
+  overwrite_legend_text = NULL
+)
+
 illustration <- part_a | part_b 
-final_illustration <- illustration + plot_layout(guides = "collect") & theme(legend.position = "bottom")
+final_illustration <- illustration +
+  plot_layout(
+    guides = "collect",
+    axis_titles = "collect"
+  ) &
+  theme(legend.position = "bottom") 
+
 
 ggsave(
-  filename = "illustration.pdf",
+  filename = "illustration_v2.pdf",
   plot = final_illustration,
   device = "pdf",
   path = "Figures/Main",
@@ -348,9 +397,37 @@ ggsave(
 )
 
 
-# add % change for the paragraph -----------------------------------------------
-## mean annual rainfall ========================================================
+
+
+# Supplementary Plot -----------------------------------------------------------
+## Repeat for all high evidence ratio gauges
+## Only include it will not work great if start and end can vary
+## I could override the scales
+
+# TODO:
+# Repeat gauge - like below
+# Repeat model years - range_year_in_calibration below
+# Chunk
+# Create caption etc.
+
+rainfall_runoff_plots(
+  gauge = "606195",
+  model_years = c(1964, 2020), # this needs to be the min/max in calibration of gauge - write something here
+  replace_precipitation = NULL,
+  data = data,
+  model_results = best_CO2_and_non_CO2_model_and_params_per_gauge,
+  plot_label = "a",
+  plot_arrow = FALSE,
+  overwrite_legend_text = c("lower", "upper")
+)
+
+
+
+
+# Percentage change calculation ------------------------------------------------
+## Mean annual rainfall ========================================================
 mean_annual_rainfall <- data |> 
+  filter(gauge %in% high_evi_gauges) |> 
   summarise(
     mean_annual_rainfall = mean(p_mm),
     max_annual_rainfall = max(p_mm),
@@ -358,169 +435,102 @@ mean_annual_rainfall <- data |>
     .by = gauge
   ) 
 
-## use mean annual rainfall to find streamflow % change ========================
-### modify illustration plots function to find % change
-### What this code does:
-### - makes log-sinh runoff vs. rainfall lines using the simplest CO2 model (just slope or intercept)
-### - get the log-sinh runoff for the average rainfall
-### - convert the log-sinh runoff back into realspace
-### - it does not deal with drought parameters
 
-percentage_change_based_on_rainfall <- function(gauge, mean_annual_rainfall_data) {
-  
-  
-  b <- best_CO2_and_non_CO2_model_and_params_per_gauge |>
-    filter(contains_CO2) |>
-    filter(gauge == {{ gauge }}) |>
-    filter(parameter == "b") |>
-    pull(parameter_value)
-  
-  
-  mean_annual_rainfall <- mean_annual_rainfall_data |> 
-    filter(gauge == {{ gauge }}) |> 
-    pull(mean_annual_rainfall)
-    
-  
-  modified_data <- data |>
-    filter(gauge == {{ gauge }}) |>
-    mutate(
-      q_log_sinh = log_sinh_transform(b = b, y = q_mm, offset = 0)
-    ) |> 
-    mutate(
-      p_mm = mean_annual_rainfall
-    )
-  
-  
-  # Plotting lines for the illustration
-  CO2_for_selected_years <- modified_data |>
-    filter(year %in% c(1959, 1979, 1999, 2019)) |>
-    pull(CO2)
-  
-  
-  different_CO2_modified_data <- map(
-    .x = CO2_for_selected_years,
-    .f = replace_CO2_in_data,
-    data = modified_data
-  )
-  
-  different_CO2_catchment_data <- map(
-    .x = different_CO2_modified_data,
-    .f = rearrange_catchment_data_blueprint,
-    gauge = gauge,
-    start_stop_indexes = start_stop_indexes
-  )
-  
-  
-  # if it is a drought model turn off the drought intercept by setting it
-  # to the non-drought intercept
-  non_drought_intercept <- best_CO2_and_non_CO2_model_and_params_per_gauge |>
-    filter(contains_CO2) |>
-    filter(gauge == {{ gauge }}) |>
-    filter(parameter == "a0_n") |> 
-    pull(parameter_value)
-  
-  # empty vectors do not play nice
-  if(is_empty(non_drought_intercept)){non_drought_intercept <- NA}
-  
-  parameter_set <- best_CO2_and_non_CO2_model_and_params_per_gauge |>
-    filter(contains_CO2) |>
-    filter(gauge == {{ gauge }}) |>
-    # make sure we get a straight line by turning off a2, a4 etc.
-    mutate(
-      parameter_value = case_when(
-        parameter == "a0_d" ~ non_drought_intercept,
-        parameter == "a2" ~ 0,
-        parameter == "a4" ~ 0,
-        .default = parameter_value
-      )
-    ) |>
-    pull(parameter_value)
-  
+## Get range of years for each gauge ===========================================
+### It is the range of years in included_in_calibration
+range_year_in_calibration <- data |> 
+  filter(gauge %in% high_evi_gauges) |> 
+  filter(included_in_calibration) |> 
+  summarise(
+    max_year = max(year),
+    min_year = min(year),
+    .by = gauge
+  ) 
 
 
-  
-  
-  streamflow_model <- best_CO2_model_gauge |>
-    filter(gauge == {{ gauge }}) |>
-    pull(streamflow_model) |>
-    match.fun()
-  
-  
-  different_CO2_streamflow <- map(
-    .x = different_CO2_catchment_data,
-    .f = streamflow_model,
-    parameter = parameter_set
+## Convert to pmap format for percentage change calculation ====================
+info_for_percentage_change_pmap <- mean_annual_rainfall |> 
+  left_join(
+    range_year_in_calibration,
+    by = join_by(gauge)
   ) |> 
-    # extract streamflow for each of the results
-    list_rbind() |> 
-    select(precipitation, CO2, streamflow_results) |> 
-    distinct() |> 
-    # transform streamflow results into realspace
-    mutate(
-      realspace_streamflow = inverse_log_sinh_transform(b = b, z = streamflow_results, offset = 0)
-    )
-  
-  # if there is no data beyond 2019 for a gauge do not plot it
-  year_range <- modified_data |> 
-    drop_na() |> 
-    pull(year) |> 
-    range()
-  
-  # must replace different_CO2_streamflow
-  if(max(year_range) < 2019) {
-    # drop last row
-    different_CO2_streamflow |> 
-      slice(-n())
-  } else {
-    different_CO2_streamflow
-  }
-  
-}
-
-### Difference between top and bottom for mean annual rainfall #################
-### Good for intercept. Slope changes a bit.
-### What this function does:
-### - Calls percentage_change_based_on_rainfall
-### - percentage_change_based_on_rainfall returns a realspace streamflow 
-###   for 4 periods based on mean annual rainfall (the 4 lines in the graph)
-### - Find the percentage difference between realspace streamflow for min CO2
-###   and max CO2
-percent_diff_between_min_max_streamflow_illustration <- function(gauge, mean_annual_rainfall_data) {
-  
-  streamflow_tibble <- percentage_change_based_on_rainfall(
-    gauge = {{ gauge }},
-    mean_annual_rainfall_data = mean_annual_rainfall_data
+  rowwise() |> 
+  mutate(
+    range_years = list(c(min_year, max_year))
   )
-  
-  late_streamflow <- streamflow_tibble |> slice_max(CO2, n = 1) |> pull(realspace_streamflow)
-  early_streamflow <- streamflow_tibble |> slice_min(CO2, n = 1) |> pull(realspace_streamflow)
-  
-  ((late_streamflow - early_streamflow) / early_streamflow) * 100 
-}
 
-### Two plots in the main figure ###############################################
-percent_diff_between_min_max_streamflow_illustration(
+input_pmap <- list( # gauge, model_years, replace_precipitation
+  info_for_percentage_change_pmap |> pull(gauge),
+  info_for_percentage_change_pmap |> pull(range_years),
+  info_for_percentage_change_pmap |> pull(mean_annual_rainfall)
+)
+
+
+## it is a pmap angle ==========================================================
+percentage_changes <- pmap_dbl(
+  .l = input_pmap,
+  .f = get_percentage_difference,
+  data = data,
+  model_results = best_CO2_and_non_CO2_model_and_params_per_gauge
+)
+
+
+## Make into a nice tibble =====================================================
+rainfall_runoff_percent_changes <- tibble(
+  "gauge" = info_for_percentage_change_pmap |> pull(gauge),
+  "rainfall_runoff_change" = percentage_changes
+)
+
+
+### print out changes in main figure (slightly diff because I am taking the included_in_calibration)
+rainfall_runoff_percent_changes |> 
+  filter(gauge %in% c("238235", "606195"))
+
+
+
+
+
+
+
+# there need to a be a check
+x <- make_rainfall_runoff_results(
   gauge = "606195",
-  mean_annual_rainfall_data = mean_annual_rainfall
-)
-
-percent_diff_between_min_max_streamflow_illustration(
-  gauge = "238235",
-  mean_annual_rainfall_data = mean_annual_rainfall
-)
+  model_years = c(1959, 1979, 1975, 1999, 2019),
+  replace_precipitation = NULL,
+  data = data,
+  model_results = best_CO2_and_non_CO2_model_and_params_per_gauge
+) 
 
 
-### For the 81 high evidence ratio catchments ##################################
-percentage_changes_illustration_vector <- map_dbl(
-  .x = high_evi_gauges,
-  .f = percent_diff_between_min_max_streamflow_illustration,
-  mean_annual_rainfall_data = mean_annual_rainfall
+y <- get_percentage_difference(
+  gauge = "606195",
+  model_years = c(1964, 2020), # this needs to be the min/max in calibration of gauge - write something here
+  replace_precipitation = 1043,
+  data = data,
+  model_results = best_CO2_and_non_CO2_model_and_params_per_gauge
+) 
+
+
+rainfall_runoff_plots(
+  gauge = "606195",
+  model_years = c(1964, 2020), # this needs to be the min/max in calibration of gauge - write something here
+  replace_precipitation = NULL,
+  data = data,
+  model_results = best_CO2_and_non_CO2_model_and_params_per_gauge,
+  plot_label = "a",
+  plot_arrow = FALSE,
+  overwrite_legend_text = c("lower", "upper")
 )
 
-illustration_percentage_changes <- tibble(
-  "gauge" = high_evi_gauges,
-  "percent_change_illustration" = percentage_changes_illustration_vector
-)
+
+
+
+
+
+
+
+
+
 
 
 ### Compare with CO2 model results #############################################
@@ -797,6 +807,31 @@ by_state_runoff_ratio <- data |>
     .by = c(state, decade)
   )
 
+# Percentage changes using our models by state
+CO2_percentage_change_models |> 
+  left_join(
+    gauge_information,
+    by = join_by(gauge)
+  ) |> 
+  filter(decade == 2) |> 
+  summarise(
+    mean_percent_change = median(CO2_impact_on_streamflow_percent),
+    .by = state
+  )
+
+
+# percentage change
+by_state_runoff_ratio |> 
+  filter(state %in% c("NSW", "TAS", "VIC", "WA")) |>
+  filter(decade %in% c(1960, 2010)) |> 
+  pivot_wider(
+    names_from = decade,
+    values_from = mean_runoff_ratio_by_state
+  ) |> 
+  mutate(
+    percent_diff = -(`1960` - `2010`) / `1960`
+  )
+  
   
 
 # number of gauges by state
@@ -811,7 +846,8 @@ mean_decade_runoff_ratio_by_state <- by_state_runoff_ratio |>
   geom_point() +
   labs(
     x = "Decade",
-    y = "Runoff Ratio"
+    y = "Runoff Ratio",
+    colour = "State"
   ) +
   theme_bw()
 
@@ -825,7 +861,35 @@ ggsave(
 )
 
 
+# Why does TAS have such a high ratio in the 1960s?
+high_evi_tas_gauges <- gauge_information |> 
+  filter(state == "TAS") |> 
+  filter(gauge %in% high_evi_gauges) |> 
+  pull(gauge)
 
+
+check_TAS <- data |> 
+  filter(gauge %in% high_evi_gauges) |> 
+  mutate(
+    decade = year - (year %% 10)
+  ) |> 
+  summarise(
+    # mean account for missing year sum(q) / number of observations not NA
+    decade_mean_q = mean(q_mm, na.rm = TRUE),
+    #use all available rainfall data
+    decade_mean_p = mean(p_mm, na.rm = TRUE),
+    .by = c(decade, gauge)
+  ) |> 
+  mutate(
+    runoff_ratio = decade_mean_q / decade_mean_p
+  ) |> 
+  # remove gauges and decades without enough years
+  semi_join(
+    keep_decade_and_gauges,
+    by = join_by(gauge, decade)
+  ) |> 
+  filter(gauge %in% high_evi_tas_gauges) |> 
+  filter(decade == 1960)
 
 
 
