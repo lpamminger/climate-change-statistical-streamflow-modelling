@@ -248,7 +248,7 @@ get_percentage_difference <- function(gauge, model_years, replace_precipitation,
 
 # Use make_rainfall_runoff_results for plotting --------------------------------
 # wrapper around make_rainfall_runoff_results
-rainfall_runoff_plots <- function(gauge, model_years, replace_precipitation, data, model_results, plot_label, plot_arrow, overwrite_legend_text) {
+rainfall_runoff_plots <- function(gauge, model_years, plot_label, replace_precipitation, data, model_results, plot_arrow, overwrite_legend_text) {
   
   stopifnot(is.null(replace_precipitation))
   
@@ -355,24 +355,26 @@ rainfall_runoff_plots <- function(gauge, model_years, replace_precipitation, dat
 
 
 # Main figure plot -------------------------------------------------------------
+main_plot_gauges <- c("606195", "238235")
+  
 part_a <- rainfall_runoff_plots(
-  gauge = "606195",
+  gauge = main_plot_gauges[1],
   model_years = c(1959, 1979, 1999, 2019), # this needs to be the min/max in calibration of gauge - write something here
+  plot_label = "A",
   replace_precipitation = NULL,
   data = data,
   model_results = best_CO2_and_non_CO2_model_and_params_per_gauge,
-  plot_label = "A",
   plot_arrow = TRUE,
   overwrite_legend_text = NULL
 )
 
 part_b <- rainfall_runoff_plots(
-  gauge = "238235",
+  gauge = main_plot_gauges[2],
   model_years = c(1959, 1979, 1999, 2019), # this needs to be the min/max in calibration of gauge - write something here
+  plot_label = "B",
   replace_precipitation = NULL,
   data = data,
   model_results = best_CO2_and_non_CO2_model_and_params_per_gauge,
-  plot_label = "B",
   plot_arrow = TRUE,
   overwrite_legend_text = NULL
 )
@@ -397,29 +399,6 @@ ggsave(
 )
 
 
-
-
-# Supplementary Plot -----------------------------------------------------------
-## Repeat for all high evidence ratio gauges
-## Only include it will not work great if start and end can vary
-## I could override the scales
-
-# TODO:
-# Repeat gauge - like below
-# Repeat model years - range_year_in_calibration below
-# Chunk
-# Create caption etc.
-
-rainfall_runoff_plots(
-  gauge = "606195",
-  model_years = c(1964, 2020), # this needs to be the min/max in calibration of gauge - write something here
-  replace_precipitation = NULL,
-  data = data,
-  model_results = best_CO2_and_non_CO2_model_and_params_per_gauge,
-  plot_label = "a",
-  plot_arrow = FALSE,
-  overwrite_legend_text = c("lower", "upper")
-)
 
 
 
@@ -484,7 +463,151 @@ rainfall_runoff_percent_changes <- tibble(
 
 ### print out changes in main figure (slightly diff because I am taking the included_in_calibration)
 rainfall_runoff_percent_changes |> 
-  filter(gauge %in% c("238235", "606195"))
+  filter(gauge %in% main_plot_gauges)
+
+
+
+
+# Supplementary Plot -----------------------------------------------------------
+
+## Chunk the gauges into groups of 8 ===========================================
+### Ignore the two gauges in main
+supp_high_evi_gauges <- high_evi_gauges[!high_evi_gauges %in% main_plot_gauges] |> 
+  sort()
+chunk <- 8
+n <- length(supp_high_evi_gauges)
+split_group <- rep(rep(1:ceiling(n / chunk), each = chunk))[1:n]
+split_supp_high_evi_gauges <- split(supp_high_evi_gauges, split_group)
+
+
+## Chunk range_years using the same method as gauges ===========================
+split_supp_range_years <- split(
+  info_for_percentage_change_pmap |> filter(!gauge %in% c(main_plot_gauges)) |> pull(range_years),
+  split_group
+)
+
+## Labels ======================================================================
+split_supp_letters <- map(
+  .x = lengths(split_supp_high_evi_gauges),
+  .f = \(x) rep(letters[1:x])
+)
+
+
+## Plot function ===============================================================
+### Wrapper around rainfall_runoff_plots
+make_grouped_rainfall_runoff_plot <- function(gauge_group, range_years_group, letters_group, replace_precipitation, data, model_results, plot_arrow, overwrite_legend_text) {
+  
+  input_plot_pmap <- list(
+    gauge_group,
+    range_years_group,
+    letters_group
+  )
+  
+  pmap(
+    .l = input_plot_pmap,
+    .f = rainfall_runoff_plots,
+    replace_precipitation = replace_precipitation,
+    data = data,
+    model_results = model_results,
+    plot_arrow = plot_arrow,
+    overwrite_legend_text =overwrite_legend_text
+  ) |> 
+    reduce(
+      .f = `+`
+    ) + 
+    plot_layout(
+      nrow = 4, 
+      guides = "collect",
+      axis_titles = "collect"
+    ) & 
+    theme(
+      legend.position = "bottom",
+      plot.margin = margin(t = 0, l = 10, r = 10, b = 0, unit = "pt")
+    )
+  
+}
+
+
+## Repeat plot function for all chunks =========================================
+pmap_input_supp_rainfall_runoff_plots <- list(
+  split_supp_high_evi_gauges,
+  split_supp_range_years,
+  split_supp_letters
+)
+
+supp_rainfall_runoff_plots <- pmap(
+  .l = pmap_input_supp_rainfall_runoff_plots,
+  .f = make_grouped_rainfall_runoff_plot,
+  replace_precipitation = NULL,
+  data = data,
+  model_results = best_CO2_and_non_CO2_model_and_params_per_gauge,
+  plot_arrow = FALSE,
+  overwrite_legend_text = c("Estimated Relationship Early", "Estimated Relationship Late")
+)
+  
+  
+## Make figure captions ========================================================
+create_caption <- function(chunk_gauge, chunk_letters, identifier) {
+  gauge_abc <- paste0(chunk_gauge, " (", chunk_letters, ")")
+  # concatenate everything but last value
+  start_gauge_abc <- paste0(gauge_abc[1:(length(gauge_abc) - 2)], ", ", collapse = "")
+  end_gauge_abc <- paste0(gauge_abc[(length(gauge_abc) - 1)], " and ", gauge_abc[length(gauge_abc)], ".")
+  gauge_text <- paste(c(start_gauge_abc, end_gauge_abc), collapse = "")
+  
+  cat("\\begin{figure}")
+  cat("\n")
+  cat("\t\\centering")
+  cat("\n")
+  cat(paste0("\t\\includegraphics[width=\\textwidth]{Figures/illustration_plot_", identifier, ".pdf}"))
+  cat("\t\n")
+  # The line below must change
+  cat(paste0("\t\\caption{\\textbf{Observed shifts in the rainfall-runoff relationship for gauges ", gauge_text, "} Same as fig X.}"))
+  cat("\n")
+  # The line below must change
+  cat(paste0("\t\\label{fig:supp_illustration_", identifier, "}"))
+  cat("\n")
+  cat("\\end{figure}")
+  cat("\n")
+  cat("\\clearpage")
+  cat("\n")
+  cat("\n")
+}
+
+pmap_caption_input <- list(
+  split_supp_high_evi_gauges,
+  split_supp_letters,
+  1:length(split_supp_high_evi_gauges)
+)
+
+
+sink("Figures/Other/supp_illustration_gauge_caption.txt")
+pwalk(
+  .l = pmap_caption_input,
+  .f = create_caption
+)
+sink()
+
+
+## Save supp_rainfall_runoff_plots =============================================
+supp_rainfall_runoff_plots_names <- paste0("illustration_plot_", 1:length(supp_rainfall_runoff_plots), ".pdf")
+
+walk2(
+  .x = supp_rainfall_runoff_plots_names,
+  .y = supp_rainfall_runoff_plots,
+  .f = ggsave,
+  path = "Figures/Other/",
+  device = "pdf",
+  width = 180,
+  height = 254,
+  units = "mm"
+)
+
+
+
+
+
+
+# Examine the observed rainfall-runoff ratio -----------------------------------
 
 
 
@@ -492,7 +615,9 @@ rainfall_runoff_percent_changes |>
 
 
 
-# there need to a be a check
+
+
+# Testing functions
 x <- make_rainfall_runoff_results(
   gauge = "606195",
   model_years = c(1959, 1979, 1975, 1999, 2019),
@@ -504,7 +629,7 @@ x <- make_rainfall_runoff_results(
 
 y <- get_percentage_difference(
   gauge = "606195",
-  model_years = c(1964, 2020), # this needs to be the min/max in calibration of gauge - write something here
+  model_years = c(1964, 2020), 
   replace_precipitation = 1043,
   data = data,
   model_results = best_CO2_and_non_CO2_model_and_params_per_gauge
@@ -513,7 +638,7 @@ y <- get_percentage_difference(
 
 rainfall_runoff_plots(
   gauge = "606195",
-  model_years = c(1964, 2020), # this needs to be the min/max in calibration of gauge - write something here
+  model_years = c(1964, 2020), 
   replace_precipitation = NULL,
   data = data,
   model_results = best_CO2_and_non_CO2_model_and_params_per_gauge,
@@ -562,100 +687,9 @@ comparison_percentage_changes |> ggplot(aes(y = abs_diff)) + geom_boxplot() + sc
 
 
 
-# Repeat plot for all 81 high evidence ratio catchments ------------------------
-## Remove gauges already in chapter 4 ==========================================
-supp_illustration_gauges <- high_evi_gauges[!high_evi_gauges %in% c("606195", "238235")] 
-
-## I want 8 per page - split supp_illustration_gauges ==========================
-chunk <- 8
-n <- length(supp_illustration_gauges)
-split_group <- rep(rep(1:ceiling(n / chunk), each = chunk))[1:n]
-split_supp_illustration_gauges <- split(supp_illustration_gauges, split_group)
-
-## Plot groups =================================================================
-### this is a wrapper for illustration_plots
-grouped_illustration_plot <- function(split_gauges) {
-  map2(
-    .x = split_gauges,
-    .y = letters[1:length(split_gauges)],
-    .f = illustration_plots,
-    plot_arrow = FALSE
-  ) |> 
-    reduce(
-      .f = `+`
-    ) + 
-    plot_layout(
-      nrow = 4, 
-      guides = "collect",
-      axis_titles = "collect"
-    ) & 
-    theme(
-      legend.position = "bottom",
-      plot.margin = margin(t = 0, l = 10, r = 10, b = 0, unit = "pt")
-    )
-}
-
-### Make caption for plots
-#### use the same style as the extended figures
-#### something for gauges 123456 (a), 123456 (b) etc. Same as fig. X.
-create_caption <- function(gauge_chunk, identifier) {
-  abc <- letters[1:length(gauge_chunk)]
-  gauge_abc <- paste0(gauge_chunk, " (", abc, ")")
-  # concatenate everything but last value
-  start_gauge_abc <- paste0(gauge_abc[1:(length(gauge_abc) - 2)], ", ", collapse = "")
-  end_gauge_abc <- paste0(gauge_abc[(length(gauge_abc) - 1)], " and ", gauge_abc[length(gauge_abc)], ".")
-  gauge_text <- paste(c(start_gauge_abc, end_gauge_abc), collapse = "")
-  
-  cat("\\begin{figure}")
-  cat("\n")
-  cat("\t\\centering")
-  cat("\n")
-  cat(paste0("\t\\includegraphics[width=\\textwidth]{Figures/illustration_plot_", identifier, ".pdf}"))
-  cat("\t\n")
-  # The line below must change
-  cat(paste0("\t\\caption{\\textbf{Observed shifts in the rainfall-runoff relationship for gauges ", gauge_text, "} Same as fig X.}"))
-  cat("\n")
-  # The line below must change
-  cat(paste0("\t\\label{fig:supp_illustration_", identifier, "}"))
-  cat("\n")
-  cat("\\end{figure}")
-  cat("\n")
-  cat("\\clearpage")
-  cat("\n")
-  cat("\n")
-}
-
-sink("Figures/Other/supp_illustration_gauge_caption.txt")
-iwalk(
-  .x = split_supp_illustration_gauges,
-  .f = create_caption
-)
-sink()
 
 
-# Issues with plot:
-# - not all gauges have data at 1959 thus missing - leave
-# - arrow is in a bad position (likely add argument to turn this on/off) or fix it
 
-#illustration_plots(gauge = supp_illustration_gauges[8], plot_label = "h", plot_arrow = F)
-supp_illustration_plots <- map(
-  .x = split_supp_illustration_gauges,
-  .f = grouped_illustration_plot
-)
-
-
-supp_illustration_plot_names <- paste0("illustration_plot_", 1:length(supp_illustration_plots), ".pdf")
-
-walk2(
-  .x = supp_illustration_plot_names,
-  .y = supp_illustration_plots,
-  .f = ggsave,
-  path = "Figures/Other/",
-  device = "pdf",
-  width = 180,
-  height = 254,
-  units = "mm"
-)
 
 
 # Using observed data does a catchment with the same amount of rainfall receive less runoff? -----
