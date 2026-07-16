@@ -260,7 +260,10 @@ time_of_emergence_data <- time_of_emergence_data |>
   # ggplot plots thing in order they appear in the tibble
   arrange(desc(ToE_IQR))
 
-
+write_csv(
+  time_of_emergence_data,
+  file = "Modelling/Results/time_of_emergence.csv"
+)
 
 
 # Does the time of emergence kick in at the last couple of years? -------------- 
