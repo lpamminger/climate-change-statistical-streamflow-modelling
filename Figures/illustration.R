@@ -832,7 +832,7 @@ CO2_impact_on_streamflow_percent_limits <- pivot_longer_percent_change_compariso
   as.double()
 
 
-hard_coded_breaks_CO2_impact_of_streamflow <- c(-75, -50, -25, -10, -1, 0, 1, 10, 25, 50, 75)
+hard_coded_breaks_CO2_impact_of_streamflow <- c(-80, -60, -40, -20, 0, 20, 40, 65, 80)
 
 dot_transparency <- 0.8
 
@@ -843,8 +843,6 @@ big_palette <- function(x) {
     "#d6604d",
     "#f4a582",
     "#fddbc7",
-    "white",
-    "white",
     "#d1e5f0",
     "#92c5de",
     "#4393c3",
