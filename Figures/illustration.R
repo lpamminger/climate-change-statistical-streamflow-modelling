@@ -649,20 +649,51 @@ by_gauge_runoff_ratio <- data |>
 
 
 ## Australia wide (for high evi gauges) runoff-ratio ===========================
-mean_decade_by_gauge <- by_gauge_runoff_ratio |>
-  summarise(mean_ratio = mean(runoff_ratio, na.rm = T), .by = decade) |>
+median_decade_by_gauge <- by_gauge_runoff_ratio |>
+  summarise(
+    median_ratio = median(runoff_ratio),
+    mean_ratio = mean(runoff_ratio),
+    p75_ratio = quantile(runoff_ratio, probs = 0.75),
+    p25_ratio = quantile(runoff_ratio, probs = 0.25),
+    IQR = IQR(runoff_ratio),
+    min_ratio = min(runoff_ratio),
+    max_ratio = max(runoff_ratio),
+    n = n(),
+    .by = decade
+    ) |> 
+  # whiskers extend to the largest value no further than 1.5*IQR from the hinge (25th and 75th percentile)
+  mutate(
+    upper_whisker = if_else((p75_ratio + IQR > max_ratio), max_ratio, p75_ratio + IQR),
+    lower_whisker = if_else((p25_ratio - IQR < min_ratio), min_ratio, p25_ratio - IQR)
+  )
+
+median_decade_by_gauge_plot <- median_decade_by_gauge |>
   ggplot(aes(x = decade, y = mean_ratio)) +
+  geom_errorbar(
+    aes(ymin = lower_whisker, ymax = upper_whisker), 
+    width = 4,
+    linewidth = 0.2
+  ) +
+  geom_crossbar(
+    aes(ymin = p25_ratio, ymax = p75_ratio), 
+    width = 5,
+    linewidth = 0.2,
+    fill = "grey90",
+    middle.linewidth = 0.3
+  ) +
   geom_line() +
   geom_point() +
   labs(
     x = "Decade",
     y = "Runoff Ratio"
   ) +
+  scale_x_continuous(breaks = seq(from = 1960, to = 2010, by = 10)) +
   theme_bw()
+
 
 ggsave(
   filename = "Figures/Other/change_in_runoff_ratio.pdf",
-  plot = mean_decade_by_gauge,
+  plot = median_decade_by_gauge_plot,
   device = "pdf",
   width = 140,
   height = 100,
@@ -675,10 +706,22 @@ by_state_runoff_ratio <- by_gauge_runoff_ratio |>
   left_join(
     gauge_information,
     by = join_by(gauge)
-  ) |>
+  ) |> 
   summarise(
+    median_ratio = median(runoff_ratio),
     mean_runoff_ratio_by_state = mean(runoff_ratio),
-    .by = c(state, decade)
+    p75_ratio = quantile(runoff_ratio, probs = 0.75),
+    p25_ratio = quantile(runoff_ratio, probs = 0.25),
+    IQR = IQR(runoff_ratio),
+    min_ratio = min(runoff_ratio),
+    max_ratio = max(runoff_ratio),
+    n = n(),
+    .by = c(decade, state)
+  ) |> 
+  # whiskers extend to the largest value no further than 1.5*IQR from the hinge (25th and 75th percentile)
+  mutate(
+    upper_whisker = if_else((p75_ratio + IQR > max_ratio), max_ratio, p75_ratio + IQR),
+    lower_whisker = if_else((p25_ratio - IQR < min_ratio), min_ratio, p25_ratio - IQR)
   )
 
 
@@ -686,6 +729,7 @@ by_state_runoff_ratio <- by_gauge_runoff_ratio |>
 by_state_runoff_ratio |>
   filter(state %in% c("NSW", "TAS", "VIC", "WA")) |>
   filter(decade %in% c(1960, 2010)) |>
+  select(state, decade, mean_runoff_ratio_by_state) |> 
   pivot_wider(
     names_from = decade,
     values_from = mean_runoff_ratio_by_state
@@ -702,16 +746,30 @@ gauge_information |>
 
 ### Plot #######################################################################
 mean_decade_runoff_ratio_by_state <- by_state_runoff_ratio |>
-  filter(state %in% c("NSW", "TAS", "VIC", "WA")) |> # only 1 ACT, 1 QLD and 1 SA gauge
-  ggplot(aes(x = decade, y = mean_runoff_ratio_by_state, colour = state)) +
+  filter(state %in% c("NSW", "VIC", "WA")) |> # only 1 ACT, 1 QLD and 1 SA gauge, 6 TAS gauge
+  ggplot(aes(x = decade, y = mean_runoff_ratio_by_state)) +
+  geom_errorbar(
+    aes(ymin = lower_whisker, ymax = upper_whisker), 
+    width = 4,
+    linewidth = 0.2
+  ) +
+  geom_crossbar(
+    aes(ymin = p25_ratio, ymax = p75_ratio), 
+    width = 5,
+    linewidth = 0.2,
+    fill = "grey90",
+    middle.linewidth = 0.3
+  ) +
   geom_line() +
   geom_point() +
   labs(
     x = "Decade",
-    y = "Runoff Ratio",
-    colour = "State"
+    y = "Runoff Ratio"
   ) +
-  theme_bw()
+  scale_x_continuous(breaks = seq(from = 1960, to = 2010, by = 10)) +
+  theme_bw() +
+  facet_wrap(~state)
+  
 
 
 ggsave(
@@ -1090,10 +1148,10 @@ make_percentage_change_map <- function(data, title, legend_title) {
       panel.grid = element_blank(),
       axis.ticks = element_blank(),
       plot.title = element_text(margin = margin(l = 25, r = 0, t = 30, b = -20), size = 10, face = "bold") # push title into plot
-    ) +
+      ) +
     guides(
       fill = guide_coloursteps(
-        barwidth = unit(10, "cm"),
+        barwidth = unit(7, "cm"),
         barheight = unit(0.25, "cm"),
         show.limits = TRUE,
         even.steps = TRUE,
@@ -1109,36 +1167,40 @@ make_percentage_change_map <- function(data, title, legend_title) {
 ## Combine 3 percent change maps ===============================================
 aus_map_turn_off_CO2 <- make_percentage_change_map(
   data = pivot_longer_percent_change_comparison |> filter(type == "turn_off_CO2_change"),
-  title = "A) turn_off_CO2",
+  title = "A)",
   legend_title = "Percentage Change in Streamflow Per Rainfall"
 )
 
 aus_map_runoff_ratio <- make_percentage_change_map(
   data = pivot_longer_percent_change_comparison |> filter(type == "runoff_ratio_change"),
-  title = "B) runoff_ratio",
+  title = "B)",
   legend_title = "Percentage Change in Streamflow Per Rainfall"
 )
 
 aus_map_rainfall_runoff <- make_percentage_change_map(
   data = pivot_longer_percent_change_comparison |> filter(type == "rainfall_runoff_change"),
-  title = "C) rainfall_runoff",
+  title = "C)",
   legend_title = "Percentage Change in Streamflow Per Rainfall"
-)
+) 
 
 
 aus_map_percent_change_comparision <- aus_map_turn_off_CO2 +
   aus_map_runoff_ratio +
   aus_map_rainfall_runoff +
-  plot_layout(guides = "collect") &
-  theme(legend.position = "bottom")
+  guide_area() +
+  plot_layout(guides = "collect", ncol = 2, nrow = 2) &
+  theme(
+    legend.background = element_rect(colour = "black", linewidth = 0.25),
+    legend.margin = margin(t = 8, b = 8, l = 15, r = 15)
+  )
 
 
 ggsave(
   filename = "./Figures/Other/aus_map_percent_change_comparision.pdf",
   plot = aus_map_percent_change_comparision,
   device = "pdf",
-  width = 297,
-  height = 210,
+  width = 180,
+  height = 160,
   units = "mm"
 )
 
