@@ -196,10 +196,11 @@ remove_nested <- gauge_information |>
   pull(gauge)
 
 grouped_catchments <- grouped_catchments |> 
-  filter(!gauge %in% remove_nested)
+  filter(!gauge %in% remove_nested) |> 
+  filter(type != "Wheatbelt")
 
 custom_palette <- function(x) {
-  rev(c("yellow", "blue", "red", "#67001f", "#b2182b", "#d6604d", "#f4a582", "#fddbc7", "#f7f7f7"))
+  rev(c("blue", "red", "#67001f", "#b2182b", "#d6604d", "#f4a582", "#fddbc7", "#f7f7f7"))
 }
 
 
@@ -207,6 +208,13 @@ wheat_belt_map <- aus_map |>
   filter(state == "WA") |> 
   ggplot() +
   geom_sf() +
+  geom_sf(
+    data = WA_wheat_belt,
+    colour = "yellow",
+    fill = "yellow",
+    alpha = 0.1,
+    linewidth = 1E-5
+  ) +
   geom_sf(
     data = grouped_catchments,
     aes(fill = type),
