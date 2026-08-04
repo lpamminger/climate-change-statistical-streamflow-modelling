@@ -189,7 +189,7 @@ allowable_stream_length <- gauge_information |>
   ) |> 
   filter(Hierarchy == "Minor") |> 
   pull(Shape_Leng) |> 
-  quantile(probs = 0.95)
+  quantile(probs = 1) # o.g. 0.95
 
 minor_streamflow_network <- gauge_information |> 
   select(gauge, state, catchment_area_sq_km) |> 
@@ -1065,7 +1065,12 @@ CO2_map_2010s <- make_CO2_streamflow_percentage_change_map(
 
 
 # Combine graphs into one ------------------------------------------------------
-catchment_boundary_combined_map <- single_map_aus + CO2_map_2010s
+catchment_boundary_combined_map <- single_map_aus + CO2_map_2010s + 
+  plot_annotation(tag_levels = "a") & 
+  theme(
+    plot.tag.position = c(0.015, 1.02),
+    plot.tag = element_text(face = "bold")
+  )
 
 ggsave(
   filename = "./Figures/Other/catchment_boundary_combined_map.pdf",
