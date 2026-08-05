@@ -646,6 +646,7 @@ compare_model_and_observed_seasonality |>
     values_from = n
   ) |> 
   mutate(
+    total = (`TRUE` + `FALSE`),
     contains_percentages = `TRUE` / (`TRUE` + `FALSE`)
   )
 
