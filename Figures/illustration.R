@@ -877,6 +877,7 @@ pivot_longer_percent_change_comparison <- percent_change_comparison |>
     values_to = "percent_change"
   )
 
+<<<<<<< HEAD
 ### Summary statistics #########################################################
 pivot_longer_percent_change_comparison |> 
   summarise(
@@ -887,6 +888,15 @@ pivot_longer_percent_change_comparison |>
 
 
 
+=======
+### Summary statistics
+pivot_longer_percent_change_comparison |> 
+  summarise(
+    mean_percent_change = mean(percent_change),
+    .by = type
+  )
+
+>>>>>>> 54d0589b66e1f7853584835e371c44e36d8aac06
 ### Define plot parameters #####################################################
 make_limits <- function(timeseries) {
   # round up to next whole number
