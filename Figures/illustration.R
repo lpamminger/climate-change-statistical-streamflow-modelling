@@ -1165,19 +1165,19 @@ make_percentage_change_map <- function(data, title, legend_title) {
 ## Combine 3 percent change maps ===============================================
 aus_map_turn_off_CO2 <- make_percentage_change_map(
   data = pivot_longer_percent_change_comparison |> filter(type == "turn_off_CO2_change"),
-  title = "A)",
+  title = "a",
   legend_title = "Percentage Change in Streamflow Per Rainfall"
 )
 
 aus_map_runoff_ratio <- make_percentage_change_map(
   data = pivot_longer_percent_change_comparison |> filter(type == "runoff_ratio_change"),
-  title = "B)",
+  title = "b",
   legend_title = "Percentage Change in Streamflow Per Rainfall"
 )
 
 aus_map_rainfall_runoff <- make_percentage_change_map(
   data = pivot_longer_percent_change_comparison |> filter(type == "rainfall_runoff_change"),
-  title = "C)",
+  title = "c",
   legend_title = "Percentage Change in Streamflow Per Rainfall"
 ) 
 
