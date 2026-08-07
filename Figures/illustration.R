@@ -667,6 +667,8 @@ median_decade_by_gauge <- by_gauge_runoff_ratio |>
     lower_whisker = if_else((p25_ratio - IQR < min_ratio), min_ratio, p25_ratio - IQR)
   )
 
+  
+
 median_decade_by_gauge_plot <- median_decade_by_gauge |>
   ggplot(aes(x = decade, y = mean_ratio)) +
   geom_errorbar(
@@ -874,6 +876,16 @@ pivot_longer_percent_change_comparison <- percent_change_comparison |>
     names_to = "type",
     values_to = "percent_change"
   )
+
+### Summary statistics #########################################################
+pivot_longer_percent_change_comparison |> 
+  summarise(
+    mean_percent_change = mean(percent_change),
+    sd_percent_change = sd(percent_change),
+    .by = type # note we use the decadal average for runoff ratio rather than this value here
+  )
+
+
 
 ### Define plot parameters #####################################################
 make_limits <- function(timeseries) {
