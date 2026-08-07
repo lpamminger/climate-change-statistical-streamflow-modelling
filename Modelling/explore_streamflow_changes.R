@@ -323,7 +323,9 @@ best_model_per_gauge <- best_CO2_non_CO2_per_gauge |>
   distinct() |>
   add_column(best_model = TRUE)
 
-all_NSE_results <- streamflow_results |>
+
+
+best_AIC_model_NSE_results <- streamflow_results |>
   summarise(
     NSE_value = nash_sutcliffe_efficiency(
       observed = realspace_observed_streamflow,
@@ -332,7 +334,7 @@ all_NSE_results <- streamflow_results |>
     .by = c(gauge, streamflow_model)
   ) |>
   arrange(gauge, desc(NSE_value)) |>
-  left_join(
+  right_join(
     best_model_per_gauge,
     by = join_by(gauge, streamflow_model)
   ) |>
@@ -341,14 +343,6 @@ all_NSE_results <- streamflow_results |>
   ) |>
   arrange(best_model)
 
-# selected best AIC gauges - examine their NSE values
-all_NSE_results |> 
-  semi_join(
-    best_model_per_gauge,
-    by = join_by(gauge, streamflow_model)
-  ) |> 
-  filter(NSE_value > 0.8) |> 
-  nrow()
 
 
 # Make the plot look nice
@@ -361,7 +355,7 @@ single_label <- function(x_pos, y_pos, label_name) { # for adding a, b, c labels
 }
 
 
-NSE_histogram <- all_NSE_results |>
+NSE_histogram <- best_AIC_model_NSE_results |>
   ggplot(aes(x = NSE_value)) +
   geom_histogram(
     aes(y = after_stat(count) / sum(after_stat(count))),
@@ -372,7 +366,7 @@ NSE_histogram <- all_NSE_results |>
     boundary = 0
     ) +
   geom_text(
-    data = single_label(x_pos = 0, y_pos = 0.33, label_name = "a"),
+    data = single_label(x_pos = 0.05, y_pos = 0.43, label_name = "a"),
     mapping = aes(x = x_pos, y = y_pos, label = label_name),
     inherit.aes = FALSE,
     fontface = "bold",
@@ -380,7 +374,7 @@ NSE_histogram <- all_NSE_results |>
     size.unit = "pt"
   ) +
   labs(
-    y = "Proportion of Values"
+    y = "Proportion of Catchments"
   ) +
   NSE_x_axis +
   scale_y_continuous(labels = scales::percent) +
@@ -401,13 +395,15 @@ get_parameter_number <- function(streamflow_model_name) {
   return(length(streamflow_function()$parameter))
 }
 
-NSE_parameter_number <- all_NSE_results |>
+NSE_parameter_number <- best_AIC_model_NSE_results |>
   # cannot use match.fun with vector. Use rowwise for row-by-row operation
   rowwise() |>
   mutate(
     parameter_number = get_parameter_number(streamflow_model_name = streamflow_model)
   ) |>
   ungroup()
+
+
 
 
 
@@ -420,7 +416,7 @@ NSE_ecdf <- NSE_parameter_number |>
   ) +
   stat_ecdf(geom = "step", pad = TRUE) +
   geom_text(
-    data = single_label(x_pos = 0, y_pos = 0.95, label_name = "b"),
+    data = single_label(x_pos = 0.05, y_pos = 0.95, label_name = "b"),
     mapping = aes(x = x_pos, y = y_pos, label = label_name),
     inherit.aes = FALSE,
     fontface = "bold",
@@ -437,10 +433,11 @@ NSE_ecdf <- NSE_parameter_number |>
   theme_bw() +
   theme(
     legend.position = "inside",
-    legend.position.inside = c(0.17, 0.6),
+    legend.position.inside = c(0.3, 0.7),
     legend.background = element_rect(colour = "black", linewidth = 0.2),
-    legend.title = element_text(hjust = 0.5),
+    legend.title = element_text(hjust = 0.5, size = 9),
     legend.key.spacing.x = unit(0.5, units = "cm"),
+    legend.key.size = unit(0.4, "cm")
   ) +
   guides(
     colour = guide_legend(
@@ -450,8 +447,34 @@ NSE_ecdf <- NSE_parameter_number |>
   )
 
 
-combined_NSE_graphs <- NSE_histogram / NSE_ecdf +
-  theme(text = element_text(size = 10))
+parameter_number_hist <- NSE_parameter_number |> 
+  ggplot(aes(x = parameter_number)) +
+  geom_histogram(
+    aes(y = after_stat(count) / sum(after_stat(count))),
+    colour = "black", 
+    fill = "grey", 
+    linewidth = 0.2, 
+    bins = 6,
+    center = 0,
+    binwidth = 1
+  ) +
+  geom_text(
+    data = single_label(x_pos = 1.5, y_pos = 0.35, label_name = "c"),
+    mapping = aes(x = x_pos, y = y_pos, label = label_name),
+    inherit.aes = FALSE,
+    fontface = "bold",
+    size = 12,
+    size.unit = "pt"
+  ) +
+  labs(
+    y = "Proportion of Catchments",
+    x = "Number of Parameters in Best Model"
+  ) +
+  scale_y_continuous(labels = scales::percent) +
+  scale_x_continuous(breaks = seq(from = 2, to = 7)) +
+  theme_bw() 
+
+combined_NSE_graphs <- ((NSE_histogram / NSE_ecdf) | parameter_number_hist)
 
 ggsave(
   filename = "Figures/Supplementary/NSE_ecdf.pdf",
@@ -461,6 +484,12 @@ ggsave(
   width = 180,
   units = "mm"
 )
+
+## Does drought/no drought impact the number of parameters? ====================
+drought_gauges <- gauge_information |> filter(drought) |> pull(gauge)
+NSE_parameter_number |> filter(!gauge %in% drought_gauges) |> count(parameter_number)
+NSE_parameter_number |> filter(gauge %in% drought_gauges) |> count(parameter_number)
+# Not really
 
 # Find maximum difference between NSE for a given gauge
 min_max_NSEs_per_gauge <- NSE_parameter_number |> 
