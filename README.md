@@ -30,7 +30,7 @@ The code was developed and tested in both Windows and Linux operating systems: T
 
 ### R Requirements
 
-The code is designed for R version 4.5.2.
+The code is designed for R version 4.6.1.
 
 The code requires the following R packages: tidyverse, cmaesr, smoof, truncnorm , sloop, ggExtra, gridExtra, furrr, parallel, arrow, tictoc, dream, patchwork, ozmaps, sf, patchwork, metR, ggmagnify, ggh4x, trend and qpdf.
 
