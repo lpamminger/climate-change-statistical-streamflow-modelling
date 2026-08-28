@@ -8,7 +8,7 @@
 
 
 # Import libraries--------------------------------------------------------------
-pacman::p_load(tidyverse, truncnorm, sloop, patchwork, ozmaps, sf, patchwork, metR, ggmagnify)
+pacman::p_load(tidyverse, truncnorm, sloop, patchwork, ozmaps, sf, patchwork, ggmagnify)
 
 
 # Import functions -------------------------------------------------------------
