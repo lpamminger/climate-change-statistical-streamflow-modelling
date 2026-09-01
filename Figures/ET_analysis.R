@@ -1220,7 +1220,7 @@ wilcox_test_results <- AET_with_ecdf |>
 storage_error <- 0.03 # from Han et al, 2020 https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2020WR027392
 
 
-AET_comparison <- AET_comparison[["single_decade"]] |> # get the single decade for this analysis
+AET_comparison_single_comparison <- AET_comparison[["single_decade"]] |> # get the single decade for this analysis
   select(gauge, decade, ave_budyko_AET, ave_waterbalance_AET) |>
   mutate(
     AET_waterbalance_minus_budyko_ave = ave_waterbalance_AET - ave_budyko_AET,
@@ -1292,7 +1292,7 @@ make_ecdf <- function(x) {
 # filter(dryness_zone == "Semi-Arid") |>
 #  pull(gauge)
 
-AET_comparison <- AET_comparison |>
+AET_comparison_single_comparison <- AET_comparison_single_comparison |>
   # filter(gauge %in% arid_gauges) |>
   # forces by decade operation
   group_by(decade) |>
@@ -1307,17 +1307,17 @@ AET_comparison <- AET_comparison |>
 
 
 # it is like I need to rearrange then put back together
-xmiddle <- AET_comparison |>
+xmiddle <- AET_comparison_single_comparison |>
   select(decade, AET_waterbalance_minus_budyko_ave, ecdf_AET_middle) |>
   arrange(ecdf_AET_middle) |>
   rename(ecdf = ecdf_AET_middle)
 
-xlower <- AET_comparison |>
+xlower <- AET_comparison_single_comparison |>
   select(decade, new_lower_bound, ecdf_AET_lower) |>
   arrange(ecdf_AET_lower) |>
   rename(ecdf = ecdf_AET_lower)
 
-xupper <- AET_comparison |>
+xupper <- AET_comparison_single_comparison |>
   select(decade, new_upper_bound, ecdf_AET_upper) |>
   arrange(ecdf_AET_upper) |>
   rename(ecdf = ecdf_AET_upper)
