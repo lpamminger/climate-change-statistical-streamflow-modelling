@@ -224,7 +224,7 @@ ggsave(
 
 ## Box plot for streamflow percentage changes ==================================
 CO2_streamflow_percentage_changes <- read_csv(
-  "Modelling/Results/CO2_streamflow_percentage_changes.csv",
+  "Modelling/decade_streamflow_CO2_differences.csv",
   show_col_types = FALSE
   )
 
