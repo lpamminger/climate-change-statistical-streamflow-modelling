@@ -9,8 +9,8 @@ result_set <- function(cmaes_or_dream_result) {
   ## Make class ================================================================
   structure(
     list(
-      "optimised_object" = cmaes_or_dream_result,
-      "numerical_optimiser_setup" = cmaes_or_dream_result$numerical_optimiser_setup,
+      "optimised_object" = cmaes_or_dream_result, 
+      "numerical_optimiser_setup" = cmaes_or_dream_result$numerical_optimiser_setup, 
       "best_parameter_set" = get_best_parameters_real_space(cmaes_or_dream_result),
       "LL_best_parameter_set" = get_best_fitness(cmaes_or_dream_result),
       "AIC_best_parameter_set" = get_AIC(cmaes_or_dream_result),

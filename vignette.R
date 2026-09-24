@@ -3,14 +3,25 @@
 
 
 # Import libraries required ----------------------------------------------------
-# If this is a package this step is not required
-pacman::p_load(tidyverse, cmaesr, smoof, truncnorm, sloop, ggExtra, tictoc)
-## ggExtra is for ggMarginal used in the examine_transform plot
+pacman::p_load(tidyverse, cmaesr, smoof, truncnorm, sloop, ggExtra, tictoc, dream) # Once this becomes a package this step is not required
 
-# Expected run time for vignette is less than 30 seconds
+
+# There are multiple packages called dream.
+# Install the following:
+# - install.packages("dream", repos="http://R-Forge.R-project.org") 
+# OR
+# - https://rdrr.io/rforge/dream/
+
+
+
+# Expected run time ------------------------------------------------------------
+# The expected run time for the CMAES part of the vignette is less than 30 seconds
+# The expected run time of the DREAM part of the vignette is approximately 15 minutes
+
+
+
 
 # Import and prepare data-------------------------------------------------------
-# If this is a package this step is not required
 start_stop_indexes <- readr::read_csv(
   "./Data/Tidy/start_end_index.csv",
   show_col_types = FALSE
@@ -35,7 +46,6 @@ gauge_information <- readr::read_csv(
 
 
 ## Import functions ============================================================
-#If this is a package this step is not required
 source("./Functions/utility.R")
 source("./Functions/boxcox_logsinh_transforms.R")
 source("./Functions/streamflow_models.R")
@@ -48,6 +58,7 @@ source("./Functions/generic_functions.R")
 source("./Functions/CMAES.R")
 source("./Functions/objective_function_setup.R")
 source("./Functions/result_set.R")
+source("./Functions/DREAM.R")
 
 
 
@@ -70,7 +81,11 @@ example_catchment <- gauge |>
 plot(example_catchment, type = "streamflow-time")
 plot(example_catchment, type = "rainfall-runoff")
 
-# 2. Prepare numerical_optimiser object ----------------------------------------
+
+
+
+# CMAES EXAMPLE ----------------------------------------------------------------
+# 2. Prepare numerical_optimiser object ========================================
 
 # Here you can adjust:
 ## - the streamflow_model used. 
@@ -91,7 +106,7 @@ plot(example_catchment, type = "rainfall-runoff")
 
 numerical_optimiser <- example_catchment |>
   numerical_optimiser_setup_vary_inputs(
-    streamflow_model = streamflow_model_slope_shifted_CO2_seasonal_ratio_auto,
+    streamflow_model = streamflow_model_intercept_shifted_CO2,
     objective_function = constant_sd_objective_function, 
     streamflow_transform_method = log_sinh_transform, 
     bounds_and_transform_method = make_default_bounds_and_transform_methods, 
@@ -102,8 +117,7 @@ numerical_optimiser <- example_catchment |>
 
 
 
-# 3. Put numerical_optimiser object into a numerical optimiser -----------------
-
+# 3. Put numerical_optimiser object into a numerical optimiser =================
 # currently only works with CMAES and DREAM functions
 results <- numerical_optimiser |>
   CMAES(
@@ -112,24 +126,88 @@ results <- numerical_optimiser |>
   ) 
 
 
-# 4. Convert results into a result_set object (standardised format) ------------
+# 4. Convert results into a result_set object (standardised format) ============
 standardised_results <- results |> result_set() 
 
 
-# 5. Examine results -----------------------------------------------------------
+# 5. Examine results ===========================================================
 ### probably should add ... in plot method so the user can alter the ggplot object directly i.e.,
 ### plot(standardised_results, type = "streamflow-time, ...) add theme(axis...)
-### an NSE value on the streamflow time would also be a nice touch
 plot(standardised_results, type = "streamflow-time")
 plot(standardised_results, type = "rainfall-runoff")
 plot(standardised_results, type = "examine_transform") 
 plot(standardised_results, type = "std_errors")
 
 
-# The near_bound column does not functioning correctly
-# Ideally, it should scale with the parameters. It does not do this currently.
-parameter_table <- parameters_summary(standardised_results)
+### Data in table form
+parameter_table <- parameters_summary(standardised_results) # The near_bound column does not functioning correctly. Ideally, it should scale with the parameters. It does not do this currently.
 result_table <- streamflow_timeseries_summary(standardised_results) 
+
+
+
+
+
+# DREAM EXAMPLE (repeat steps 2-5) ---------------------------------------------
+# 2. Prepare numerical_optimiser object ========================================
+DREAM_numerical_optimiser <- example_catchment |>
+  numerical_optimiser_setup_vary_inputs(
+    streamflow_model = streamflow_model_intercept_shifted_CO2,
+    objective_function = constant_sd_objective_function, 
+    streamflow_transform_method = log_sinh_transform, 
+    bounds_and_transform_method = make_default_bounds_and_transform_methods, 
+    minimise_likelihood = FALSE, # DREAM requires maximising likelihood
+    streamflow_transform_method_offset = 0 
+  )
+
+
+# 3. Put numerical_optimiser object into a numerical optimiser =================
+DREAM_results <- DREAM_numerical_optimiser |>
+  DREAM(
+    controls = list() # uses parameters see DREAM_controls below. Passing empty list uses the defaults.
+  ) 
+
+
+# Default controls for DREAM. These were found to work best for this analysis
+DREAM_controls <- list(
+  check_convergence_steps = 200,
+  warm_up_per_chain = 5E4, 
+  burn_in_per_chain = 1E4, 
+  iterations_after_burn_in_per_chain = 1E4, 
+  eps = 0.05, 
+  steps = 10, 
+  thinning = 1
+)
+
+# For more complex controls examine the following control_DREAM_defaults()
+# or `dream` package directly
+
+
+
+
+
+# 4. Convert results into a result_set object (standardised format) ============
+DREAM_standardised_results <- DREAM_results |> result_set() 
+
+
+# 5. Examine results ===========================================================
+plot(DREAM_standardised_results, type = "streamflow-time")
+plot(DREAM_standardised_results, type = "rainfall-runoff")
+plot(DREAM_standardised_results, type = "examine_transform") 
+plot(DREAM_standardised_results, type = "std_errors")
+
+### DREAM also has specific plots:
+gg_trace_plot(DREAM_results) # trace plot
+gg_distribution_plot(DREAM_results) # distribution plot
+
+
+### Data in table form
+DREAM_parameter_table <- parameters_summary(DREAM_standardised_results)
+DREAM_result_table <- streamflow_timeseries_summary(DREAM_standardised_results) 
+
+
+
+
+
 
 
 

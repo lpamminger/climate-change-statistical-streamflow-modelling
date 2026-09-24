@@ -221,10 +221,12 @@ get_restart_count.default <- function(cmaes_result, ...) {
 }
 
 ## Covert parameter into real space ============================================
-## uses coef
+## uses coef for cmaes. DREAM has it in the dream object
 get_best_parameters_real_space <- function(cmaes_or_dream_result) {
+
   force(cmaes_or_dream_result)
 
+  if(sloop::s3_class(cmaes_or_dream_result)[1] == "dream") {return(cmaes_or_dream_result$real_coefs)}
   scaled_parameters <- coef(cmaes_or_dream_result)
 
   best_parameters <- purrr::pmap(
