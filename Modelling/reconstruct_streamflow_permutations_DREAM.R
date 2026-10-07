@@ -1,5 +1,16 @@
 # Construct streamflow using all permutations of DREAM
 
+# What this code does:
+## 1. extract all sequences/permutations for a given model for a given gauge i.e., a1, a2, a3 etc.
+## 2. model streamflow for each permutation
+## 3. sum streamflow for two specified decade
+## 4. repeat step 2 and 3 except set a3 to zero
+## 5. calculate a percentage difference between CO2 on vs. off
+## 6. Get IQR of all percentage differences
+
+# This code relies on the best models containing a CO2 term to calculate
+# the uncertainty
+
 
 # Import libraries -------------------------------------------------------------
 pacman::p_load(tidyverse, furrr, arrow)
@@ -41,38 +52,21 @@ best_CO2_non_CO2_per_gauge <- read_csv(
 )
 
 
+evidence_ratio_calc <- read_csv(
+  "./Modelling/Results/CMAES/evidence_ratio_results.csv",
+  show_col_types = FALSE
+)
+
+
+
+
+
+
 
 
 
 
 # Get relevant catchments and models -------------------------------------------
-## Calculate evidence ratio for filtering ======================================
-evidence_ratio_calc <- best_CO2_non_CO2_per_gauge |>
-  select(gauge, contains_CO2, AIC) |>
-  distinct() |>
-  pivot_wider(
-    names_from = contains_CO2,
-    values_from = AIC
-  ) |>
-  mutate(
-    CO2_model = `TRUE`,
-    non_CO2_model = `FALSE`,
-    .keep = "unused"
-  ) |>
-  mutate(
-    AIC_difference = CO2_model - non_CO2_model # CO2 is smaller than non-CO2 then negative and CO2 is better
-  ) |>
-  mutate(
-    evidence_ratio = case_when(
-      AIC_difference < 0 ~ exp(0.5 * abs(AIC_difference)), # when CO2 model is better
-      AIC_difference > 0 ~ -exp(0.5 * abs(AIC_difference)) # when non-CO2 model is better
-    )
-  ) |>
-  select(gauge, evidence_ratio) |>
-  arrange(evidence_ratio)
-
-
-
 ## Extract gauges with evidence ratio > 100 and contains CO2 ===================
 best_model_per_gauge <- best_CO2_non_CO2_per_gauge |>
   slice_min(
@@ -102,7 +96,7 @@ round_2_gauges <- gauges[41:81]
 DREAM_sequences <- open_dataset(
   sources = "./Modelling/Results/DREAM/Sequences"
 ) |>
-  filter(gauge %in% round_2_gauges) |> 
+  filter(gauge %in% round_1_gauges) |> 
   collect() |> 
   arrange(chain, n)
 
@@ -369,6 +363,9 @@ list.files(
   write_csv("./Modelling/Results/DREAM/DREAM_CO2_impact_uncertainty_on_streamflow.csv")
 
 
+
+
+
 # Testing
 stop_here()
 
@@ -389,7 +386,7 @@ tribble(
 
 
 y <- CO2_impact_total_decade_streamflow_uncertainty(
-  specific_gauge = "305202",
+  specific_gauge = "235205",
   period_1 = decade_1,
   period_2 = decade_2,
   observed_data = data,
