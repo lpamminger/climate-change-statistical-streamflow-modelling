@@ -1087,7 +1087,7 @@ ggsave(
 ## Map of percentage differences CO2 model vs. non-CO2 model ===================
 # Repeat percentage_difference_a3_on_off_data except with best CO2 and non-CO2 
 # copy-paste code from above
-percentage_difference_best_CO2_vs_best_non_CO2 <- high_evidence_master_streamflow_table |>
+percentage_difference_best_CO2_vs_best_non_CO2 <- master_streamflow_table |>
   filter(year %in% c(decade_1, decade_2)) |>
   # add decade group for summarising
   mutate(
@@ -1121,7 +1121,8 @@ plot_ready_decade_differences_best_CO2_non_CO2 <- percentage_difference_best_CO2
   left_join(
     evidence_ratio,
     by = join_by(gauge)
-  ) 
+  ) |> 
+  filter(evidence_ratio > 100)
 
 # change limits globally (not a great way of doing it)
 CO2_impact_on_streamflow_percent_limits <- plot_ready_decade_differences_best_CO2_non_CO2 |>
@@ -1417,6 +1418,76 @@ patchwork_CO2_model_and_non_CO2_model_percentage_differences <- (make_CO2_stream
   plot_layout(guides = "collect") & theme(legend.position = "bottom")
 
 
+
+## REPEAT THE ABOVE BUT FOR ALL EVIDENCE RATIOS ================================
+### make it plot ready
+all_evi_plot_ready_decade_differences_best_CO2_non_CO2 <- percentage_difference_best_CO2_vs_best_non_CO2 |>
+  left_join(
+    evidence_ratio,
+    by = join_by(gauge)
+  )
+
+### Get average change for each binned evidence ratio 
+binned_evidence_ratio <- c("Weak", "Moderate", "Moderately Strong", "Strong", "Very Strong", "Extremely Strong")
+
+all_evi_plot_ready_decade_differences_best_CO2_non_CO2 |> 
+  filter(decade == 2) |> 
+  #filter(CO2_impact_on_streamflow_percent > 0) |> 
+  summarise(
+    ave_CO2_impact_on_streamflow_percent = mean(CO2_impact_on_streamflow_percent),
+    .by = binned_evidence_ratio
+  ) |> 
+  arrange(ave_CO2_impact_on_streamflow_percent)
+
+
+# change limits globally (not a great way of doing it)
+CO2_impact_on_streamflow_percent_limits <- all_evi_plot_ready_decade_differences_best_CO2_non_CO2 |>
+  pull(CO2_impact_on_streamflow_percent) |>
+  make_limits() |>
+  as.double()
+
+
+### wrap make_CO2_streamflow_percentage_change_map function
+wrapped_make_CO2_streamflow_percentage_change_map <- function(evidence_ratio, label, data, legend_title) {
+  data |> 
+    filter(binned_evidence_ratio == {{ evidence_ratio }}) |> 
+    filter(decade == 2) |> 
+    make_CO2_streamflow_percentage_change_map(
+      title = label, 
+      legend_title = legend_title
+    )
+}
+
+
+legend_title_1 <- bquote("Average Annual Impact of" ~ CO[2] ~ "on Streamflow (%)")
+
+
+all_evidence_ratio_percentage_changes <- map2(
+  .x = binned_evidence_ratio,
+  .y = letters[1:length(binned_evidence_ratio)],
+  .f = wrapped_make_CO2_streamflow_percentage_change_map,
+  data = all_evi_plot_ready_decade_differences_best_CO2_non_CO2,
+  legend_title = legend_title_1
+)
+
+all_evidence_ratio_percent_change_patchwork <- all_evidence_ratio_percentage_changes |> 
+  reduce(.f = `+`) +
+  plot_layout(guides = "collect") & theme(legend.position = "bottom")
+
+
+ggsave(
+  filename = "./Figures/Extended_Data/all_evidence_ratio_percent_change_patchwork.pdf",
+  plot = all_evidence_ratio_percent_change_patchwork,
+  device = "pdf",
+  width = 297,
+  height = 210,
+  units = "mm"
+)
+
+
+
+
+
 ## Map of absolute percentage changes ==========================================
 # does plot_ready_decade_differences have absolute values built in?
 # yes it does --> CO2_impact_on_streamflow_mm_per_year
@@ -1431,6 +1502,7 @@ altered_plot_ready_decade_differences <- plot_ready_decade_differences |>
 
 
 ### Get averages ###############################################################
+### Sense check
 altered_plot_ready_decade_differences |> 
   summarise(
     mean_abs_changes = mean(CO2_impact_on_streamflow_percent),
@@ -1517,6 +1589,7 @@ compare_absolute_change_with_rainfall_and_APET <- altered_plot_ready_decade_diff
   arrange(mean_rainfall)
 
 
+
 ### Recalculate global plotting variables using abs values #####################
 CO2_impact_on_streamflow_percent_limits <- altered_plot_ready_decade_differences |>
   pull(CO2_impact_on_streamflow_percent) |>
@@ -1558,6 +1631,18 @@ ggsave(
   height = 210,
   units = "mm"
 )
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
