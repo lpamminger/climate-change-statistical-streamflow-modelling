@@ -178,7 +178,10 @@ time_of_emergence_data <- CO2_time_of_emergence |>
     )
   )
 
-
+write_csv(
+  time_of_emergence_data,
+  file = "Modelling/Results/all_time_of_emergence.csv"
+)
 
 
 # Calculate evidence ratio -----------------------------------------------------
