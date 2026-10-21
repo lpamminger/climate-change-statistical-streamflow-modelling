@@ -1435,6 +1435,7 @@ all_evi_plot_ready_decade_differences_best_CO2_non_CO2 |>
   #filter(CO2_impact_on_streamflow_percent > 0) |> 
   summarise(
     ave_CO2_impact_on_streamflow_percent = mean(CO2_impact_on_streamflow_percent),
+    sd_CO2_impact_on_streamflow_percent = sd(CO2_impact_on_streamflow_percent),
     .by = binned_evidence_ratio
   ) |> 
   arrange(ave_CO2_impact_on_streamflow_percent)
