@@ -83,6 +83,13 @@ year_DREAM_sequence_data <- open_dataset(
 )
 
 
+DREAM_convergence_stats <- read_csv(
+  "Modelling/Results/DREAM/DREAM_convergence_stats.csv",
+  show_col_types = FALSE
+  ) |> 
+  filter(parameter == "a5") |> 
+  select(gauge, best_coefficients)
+
 
 # Calculate time of emergence using CMAES parameters ---------------------------
 best_model_per_gauge <- best_CO2_non_CO2_per_gauge |>
@@ -178,10 +185,54 @@ time_of_emergence_data <- CO2_time_of_emergence |>
     )
   )
 
+
+DREAM_ToA <- DREAM_convergence_stats |> 
+  mutate(
+    year_time_of_emergence = adjusted_a5_to_ToE(best_coefficients)
+  ) |> 
+  rename(
+    DREAM_ToA = year_time_of_emergence
+  )
+
+time_of_emergence_data <- time_of_emergence_data |> 
+  left_join(
+    DREAM_ToA,
+    by = join_by(gauge)
+  )
+  
+
 write_csv(
   time_of_emergence_data,
   file = "Modelling/Results/all_time_of_emergence.csv"
 )
+
+
+# How similar is DREAM and CMAES ToA? ------------------------------------------
+compare_ToAs <- time_of_emergence_data |> 
+  rename(
+    CMAES_ToA = year_time_of_emergence
+  ) |> 
+  select(gauge, CMAES_ToA, DREAM_ToA) |> 
+  mutate(
+    abs_diff = abs(CMAES_ToA - DREAM_ToA)
+  ) 
+
+compare_ToAs |> 
+  summarise(
+    mean_diff = mean(abs_diff),
+    median_diff = median(abs_diff),
+    sd_diff = sd(abs_diff)
+  )
+
+# I am not sure this is correct
+wilcox.test(
+  x = compare_ToAs |> pull(CMAES_ToA),
+  y = compare_ToAs |> pull(DREAM_ToA),
+  alternative = "two.sided",
+  paired = TRUE
+)
+
+
 
 
 # Calculate evidence ratio -----------------------------------------------------
@@ -238,6 +289,8 @@ time_of_emergence_data <- time_of_emergence_data |>
   ) |> 
   # For the purpose of analysis we are only interested in moderate strong or above. 
   filter(binned_evidence_ratio %in% c("Moderately Strong", "Strong", "Very Strong", "Extremely Strong")) 
+
+
 
 
 
