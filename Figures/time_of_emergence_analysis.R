@@ -208,6 +208,14 @@ write_csv(
 
 
 # How similar is DREAM and CMAES ToA? ------------------------------------------
+start_and_end <- data |> 
+  drop_na() |> 
+  summarise(
+    max_year = max(year),
+    min_year = min(year),
+    .by = gauge
+  ) 
+
 compare_ToAs <- time_of_emergence_data |> 
   rename(
     CMAES_ToA = year_time_of_emergence
@@ -215,7 +223,14 @@ compare_ToAs <- time_of_emergence_data |>
   select(gauge, CMAES_ToA, DREAM_ToA) |> 
   mutate(
     abs_diff = abs(CMAES_ToA - DREAM_ToA)
-  ) 
+  ) |> 
+  left_join(
+    start_and_end,
+    by = join_by(gauge)
+  )
+
+
+
 
 compare_ToAs |> 
   summarise(
